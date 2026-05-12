@@ -2,8 +2,8 @@ package com.flix.flixintegrationtest.common
 
 import com.flix.app.FlixPlaftformApplication
 import com.flix.common.enums.Role
-import com.flix.identity.entity.User
-import com.flix.identity.repository.UserRepository
+import com.flix.identity.dao.entity.User
+import com.flix.identity.dao.repository.UserRepository
 import io.restassured.RestAssured
 import io.restassured.builder.RequestSpecBuilder
 import io.restassured.http.ContentType

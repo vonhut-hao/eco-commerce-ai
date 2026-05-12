@@ -1,4 +1,4 @@
-package com.flix.identity.exception;
+package com.flix.identity.common.exception;
 
 import com.flix.common.enums.ErrorCode;
 import com.flix.common.exception.BusinessException;

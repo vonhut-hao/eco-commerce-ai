@@ -1,4 +1,4 @@
-package com.flix.identity.enums;
+package com.flix.identity.common.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,10 @@
-package com.flix.identity.config;
+package com.flix.identity.auth.config;
 
-import com.flix.identity.service.*;
+import com.flix.identity.auth.handler.JwtAccessDeniedHandler;
+import com.flix.identity.auth.handler.JwtAuthenticationEntryPoint;
+import com.flix.identity.auth.handler.OAuth2AuthenticationFailureHandler;
+import com.flix.identity.auth.handler.OAuth2AuthenticationSuccessHandler;
+import com.flix.identity.auth.service.CustomOidcUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;

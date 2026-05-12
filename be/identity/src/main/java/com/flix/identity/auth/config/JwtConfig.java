@@ -1,9 +1,8 @@
-package com.flix.identity.config;
+package com.flix.identity.auth.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -19,17 +18,17 @@ import javax.crypto.spec.SecretKeySpec;
 @RequiredArgsConstructor
 public class JwtConfig {
 
-    IdentityConfig identityConfig;
+    AuthConfig authConfig;
 
     @Bean
     public JwtEncoder jwtEncoder() {
-        return new NimbusJwtEncoder(new ImmutableSecret<>(identityConfig.getJwtSecret()
+        return new NimbusJwtEncoder(new ImmutableSecret<>(authConfig.getJwtSecret()
                 .getBytes()));
     }
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        SecretKeySpec secretKey = new SecretKeySpec(identityConfig.getJwtSecret().getBytes(), "HmacSHA256");
+        SecretKeySpec secretKey = new SecretKeySpec(authConfig.getJwtSecret().getBytes(), "HmacSHA256");
         return NimbusJwtDecoder
                 .withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)

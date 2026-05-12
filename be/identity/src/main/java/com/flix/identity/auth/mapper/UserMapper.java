@@ -1,4 +1,4 @@
-package com.flix.identity.mapper;
+package com.flix.identity.auth.mapper;
 
 import org.mapstruct.Mapper;
 

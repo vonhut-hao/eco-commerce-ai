@@ -1,4 +1,4 @@
-package com.flix.identity.config;
+package com.flix.identity.auth.config;
 
 import com.flix.common.config.CommonConfig;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Slf4j
 @Getter
-public class IdentityConfig extends CommonConfig {
+public class AuthConfig extends CommonConfig {
 
     @Value("${identity.jwt.secret-key}")
     private String jwtSecret;

@@ -1,11 +1,11 @@
-package com.flix.identity.service;
+package com.flix.identity.auth.service;
 
 import com.flix.common.enums.Role;
-import com.flix.identity.entity.User;
-import com.flix.identity.entity.UserProfile;
-import com.flix.identity.enums.AuthProvider;
-import com.flix.identity.repository.UserProfileRepository;
-import com.flix.identity.repository.UserRepository;
+import com.flix.identity.dao.entity.User;
+import com.flix.identity.dao.entity.UserProfile;
+import com.flix.identity.auth.enums.AuthProvider;
+import com.flix.identity.dao.repository.UserProfileRepository;
+import com.flix.identity.dao.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -76,7 +76,7 @@ public class CustomOidcUserService extends OidcUserService {
 
 
 
-    OidcUser loadOidcUser(OidcUserRequest userRequest) {
+    public OidcUser loadOidcUser(OidcUserRequest userRequest) {
         return super.loadUser(userRequest);
     }
 

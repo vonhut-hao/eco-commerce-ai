@@ -1,9 +1,10 @@
-package com.flix.identity.service;
+package com.flix.identity.auth.handler;
 
-import com.flix.identity.config.IdentityConfig;
-import com.flix.identity.dto.AuthResponse;
-import com.flix.identity.entity.User;
-import com.flix.identity.repository.UserRepository;
+import com.flix.identity.auth.config.AuthConfig;
+import com.flix.identity.auth.service.AuthService;
+import com.flix.identity.auth.dto.AuthResponse;
+import com.flix.identity.dao.entity.User;
+import com.flix.identity.dao.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
-    IdentityConfig identityConfig;
+    AuthConfig authConfig;
     UserRepository userRepository;
     AuthService authService;
 
@@ -45,7 +46,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 .orElseThrow(() -> new IllegalStateException("OAuth2 user not found after login"));
 
         AuthResponse authResponse = authService.generateTokenForUser(user);
-        String redirectUrl = identityConfig.getOauth2RedirectUrl();
+        String redirectUrl = authConfig.getOauth2RedirectUrl();
 
         String token = URLEncoder.encode(authResponse.accessToken(), StandardCharsets.UTF_8);
         String fragment = "token=" + token + "&expiresIn=" + authResponse.expiresIn();

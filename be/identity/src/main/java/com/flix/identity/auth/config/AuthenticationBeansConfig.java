@@ -1,6 +1,6 @@
-package com.flix.identity.config;
+package com.flix.identity.auth.config;
 
-import com.flix.identity.service.CustomUserDetailService;
+import com.flix.identity.auth.service.CustomUserDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.context.annotation.Bean;

@@ -1,15 +1,15 @@
-package com.flix.identity.service;
+package com.flix.identity.auth.service;
 
 import com.flix.common.enums.ErrorCode;
 import com.flix.common.enums.Role;
-import com.flix.identity.config.IdentityConfig;
-import com.flix.identity.dto.AuthResponse;
-import com.flix.identity.dto.LoginRequest;
-import com.flix.identity.dto.RegisterRequest;
-import com.flix.identity.entity.User;
-import com.flix.identity.enums.AuthProvider;
-import com.flix.identity.exception.InvalidCredentailsException;
-import com.flix.identity.repository.UserRepository;
+import com.flix.identity.auth.config.AuthConfig;
+import com.flix.identity.auth.dto.AuthResponse;
+import com.flix.identity.auth.dto.LoginRequest;
+import com.flix.identity.auth.dto.RegisterRequest;
+import com.flix.identity.dao.entity.User;
+import com.flix.identity.auth.enums.AuthProvider;
+import com.flix.identity.auth.exception.InvalidCredentailsException;
+import com.flix.identity.dao.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 public class AuthService {
 
     UserRepository userRepository;
-    IdentityConfig identityConfig;
+    AuthConfig authConfig;
     PasswordEncoder passwordEncoder;
-    private final JwtEncoder jwtEncoder;
+    JwtEncoder jwtEncoder;
 
     public AuthResponse registerForNormalUser(RegisterRequest registerRequest) {
         log.info("Register for normal user");
@@ -51,7 +51,6 @@ public class AuthService {
 
     public AuthResponse registerForVIPUser(RegisterRequest registerRequest) {
         log.info("Register for VIP user");
-
         User user = basicRegister(registerRequest);
         user.setRoles(Set.of(Role.USER, Role.VIP));
         user = userRepository.save(user);
@@ -109,7 +108,7 @@ public class AuthService {
                 .claim("userName", userName)
                 .claim("scope", rolesForClaims)
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(identityConfig.getJwtExpirationSeconds()))
+                .expiresAt(now.plusSeconds(authConfig.getJwtExpirationSeconds()))
                 .build();
 
         var params = JwtEncoderParameters.from(
@@ -120,7 +119,7 @@ public class AuthService {
 
         log.debug("Generated token for user with id {} and token value : {}", userId, tokenValue);
 
-        return new AuthResponse(tokenValue, identityConfig.getJwtExpirationSeconds());
+        return new AuthResponse(tokenValue, authConfig.getJwtExpirationSeconds());
     }
 
     public AuthResponse generateTokenForUser(User user) {

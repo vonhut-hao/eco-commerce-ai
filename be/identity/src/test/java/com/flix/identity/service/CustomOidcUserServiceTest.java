@@ -1,10 +1,11 @@
 package com.flix.identity.service;
 
 import com.flix.common.enums.Role;
-import com.flix.identity.entity.User;
-import com.flix.identity.enums.AuthProvider;
-import com.flix.identity.repository.UserProfileRepository;
-import com.flix.identity.repository.UserRepository;
+import com.flix.identity.auth.service.CustomOidcUserService;
+import com.flix.identity.dao.entity.User;
+import com.flix.identity.auth.enums.AuthProvider;
+import com.flix.identity.dao.repository.UserProfileRepository;
+import com.flix.identity.dao.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

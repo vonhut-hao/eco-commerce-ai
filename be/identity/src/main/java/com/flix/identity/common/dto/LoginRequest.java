@@ -1,4 +1,4 @@
-package com.flix.identity.dto;
+package com.flix.identity.common.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

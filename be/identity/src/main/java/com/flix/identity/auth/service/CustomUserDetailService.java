@@ -1,6 +1,6 @@
-package com.flix.identity.service;
+package com.flix.identity.auth.service;
 
-import com.flix.identity.repository.UserRepository;
+import com.flix.identity.dao.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.core.userdetails.User;

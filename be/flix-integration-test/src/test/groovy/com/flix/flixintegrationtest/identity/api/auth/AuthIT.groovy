@@ -6,7 +6,7 @@ import com.flix.flixintegrationtest.identity.config.BaseIT
 import io.restassured.RestAssured
 import org.springframework.http.HttpStatus
 
-class AuthItSpec extends BaseITSpec {
+class AuthIT extends BaseITSpec {
 
     //Login Tests
 

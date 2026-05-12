@@ -2,7 +2,7 @@ package com.flix.identity.entity;
 
 import com.flix.common.entity.BaseEntity;
 import com.flix.common.enums.Role;
-import com.flix.identity.enums.AuthProvider;
+import com.flix.identity.common.enums.AuthProvider;
 import jakarta.persistence.*;
 import lombok.*;
 

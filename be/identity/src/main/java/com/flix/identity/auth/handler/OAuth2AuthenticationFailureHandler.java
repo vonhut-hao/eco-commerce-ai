@@ -1,4 +1,4 @@
-package com.flix.identity.service;
+package com.flix.identity.auth.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

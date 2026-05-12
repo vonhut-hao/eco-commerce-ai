@@ -1,4 +1,4 @@
-package com.flix.identity.repository;
+package com.flix.identity.dao;
 
 import com.flix.identity.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,10 +1,10 @@
 package com.flix.identity.api;
 
 import com.flix.common.dto.ApiResponse;
-import com.flix.identity.dto.AuthResponse;
-import com.flix.identity.dto.LoginRequest;
-import com.flix.identity.dto.RegisterRequest;
-import com.flix.identity.service.AuthService;
+import com.flix.identity.auth.dto.AuthResponse;
+import com.flix.identity.auth.dto.LoginRequest;
+import com.flix.identity.auth.dto.RegisterRequest;
+import com.flix.identity.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

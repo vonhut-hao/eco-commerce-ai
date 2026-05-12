@@ -1,4 +1,4 @@
-package com.flix.identity.service;
+package com.flix.identity.auth.handler;
 
 import com.flix.common.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
