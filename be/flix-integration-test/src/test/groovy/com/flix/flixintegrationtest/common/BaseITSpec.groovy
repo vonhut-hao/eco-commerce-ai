@@ -2,11 +2,12 @@ package com.flix.flixintegrationtest.common
 
 import com.flix.app.FlixPlaftformApplication
 import com.flix.common.enums.Role
-import com.flix.identity.dao.entity.User
-import com.flix.identity.dao.repository.UserRepository
+import com.flix.identity.entity.User
+import com.flix.identity.dao.UserRepository
 import io.restassured.RestAssured
 import io.restassured.builder.RequestSpecBuilder
 import io.restassured.http.ContentType
+import lombok.extern.slf4j.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -53,22 +54,20 @@ abstract class BaseITSpec extends Specification {
         jdbc.execute("SET FOREIGN_KEY_CHECKS = 1")
     }
 
-    protected String loginAndGetToken(String email, String password) {
-        RestAssured.given()
-                .contentType(ContentType.JSON)
-                .body([email: email, password: password])
-                .post("/auth/login")
-                .then()
-                .statusCode(200)
-                .extract().as(Map)["accessToken"]
+    protected String loginAndGetToken(String username, String password) {
+        def resp = RestAssured.given()
+                .basePath("/v1")
+                .body([username: username, password: password])
+                .post("/auth/login").body().jsonPath()
+        resp.getString("data.accessToken")
     }
 
     protected User createAdminUser() {
-        def passwordEncode  = '$2a$12$pmIXxQ7H.iNsd6BrXRbC/..DoMMuuFEfKml33imgyOuZklipEtpZ.'
+        def passwordEncode = '$2a$12$pmIXxQ7H.iNsd6BrXRbC/..DoMMuuFEfKml33imgyOuZklipEtpZ.'
         def user = new User(
                 username: "admin",
                 email: "admin@flix.com",
-                password: passwordEncode ,
+                password: passwordEncode,
                 isEnabled: true,
                 isVerified: true,
         )
@@ -77,11 +76,11 @@ abstract class BaseITSpec extends Specification {
     }
 
     protected User createNormalUser() {
-        def passwordEncode  = '$2a$12$pmIXxQ7H.iNsd6BrXRbC/..DoMMuuFEfKml33imgyOuZklipEtpZ.'
+        def passwordEncode = '$2a$12$pmIXxQ7H.iNsd6BrXRbC/..DoMMuuFEfKml33imgyOuZklipEtpZ.'
         def user = new User(
                 username: "testNormalUser",
                 email: "testNormalUser@gmail.com",
-                password: passwordEncode ,
+                password: passwordEncode,
                 isEnabled: true,
                 isVerified: true,
         )
@@ -90,6 +89,10 @@ abstract class BaseITSpec extends Specification {
     }
 
     protected String getAdminToken() {
-        loginAndGetToken("admin@flix.com", "Admin@123")
+        loginAndGetToken("admin", "Admin@123")
+    }
+
+    protected String getNormalUserToken() {
+        loginAndGetToken("testNormalUser", "Admin@123")
     }
 }
