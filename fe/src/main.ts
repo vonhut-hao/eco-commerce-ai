@@ -1,5 +1,13 @@
 import { createApp } from 'vue'
-import './style.css'
+import router from './router/index'
+import { initializeAuth } from './composables/useAuth'
 import App from './App.vue'
+import './style.css'
 
-createApp(App).mount('#app')
+const app = createApp(App)
+
+// Initialize auth from localStorage
+initializeAuth()
+
+app.use(router)
+app.mount('#app')
