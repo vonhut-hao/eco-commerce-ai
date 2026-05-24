@@ -1,10 +1,10 @@
 package com.flix.flixintegrationtest.identity.api.auth
 
 
+import com.flix.common.dto.ApiResponse
 import com.flix.flixintegrationtest.common.BaseITSpec
 import com.flix.flixintegrationtest.identity.config.BaseIT
-import com.flix.identity.entity.UserProfile
-import io.restassured.RestAssured
+import org.springframework.http.HttpStatus
 
 class UserProfileIT extends BaseITSpec {
 
@@ -15,14 +15,12 @@ class UserProfileIT extends BaseITSpec {
         Map body = [avatarUrl: "asdasdasd", fullName: "Doe", phoneNumber: "0795823304"]
 
         when: "User creates profile for the first time"
-        def resp = RestAssured.given()
-                .header("Authorization", "Bearer " + token)
-                .body(body)
-                .post(BaseIT.PROFILE_API)
-        Map userProfile = resp.body().jsonPath().getMap("data")
+        def resp = postRequest(BaseIT.PROFILE_API, body, token)
+                .returnResult(ApiResponse)
+        Map userProfile = resp.responseBody.data as Map
 
         then:
-        resp.statusCode() == 201
+        resp.status == HttpStatus.CREATED
         userProfile.avatarUrl == body.avatarUrl
         userProfile.fullName == body.fullName
         userProfile.phoneNumber == body.phoneNumber
@@ -30,14 +28,12 @@ class UserProfileIT extends BaseITSpec {
         and:
         when: "User updates profile"
         Map updatedBody = [avatarUrl: "updatedUrl", fullName: "John Doe", phoneNumber: "0795823304"]
-        def updateResp = RestAssured.given()
-                .header("Authorization", "Bearer " + token)
-                .body(updatedBody)
-                .post(BaseIT.PROFILE_API)
-        Map updatedProfile = updateResp.body().jsonPath().getMap("data")
+        def updateResp = postRequest(BaseIT.PROFILE_API, updatedBody, token)
+                .returnResult(ApiResponse)
+        Map updatedProfile = updateResp.responseBody.data as Map
 
         then:
-        updateResp.statusCode() == 201
+        updateResp.status == HttpStatus.CREATED
         updatedProfile.avatarUrl == updatedBody.avatarUrl
         updatedProfile.fullName == updatedBody.fullName
         updatedProfile.phoneNumber == updatedBody.phoneNumber
@@ -48,25 +44,20 @@ class UserProfileIT extends BaseITSpec {
         createNormalUser()
         String token = getNormalUserToken()
         Map body = [avatarUrl: "asdasdasd", fullName: "Doe", phoneNumber: "0795823304"]
-        def resp = RestAssured.given()
-                .header("Authorization", "Bearer " + token)
-                .body(body)
-                .post(BaseIT.PROFILE_API)
-        Map userProfile = resp.body().jsonPath().getMap("data")
+        def resp = postRequest(BaseIT.PROFILE_API, body, token)
+                .returnResult(ApiResponse)
+        Map userProfile = resp.responseBody.data as Map
 
         when:
-        def updateResp = RestAssured.given()
-                .header("Authorization", "Bearer " + token)
-                .body(profileUpdateBodys)
-                .post(BaseIT.PROFILE_API)
-        Map updatedProfile = updateResp.body().jsonPath().getMap("data")
+        def updateResp = postRequest(BaseIT.PROFILE_API, profileUpdateBodys, token)
+                .returnResult(ApiResponse)
+        Map updatedProfile = updateResp.responseBody.data as Map
 
         then:
-        updateResp.statusCode() == 201
+        updateResp.status == HttpStatus.CREATED
         updatedProfile.avatarUrl == expectedAvatarUrl
         updatedProfile.fullName == expectedFullName
         updatedProfile.phoneNumber == expectedPhoneNumber
-
 
         where:
         scenario               | profileUpdateBodys                                                                | expectedAvatarUrl | expectedFullName | expectedPhoneNumber

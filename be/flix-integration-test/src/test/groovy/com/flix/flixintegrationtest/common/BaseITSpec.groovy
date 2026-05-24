@@ -6,18 +6,13 @@ import com.flix.common.enums.Role
 import com.flix.identity.common.enums.AuthProvider
 import com.flix.identity.dao.UserRepository
 import com.flix.identity.entity.User
-import io.restassured.RestAssured
-import io.restassured.builder.RequestSpecBuilder
-import io.restassured.http.ContentType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
-import org.springframework.http.ProblemDetail
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.web.servlet.client.EntityExchangeResult
 import org.springframework.test.web.servlet.client.RestTestClient
 import spock.lang.Specification
 
@@ -45,12 +40,6 @@ abstract class BaseITSpec extends Specification {
     protected String BASE_API;
 
     void setup() {
-        RestAssured.port = port
-        RestAssured.baseURI = "http://localhost"
-        RestAssured.basePath = "/v1"
-        RestAssured.requestSpecification = new RequestSpecBuilder()
-                .setContentType(ContentType.JSON)
-                .build()
         BASE_API = "http://localhost:${port}/v1"
     }
 
@@ -139,10 +128,10 @@ abstract class BaseITSpec extends Specification {
     }
 
     protected String loginAndGetToken(String username, String password) {
-        def resp = RestAssured.given()
-                .body([username: username, password: password])
-                .post("/auth/login").body().jsonPath()
-        resp.getString("data.accessToken")
+        def resp = postRequest("/auth/login", [username: username, password: password])
+                .returnResult(ApiResponse)
+        def data = resp.responseBody?.data as Map
+        data?.accessToken
     }
 
     protected User createAdminUser() {
