@@ -15,12 +15,13 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Setter
 @Getter
 @RequiredArgsConstructor
 @Service
+@Transactional
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class UserProfileService {
@@ -45,7 +46,14 @@ public class UserProfileService {
         log.info("Get user profile requested");
         log.debug("Get user profile for user id {}", userId);
         User user = getUser(userId);
-        return ResponseUserProfile.from(user.getUserProfile());
+        UserProfile profile = user.getUserProfile();
+        if (profile != null) {
+            return ResponseUserProfile.from(profile);
+        }
+        return new ResponseUserProfile(
+                null, null, null, null,
+                user.getId(), user.getUsername(), user.getEmail()
+        );
     }
 
     public void deleteUserProfile(Long userId) {

@@ -37,7 +37,7 @@ public class UserProfileController {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<ResponseUserProfile> getUserProfile(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @AuthenticationPrincipal Jwt jwt
     ) {
         SecurityUtils.validateOwnership(id, jwt);
@@ -48,7 +48,7 @@ public class UserProfileController {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasRole('USER')")
     public void deleteUserProfile(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @AuthenticationPrincipal Jwt jwt
     ) {
         SecurityUtils.validateOwnership(id, jwt);

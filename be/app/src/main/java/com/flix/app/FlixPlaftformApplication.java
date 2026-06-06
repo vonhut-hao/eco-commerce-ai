@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 public class FlixPlaftformApplication {
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(FlixPlaftformApplication.class, args);
     }
 
