@@ -19,5 +19,4 @@ public class AuthConfig extends CommonConfig {
 
     @Value("${identity.oauth2.redirect-url}")
     private String oauth2RedirectUrl;
-
 }

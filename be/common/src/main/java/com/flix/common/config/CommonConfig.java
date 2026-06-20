@@ -13,4 +13,7 @@ public class CommonConfig {
 
     @Value("${local.server.port}")
     String serverPort;
+
+    @Value("${aws.s3.bucket.name:ecosystemctu}")
+    String bucketName;
 }

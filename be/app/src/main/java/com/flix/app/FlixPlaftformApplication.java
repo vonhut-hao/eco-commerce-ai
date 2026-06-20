@@ -7,14 +7,14 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-@SpringBootApplication( scanBasePackages = "com.flix")
+@SpringBootApplication(scanBasePackages = "com.flix")
 @EntityScan(basePackages = "com.flix")
 @EnableJpaRepositories(basePackages = "com.flix")
 @EnableJpaAuditing
 @EnableAsync
 public class FlixPlaftformApplication {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(FlixPlaftformApplication.class, args);
     }
 

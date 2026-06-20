@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus
 
 class UserProfileIT extends BaseITSpec {
 
-    def "should create or update user profile successfully"() {
+    def "profile_0010 should create or update user profile successfully"() {
         given:
         createNormalUser()
         String token = getNormalUserToken()
@@ -39,7 +39,7 @@ class UserProfileIT extends BaseITSpec {
         updatedProfile.phoneNumber == updatedBody.phoneNumber
     }
 
-    def "should update full user profile"() {
+    def "profile_0020 should update full user profile"() {
         given:
         createNormalUser()
         String token = getNormalUserToken()

@@ -13,6 +13,8 @@
         <module>app</module>
         <module>identity</module>
         <module>flix-integration-test</module>
+        <module>catalog</module>
+        <module>chat</module>
     </modules>
 
     <properties>
