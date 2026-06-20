@@ -1,0 +1,174 @@
+@startuml
+hide circle
+hide methods
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 60
+skinparam shadowing false
+
+skinparam class {
+    BorderColor Black
+    ArrowColor Black
+    FontName Arial
+}
+
+skinparam packageStyle folder
+
+' =====================================================
+' DOMAIN ENTITIES
+' =====================================================
+
+    entity "USER" as User #E1F5FE {
+        o id
+        --
+        username
+        email
+        password
+        is_enabled
+        is_verified
+        roles
+        auth_providers
+    }
+
+    entity "USER_PROFILE" as UserProfile #E1F5FE {
+        o id
+        --
+        full_name
+        phone_number
+        avatar_url
+        green_points
+        total_carbon_index
+    }
+
+    entity "ADDRESS" as Address #E1F5FE {
+        o id
+        --
+        recipient_name
+        phone_number
+        full_address
+        is_default
+    }
+
+    entity "CONVERSATION" as Conversation #F3E5F5 {
+        o id
+        --
+        type
+    }
+
+    entity "MESSAGE" as Message #F3E5F5 {
+        o id
+        --
+        content
+    }
+
+    entity "CART_ITEM" as CartItem #FFF9C4 {
+        o id
+        --
+        quantity
+    }
+
+    entity "ORDER" as Order #FCE4EC {
+        o id
+        --
+        total_amount
+        status
+    }
+
+    entity "ORDER_ITEM" as OrderItem #FCE4EC {
+        o id
+        --
+        quantity
+        price
+        line_carbon_footprint
+    }
+
+    entity "PAYMENT_METHOD" as PaymentMethod #FCE4EC {
+        o id
+        --
+        method_name
+        is_active
+    }
+
+    entity "CATEGORY" as Category #E8F5E9 {
+        o id
+        --
+        name
+        description
+    }
+
+    entity "PRODUCT" as Product #E8F5E9 {
+        o id
+        --
+        name
+        type
+        price
+        stock
+        green_points
+        eco_friendliness
+        carbon_index
+        avg_rating
+        main_image
+        sub_images
+    }
+
+    entity "MATERIAL" as Material #E8F5E9 {
+        o id
+        --
+        name
+        type
+        eco_rating
+    }
+
+    entity "GREEN_CERTIFICATE" as GreenCertificate #E8F5E9 {
+        o id
+        --
+        name
+        issuer
+        issue_date
+        image_url
+    }
+
+    entity "COMMENT" as Comment #E8F5E9 {
+        o id
+        --
+        content
+        rating
+        media_urls
+    }
+
+' =====================================================
+' RELATIONSHIPS (Crow's Foot Notation)
+' =====================================================
+
+' --- Identity & Access Links ---
+User ||--|| UserProfile
+User ||--o{ Address
+
+' --- Catalog & Inventory Links ---
+Category }o--o{ Product
+Product }o--|{ Material
+Product ||--o{ GreenCertificate
+Product ||--o{ Comment
+Comment ||--o{ Comment
+
+' --- Sales & Checkout Links ---
+Order ||--|{ OrderItem
+PaymentMethod ||--o{ Order
+
+' --- Chatbot System Links ---
+Conversation ||--o{ Message
+
+' --- Cross-Domain Links ---
+User ||--o{ Comment
+User ||--o{ CartItem
+User ||--o{ Order
+User ||--o{ Message : "sender"
+
+' Hỗ trợ cả Chatbot (1 Bot, 1 User) và Peer-to-Peer (2 Users)
+User ||--o{ Conversation : "user 1"
+User ||--o{ Conversation : "user 2"
+
+Product ||--o{ CartItem
+Product ||--o{ OrderItem
+
+@enduml

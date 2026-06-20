@@ -23,6 +23,11 @@ spring:
     ansi:
       enabled: always
 
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+
 # Health check for prod env
 management:
   endpoints:
