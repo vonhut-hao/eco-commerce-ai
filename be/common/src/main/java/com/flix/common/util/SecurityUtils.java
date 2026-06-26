@@ -1,7 +1,11 @@
 package com.flix.common.util;
 
+import com.flix.common.enums.ErrorCode;
+import com.flix.common.exception.BusinessException;
 import com.flix.common.exception.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Arrays;
@@ -20,10 +24,20 @@ public class SecurityUtils {
         return jwt.getClaim(USER_ID);
     }
 
+    public static Long getCurrentUserId() {
+        Jwt jwt = currentJwt();
+        return getCurrentUserId(jwt);
+    }
+
     public static boolean isAdminRole(Jwt jwt) {
         log.debug("Checking admin role for JWT: {}", jwt);
         String roles = jwt.getClaim(ROLES);
         return roles != null && Arrays.asList(roles.split(" ")).contains("ADMIN");
+    }
+
+    public static boolean isAdminRole() {
+        Jwt jwt = currentJwt();
+        return isAdminRole(jwt);
     }
 
     public static void validateOwnership(Long userId, Jwt jwt) {
@@ -36,6 +50,14 @@ public class SecurityUtils {
             log.debug("User {} isn't owner, reject to get resource", userId);
             throw new UserNotFoundException();
         }
+    }
+
+    public static Jwt currentJwt() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            throw new BusinessException(ErrorCode.UNAUTHENTICATED);
+        }
+        return jwt;
     }
 
 }

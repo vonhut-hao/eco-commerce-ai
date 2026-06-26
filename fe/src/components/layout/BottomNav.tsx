@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Home, ShoppingBag, Leaf, BarChart2, User } from "lucide-react";
+import { Home, ShoppingBag, BarChart2, User} from "lucide-react";
 
 const items = [
   { key: "home",    label: "Home",     icon: Home,        path: "/" },
   { key: "shop",    label: "Shop",     icon: ShoppingBag, path: "/" },
-  { key: "greenai", label: "Green AI", icon: Leaf,        path: "/" },
   { key: "impact",  label: "Impact",   icon: BarChart2,   path: "/" },
   { key: "me",      label: "Tôi",      icon: User,        path: "/profile" },
 ];

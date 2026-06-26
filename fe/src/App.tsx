@@ -10,6 +10,7 @@ import CheckoutPage from "@/pages/CheckoutPage";
 import OrdersPage from "@/pages/OrdersPage";
 import AdminPage from "@/pages/admin/AdminPage";
 import { MainLayout } from "@/components/layout/MainLayout";
+import ChatPage from "@/pages/chat/ChatPage.tsx";
 import { authService } from "@/services/auth.service";
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
@@ -33,7 +34,9 @@ export default function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route
+          <Route path="/chat-page" element={<ChatPage />}/>
+          <Route path="/chat-page/:conversationId" element={<ChatPage />}/>
+          <Route
           path="/admin"
           element={
             <AdminRoute>
@@ -42,7 +45,6 @@ export default function App() {
           }
         />
       </Route>
-
       {/* Default redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

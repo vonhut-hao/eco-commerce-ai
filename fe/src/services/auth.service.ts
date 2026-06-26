@@ -1,4 +1,5 @@
 import { api, API_BASE } from './api';
+import { tokenStorage } from '@/utils/tokenStorage';
 
 interface AuthResponse {
   accessToken: string;
@@ -27,8 +28,7 @@ function parseJwt(token: string) {
 export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const res = await api.post<AuthResponse>('/v1/auth/login', data);
-    localStorage.setItem('accessToken', res.data.accessToken);
-    localStorage.setItem('expiresIn', String(res.data.expiresIn));
+    tokenStorage.setToken(res.data.accessToken, res.data.expiresIn);
     return res.data;
   },
 
@@ -42,17 +42,16 @@ export const authService = {
   },
 
   logout(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('expiresIn');
+    tokenStorage.clear();
     localStorage.removeItem('userId');
   },
 
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('accessToken');
+    return !!tokenStorage.getToken();
   },
 
   getToken(): string | null {
-    return localStorage.getItem('accessToken');
+    return tokenStorage.getToken();
   },
 
   getUserId(): number | null {
@@ -72,6 +71,13 @@ export const authService = {
       return scope.split(" ");
     }
     return payload.roles || [];
+  },
+
+  getUsername(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    const payload = parseJwt(token);
+    return payload ? payload.sub : null;
   },
 
   isAdmin(): boolean {

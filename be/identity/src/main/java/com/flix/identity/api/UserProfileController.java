@@ -54,5 +54,4 @@ public class UserProfileController {
         SecurityUtils.validateOwnership(id, jwt);
         userProfileService.deleteUserProfile(id);
     }
-
 }

@@ -1,8 +1,8 @@
 // Token storage and management utilities
 
-const TOKEN_KEY = 'auth_token'
-const EXPIRES_IN_KEY = 'auth_expires_in'
-const EXPIRES_AT_KEY = 'auth_expires_at'
+const TOKEN_KEY = 'accessToken'
+const EXPIRES_IN_KEY = 'expiresIn'
+const EXPIRES_AT_KEY = 'expiresAt'
 
 export const tokenStorage = {
   setToken(token: string, expiresIn: number): void {

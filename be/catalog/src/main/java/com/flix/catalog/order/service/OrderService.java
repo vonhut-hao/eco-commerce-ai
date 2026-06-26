@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.flix.common.util.SecurityUtils.currentJwt;
+import static com.flix.common.util.SecurityUtils.getCurrentUserId;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -68,7 +71,7 @@ public class OrderService {
     }
 
     private OrderResponse createOrder(OrderRequest request) {
-        Long userId = currentUserId();
+        Long userId = getCurrentUserId();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         var cartItems = cartItemRepository.findByUserId(userId);
@@ -218,18 +221,6 @@ public class OrderService {
         paymentMethodEntity.setMethodName(DEFAULT_PAYMENT_METHOD_NAME);
         paymentMethodEntity.setIsActive(true);
         return paymentMethodEntity;
-    }
-
-    private Long currentUserId() {
-        return SecurityUtils.getCurrentUserId(currentJwt());
-    }
-
-    private Jwt currentJwt() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
-            throw new BusinessException(ErrorCode.UNAUTHENTICATED);
-        }
-        return jwt;
     }
 
     private boolean isAdmin() {

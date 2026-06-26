@@ -16,7 +16,7 @@ import java.time.Duration;
 @Slf4j
 public class S3Wrapper {
     private final S3Template s3Template;
-    CommonConfig config;
+    private final CommonConfig config;
 
     public String uploadPublic(String key, MultipartFile file) throws IOException {
         log.info("Uploading public file with key: {}", key);
@@ -38,6 +38,10 @@ public class S3Wrapper {
         String presignedURL = s3Template.createSignedGetURL(config.getBucketName(), key, expiry).toString();
         log.debug("Presigned URL: {}", presignedURL);
         return presignedURL;
+    }
+
+    public String getPresignedUrl(String key) {
+        return getPresignedUrl(key, Duration.ofHours(1000));
     }
 
     public byte[] download(String key) throws IOException {

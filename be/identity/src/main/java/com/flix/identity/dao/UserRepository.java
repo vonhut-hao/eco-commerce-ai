@@ -38,4 +38,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
             FROM User u where u.username = :username OR u.email = :email
             """)
     Optional<User> findByUsernameOrEmail(@Param("username") String username, @Param("email") String email);
+
+    @Query(value = """
+            SELECT u.*
+            FROM users u JOIN user_roles ur ON u.id = ur.user_id WHERE ur.roles = 'ADMIN' LIMIT 1
+            """, nativeQuery = true)
+    Optional<User> findFirstAdmin();
 }
