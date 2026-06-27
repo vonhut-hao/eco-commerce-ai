@@ -30,13 +30,6 @@ public class AuthController {
         return ApiResponse.success(authResponse, HttpStatus.CREATED, "Normal user registered successfully");
     }
 
-    @PostMapping("/register/vip")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<AuthResponse> registerForVipUser(@RequestBody @Valid RegisterRequest request) {
-        var authResponse = authService.registerForVIPUser(request);
-        return ApiResponse.success(authResponse, HttpStatus.CREATED, "VIP user registered successfully");
-    }
-
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
         var authResponse = authService.login(request);

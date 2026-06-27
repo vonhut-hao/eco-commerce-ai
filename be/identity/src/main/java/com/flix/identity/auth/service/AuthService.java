@@ -49,14 +49,13 @@ public class AuthService {
         return generateToken(user.getId(), user.getUsername(), user.getRoles());
     }
 
-    public AuthResponse registerForVIPUser(RegisterRequest registerRequest) {
-        log.info("Register for VIP user");
+    public AuthResponse registerForAdmin(RegisterRequest registerRequest) {
+        log.info("Register for admin user");
         User user = basicRegister(registerRequest);
-        user.setRoles(Set.of(Role.USER, Role.VIP));
+        user.setRoles(Set.of(Role.USER, Role.ADMIN));
         user = userRepository.save(user);
 
-        log.debug("VIP User registered with id: {}", user.getId());
-        log.info("VIP User registered successfully");
+        log.info("Admin user registered successfully");
 
         return generateToken(user.getId(), user.getUsername(), user.getRoles());
     }
