@@ -17,6 +17,7 @@ public enum ErrorCode {
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED("Unauthenticated", HttpStatus.UNAUTHORIZED),
     FORBIDDEN("Forbidden", HttpStatus.FORBIDDEN),
+    CATEGORY_NOT_FOUND("Category not found", HttpStatus.NOT_FOUND),
     ;
 
     String message;
