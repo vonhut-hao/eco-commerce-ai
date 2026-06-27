@@ -38,9 +38,11 @@ public record ProductEntityResponse(
                 entity.getMainImage(),
                 deserializeFile(entity.getSubImages()),
                 entity.getCategories().stream()
+                        .filter(categoryEntity -> categoryEntity.getDeletedAt() == null)
                         .map(CategoryEntityResponse::from)
                         .toList(),
                 entity.getMaterials().stream()
+                        .filter(materialEntity -> materialEntity.getDeleteAt() == null)
                         .map(MaterialEntityResponse::from)
                         .toList()
         );

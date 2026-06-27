@@ -6,6 +6,11 @@ import java.util.List;
 
 public class FileConvert {
 
+    private FileConvert() {
+        /* This utility class should not be instantiated */
+    }
+
+
     public static String serializeFile(List<String> files) {
         if (files == null || files.isEmpty()) {
             return "";

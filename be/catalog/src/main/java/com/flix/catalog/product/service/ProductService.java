@@ -74,7 +74,7 @@ public class ProductService {
             return new HashSet<>();
         }
         var uniqueIds = categoryIds.stream().distinct().toList();
-        var categories = categoryRepository.findAllById(uniqueIds);
+        var categories = categoryRepository.findByIdInAndDeletedAtIsNull(uniqueIds);
         if (categories.size() != uniqueIds.size()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }

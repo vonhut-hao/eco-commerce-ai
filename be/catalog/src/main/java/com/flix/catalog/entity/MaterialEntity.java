@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,9 @@ public class MaterialEntity{
 
     @Column(nullable = false)
     private double ecoRating = 0.0;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deleteAt;
 
     @ManyToMany(mappedBy = "materials")
     private List<ProductEntity> productEntities = new ArrayList<>();

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -48,7 +49,8 @@ public class MaterialService {
         }
         var materialEntity = materialRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MATERIAL_NOT_FOUND));
-        materialRepository.delete(materialEntity);
+        materialEntity.setDeleteAt(LocalDateTime.now());
+        materialRepository.save(materialEntity);
         log.info("Deleted material with ID: {}", id);
     }
 }
