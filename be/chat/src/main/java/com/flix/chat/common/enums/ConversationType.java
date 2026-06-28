@@ -6,5 +6,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ConversationType {
-     USER, BOT
+     USER,
+     BOT,
 }

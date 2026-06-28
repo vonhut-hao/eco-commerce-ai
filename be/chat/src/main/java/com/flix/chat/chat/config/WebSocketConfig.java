@@ -11,9 +11,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry){
-        registry.addEndpoint("/comment") // Cổng để Frontend kết nối tới websocket: ws://localhost:8080/comment
-                .setAllowedOriginPatterns("*") // Bỏ chặn CORS
-                .withSockJS();
+        registry.addEndpoint("/ws") // Cổng để Frontend kết nối tới websocket: ws://localhost:8080/comment
+                .setAllowedOriginPatterns("*"); // Bỏ chặn CORS
     }
 
     @Override

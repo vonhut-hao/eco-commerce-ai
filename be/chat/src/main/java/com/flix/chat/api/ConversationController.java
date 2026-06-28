@@ -27,28 +27,28 @@ public class ConversationController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse<ConversationResponse> getConversation(@PathVariable Long id) {
+    public ApiResponse<ConversationResponse> getConversation(@PathVariable("id") Long id) {
         ConversationResponse response = conversationService.getConversation(id);
         return ApiResponse.success(response, HttpStatus.OK, "Room chat fetched successfully");
     }
 
     @GetMapping("/user/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse<List<ConversationEntity>> listConversation(@PathVariable Long userId) {
+    public ApiResponse<List<ConversationEntity>> listConversation(@PathVariable("userId") Long userId) {
         List<ConversationEntity> response = conversationService.listConversation(userId);
         return ApiResponse.success(response, HttpStatus.OK, "List room chat fetched successfully");
     }
 
     @PutMapping("/{id}/hidden")
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse<ConversationResponse> hiddenConversation(@PathVariable Long id) {
+    public ApiResponse<ConversationResponse> hiddenConversation(@PathVariable("id") Long id) {
         ConversationResponse response = conversationService.hiddenConversation(id);
         return ApiResponse.success(response, HttpStatus.OK, "Room chat hidden successfully");
     }
 
     @PutMapping("/{id}/show")
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse<ConversationResponse> showConversation(@PathVariable Long id) {
+    public ApiResponse<ConversationResponse> showConversation(@PathVariable("id") Long id) {
         ConversationResponse response = conversationService.showConversation(id);
         return ApiResponse.success(response, HttpStatus.OK, "Room chat shown successfully");
     }

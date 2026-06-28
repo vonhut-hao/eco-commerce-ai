@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "conversations")
 @Getter
@@ -20,14 +22,15 @@ public class ConversationEntity extends BaseEntity {
     Long id;
 
     @Column(name = "type", length = 50)
-    ConversationType type; //chat with user / bot chat
+    @Enumerated(EnumType.STRING)
+    ConversationType type;
 
     @Column(name = "user1_id")
-    Long user1_id;
+    Long user1Id;
 
     @Column(name = "user2_id")
-    Long user2_id;
+    Long user2Id;
 
-    @Column(name = "is_delete")
-    Boolean is_deleted;
+    @Column(name = "is_deleted")
+    Boolean isDeleted = false;
 }

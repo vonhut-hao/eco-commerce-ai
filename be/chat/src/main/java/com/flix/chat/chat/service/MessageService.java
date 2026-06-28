@@ -2,12 +2,16 @@ package com.flix.chat.chat.service;
 
 import com.flix.chat.common.dto.MessagesRequest;
 import com.flix.chat.common.dto.MessagesResponse;
+import com.flix.chat.common.dto.UpdateMessageRequest;
+import com.flix.chat.dao.ConversationRepository;
 import com.flix.chat.dao.MessageRepository;
+import com.flix.chat.entity.ConversationEntity;
 import com.flix.chat.entity.MessageEntity;
 import com.flix.common.enums.ErrorCode;
 import com.flix.common.exception.BusinessException;
+import com.flix.identity.dao.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Thêm mã Slf4j để ghi log
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,22 +23,36 @@ import java.util.List;
 public class MessageService {
     private final MessageRepository messageRepository;
     private final ConversationService conversationService;
+    private final ConversationRepository conversationRepository;
+    private final UserRepository userRepository;
 
     private MessageEntity getMessageEntityOrThrow(Long messageId) {
-        return messageRepository.findMessageById(messageId)
+        return messageRepository.findByIdForce(messageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MESSAGE_NOT_FOUND));
     }
 
+    private void checkUserById(Long idUser){
+        if (!userRepository.existsById(idUser)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+
+    @Transactional
     public MessagesResponse saveMessage(MessagesRequest request) {
         log.info("Save new message");
-        conversationService.getConversation(request.conversation_id());
+
+        conversationService.validateUserInConversation(request.conversationId(), request.senderId());
+        checkUserById(request.senderId());
+
+        ConversationEntity conversation = conversationRepository.findById(request.conversationId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONVERSATION_NOT_FOUND));
 
         MessageEntity message = MessageEntity.builder()
                 .content(request.content())
-                .conversation_id(request.conversation_id())
-                .sender_id(request.sender_id())
-                .file_url(request.file_url())
-                .is_deleted(false)
+                .conversation(conversation)
+                .senderId(request.senderId())
+                .fileUrl(request.fileUrl())
+                .isDeleted(false)
                 .build();
 
         MessageEntity savedMessage = messageRepository.save(message);
@@ -43,12 +61,15 @@ public class MessageService {
     }
 
     @Transactional
-    public MessagesResponse updateMessage(Long messageId, Long userId, MessagesRequest request) {
+    public MessagesResponse updateMessage(Long messageId, Long userId, UpdateMessageRequest request) {
         log.info("Update message content");
         MessageEntity existingMessage = getMessageEntityOrThrow(messageId);
 
-        if (!existingMessage.getSender_id().equals(userId)) {
-            log.warn("User {} tried to update message {} owned by {}", userId, messageId, existingMessage.getSender_id());
+        // Thay bằng .getConversation().getId()
+        conversationService.validateUserInConversation(existingMessage.getConversation().getId(), userId);
+
+        if (!existingMessage.getSenderId().equals(userId)) {
+            log.warn("User {} tried to update message {} owned by {}", userId, messageId, existingMessage.getSenderId());
             throw new BusinessException(ErrorCode.MESSAGE_UPDATE_DENIED);
         }
 
@@ -61,17 +82,9 @@ public class MessageService {
         return MessagesResponse.from(updated);
     }
 
-    public MessagesResponse getMessage(Long messageId) {
-        log.info("Get detail message");
-        MessageEntity existingMessage = getMessageEntityOrThrow(messageId);
-
-        log.debug("Get detail message with id: {} successfully", existingMessage.getId());
-        return MessagesResponse.from(existingMessage);
-    }
-
-    public List<MessagesResponse> getAllMessage(Long conversationId) {
+    public List<MessagesResponse> getAllMessage(Long conversationId, Long userId) {
         log.info("Get all messages for conversation");
-        conversationService.getConversation(conversationId);
+        conversationService.validateUserInConversation(conversationId, userId);
 
         List<MessageEntity> messages = messageRepository.findAllByConversationIdOrderByCreatedAtAsc(conversationId);
         log.info("Get all messages successfully, total records: {}", messages.size());
@@ -84,13 +97,13 @@ public class MessageService {
     public MessagesResponse hiddenMessage(Long messageId, Long userId) {
         log.info("Hidden message (Soft delete)");
         MessageEntity existingMessage = getMessageEntityOrThrow(messageId);
-
-        if (!existingMessage.getSender_id().equals(userId)) {
+        checkUserById(userId);
+        if (!existingMessage.getSenderId().equals(userId)) {
             log.warn("User {} unauthorized to hide message {}", userId, messageId);
             throw new BusinessException(ErrorCode.MESSAGE_DELETE_DENIED);
         }
 
-        existingMessage.setIs_deleted(true);
+        existingMessage.setIsDeleted(true);
         MessageEntity hidden = messageRepository.save(existingMessage);
 
         log.debug("Hidden message with id: {} successfully", hidden.getId());
@@ -101,13 +114,13 @@ public class MessageService {
     public MessagesResponse showMessage(Long messageId, Long userId) {
         log.info("Show message");
         MessageEntity existingMessage = getMessageEntityOrThrow(messageId);
-
-        if (!existingMessage.getSender_id().equals(userId)) {
+        checkUserById(userId);
+        if (!existingMessage.getSenderId().equals(userId)) {
             log.warn("User {} unauthorized to show message {}", userId, messageId);
             throw new BusinessException(ErrorCode.MESSAGE_UPDATE_DENIED);
         }
 
-        existingMessage.setIs_deleted(false);
+        existingMessage.setIsDeleted(false);
         MessageEntity shown = messageRepository.save(existingMessage);
 
         log.debug("Show message with id: {} successfully", shown.getId());

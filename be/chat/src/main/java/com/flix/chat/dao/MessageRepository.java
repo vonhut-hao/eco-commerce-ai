@@ -11,13 +11,17 @@ import java.util.Optional;
 
 @Repository
 public interface MessageRepository extends JpaRepository<MessageEntity, Long> {
-    @Query("""
-        SELECT m FROM MessageEntity m WHERE m.id = :id AND c.is_deleted = false
-    """)
+
+    @Query("SELECT m FROM MessageEntity m WHERE m.id = :id AND m.isDeleted = false")
     Optional<MessageEntity> findMessageById(@Param("id") Long id);
 
     @Query("""
-        SELECT m FROM MessageEntity m WHERE m.conversation_id = :conversation_id AND c.is_deleted = false ORDER BY m.createdAt ASC
+        SELECT m FROM MessageEntity m 
+        WHERE m.conversation.id = :conversationId 
+        AND m.isDeleted = false 
+        ORDER BY m.createdAt ASC
     """)
-    List<MessageEntity> findAllByConversationIdOrderByCreatedAtAsc(@Param("conversation_id") Long conversation_id);
-}
+    List<MessageEntity> findAllByConversationIdOrderByCreatedAtAsc(@Param("conversationId") Long conversationId);
+
+    @Query(value = "SELECT * FROM messages WHERE id = :id", nativeQuery = true)
+    Optional<MessageEntity> findByIdForce(@Param("id") Long id);}

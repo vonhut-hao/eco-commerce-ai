@@ -4,6 +4,7 @@ import com.flix.chat.common.enums.ConversationType;
 import com.flix.chat.entity.ConversationEntity;
 
 import java.math.BigInteger;
+import java.time.LocalDateTime;
 
 public record ConversationResponse(
         Long id,
@@ -20,9 +21,9 @@ public record ConversationResponse(
         return new ConversationResponse(
                 entity.getId(),
                 entity.getType(),
-                entity.getUser1_id(),
-                entity.getUser2_id(),
-                entity.getIs_deleted()
+                entity.getUser1Id(),
+                entity.getUser2Id(),
+                entity.getIsDeleted()
         );
     }
 }

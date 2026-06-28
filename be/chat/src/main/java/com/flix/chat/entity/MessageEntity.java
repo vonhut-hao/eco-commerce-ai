@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "messsages")
+@Table(name = "messages")
 @Getter
 @Setter
 @Builder
@@ -21,19 +23,16 @@ public class MessageEntity extends BaseEntity{
     @Column(name = "content")
     String content;
 
-    @Column(name = "conversation_id")
-    Long conversation_id;
-
     @Column(name = "sender_id")
-    Long sender_id;
+    Long senderId;
 
     @Column(name = "file_url", length = 255)
-    String file_url;
+    String fileUrl;
 
-    @Column(name = "is_delete")
-    Boolean is_deleted;
+    @Column(name = "is_deleted")
+    Boolean isDeleted = false;
 
     @ManyToOne
-    @JoinColumn(name = "conversation_id", unique = true)
+    @JoinColumn(name = "conversation_id")
     private ConversationEntity conversation;
 }
