@@ -17,6 +17,15 @@ public enum ErrorCode {
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED("Unauthenticated", HttpStatus.UNAUTHORIZED),
     FORBIDDEN("Forbidden", HttpStatus.FORBIDDEN),
+
+    //ErrorCode Conversation
+    CONVERSATION_NOT_FOUND("Conversation not found", HttpStatus.NOT_FOUND),
+    CONVERSATION_ACCESS_DENIED("You do not have permission to access or modify this conversation", HttpStatus.FORBIDDEN),
+
+    //ErrorCode Message
+    MESSAGE_NOT_FOUND("Message not found", HttpStatus.NOT_FOUND),
+    MESSAGE_UPDATE_DENIED("You can only update your own messages", HttpStatus.FORBIDDEN),
+    MESSAGE_DELETE_DENIED("You can only hide your own messages", HttpStatus.FORBIDDEN),
     ;
 
     String message;
