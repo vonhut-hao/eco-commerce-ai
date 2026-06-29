@@ -17,7 +17,12 @@ public enum ErrorCode {
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED("Unauthenticated", HttpStatus.UNAUTHORIZED),
     FORBIDDEN("Forbidden", HttpStatus.FORBIDDEN),
-    ;
+    CATEGORY_NOT_FOUND("Category not found", HttpStatus.NOT_FOUND),
+    PRODUCT_NOT_FOUND("Product not found", HttpStatus.NOT_FOUND),
+    MATERIAL_NOT_FOUND("Material not found", HttpStatus.NOT_FOUND),
+    CERTIFICATE_NOT_FOUND("Certificate not found", HttpStatus.NOT_FOUND),
+    COMMENT_NOT_FOUND("Comment not found", HttpStatus.NOT_FOUND),
+    PARENT_COMMENT_NOT_FOUND("Parent comment not found", HttpStatus.NOT_FOUND);
 
     String message;
     HttpStatus httpStatus;
