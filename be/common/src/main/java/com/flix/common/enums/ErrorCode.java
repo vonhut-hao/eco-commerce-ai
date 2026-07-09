@@ -24,7 +24,11 @@ public enum ErrorCode {
     COMMENT_NOT_FOUND("Comment not found", HttpStatus.NOT_FOUND),
     PARENT_COMMENT_NOT_FOUND("Parent comment not found", HttpStatus.NOT_FOUND),
     CART_ITEM_NOT_FOUND("Cart item not found", HttpStatus.NOT_FOUND),
-    INSUFFICIENT_PRODUCT_STOCK("Insufficient product stock", HttpStatus.BAD_REQUEST);
+    INSUFFICIENT_PRODUCT_STOCK("Insufficient product stock", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_FOUND("Order not found", HttpStatus.NOT_FOUND),
+    PAYMENT_METHOD_NOT_FOUND("Payment method not found", HttpStatus.NOT_FOUND),
+    CART_EMPTY("Cart is empty", HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_STOCK("Insufficient stock", HttpStatus.BAD_REQUEST);
 
     String message;
     HttpStatus httpStatus;

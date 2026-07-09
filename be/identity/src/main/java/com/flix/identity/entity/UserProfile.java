@@ -25,6 +25,14 @@ public class UserProfile {
     @Column(length = 15)
     private String phoneNumber;
 
+    @Column(name = "green_points")
+    @Builder.Default
+    private Integer greenPoints = 0;
+
+    @Column(name = "total_carbon_index")
+    @Builder.Default
+    private Double totalCarbonIndex = 0.0;
+
     @OneToOne
     @JoinColumn(name = "user_id", unique = true)
     private User user;
