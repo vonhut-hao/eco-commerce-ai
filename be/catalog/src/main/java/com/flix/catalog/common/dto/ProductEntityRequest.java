@@ -24,7 +24,8 @@ public record ProductEntityRequest(
         @Size(max = 255) String mainImage,
         List<String> subImages,
         List<Long> categoryIds,
-        List<Long> materialIds
+        List<Long> materialIds,
+        @Size(max = 2000) String description
 ) {
 
     public void toEntity(ProductEntity entity, Set<CategoryEntity> categories, List<MaterialEntity> materials) {
@@ -36,6 +37,7 @@ public record ProductEntityRequest(
         entity.setCarbonIndex(carbonIndex);
         entity.setMainImage(mainImage);
         entity.setSubImages(serializeFile(subImages));
+        entity.setDescription(description);
 
         if (entity.getCategories() != null) {
             entity.getCategories().clear();

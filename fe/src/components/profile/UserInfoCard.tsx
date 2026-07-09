@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { Leaf } from "lucide-react";
 import { profileService, UserProfile, CreateOrUpdateProfile } from "@/services/profile.service";
 import { authService } from "@/services/auth.service";
 import { EditProfilePanel } from "./EditProfilePanel";
 
 export function UserInfoCard() {
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -75,6 +77,14 @@ export function UserInfoCard() {
         >
           Edit Profile
         </button>
+        {authService.isAdmin() && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="cursor-pointer w-full border border-[#25521f] text-[#25521f] text-[13px] tracking-widest uppercase py-2.5 rounded-full hover:bg-[#25521f] hover:text-white transition-colors mt-2"
+          >
+            Admin Panel
+          </button>
+        )}
       </div>
 
       {/* ── Desktop layout: inline ── */}
@@ -128,13 +138,21 @@ export function UserInfoCard() {
                 <span className="text-[#6b7280] text-[13px]">{profile.phoneNumber}</span>
               </>
             )}
-            <div className="pl-5">
+            <div className="pl-5 flex gap-2">
               <button
                 onClick={() => setEditing(true)}
                 className="cursor-pointer bg-transparent border border-[#c2c9bb] text-[#42493e] text-[13px] tracking-[1.3px] uppercase px-6 py-[5px] rounded-full hover:border-[#25521f] hover:text-[#25521f] transition-colors whitespace-nowrap"
               >
                 Edit Profile
               </button>
+              {authService.isAdmin() && (
+                <button
+                  onClick={() => navigate("/admin")}
+                  className="cursor-pointer bg-transparent border border-[#25521f] text-[#25521f] text-[13px] tracking-[1.3px] uppercase px-6 py-[5px] rounded-full hover:bg-[#25521f] hover:text-white transition-colors whitespace-nowrap"
+                >
+                  Admin Panel
+                </button>
+              )}
             </div>
           </div>
         </div>

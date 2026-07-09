@@ -61,4 +61,21 @@ export const authService = {
     const payload = parseJwt(token);
     return payload ? payload.userId : null;
   },
+
+  getUserRoles(): string[] {
+    const token = this.getToken();
+    if (!token) return [];
+    const payload = parseJwt(token);
+    if (!payload) return [];
+    const scope = payload.scope;
+    if (typeof scope === "string") {
+      return scope.split(" ");
+    }
+    return payload.roles || [];
+  },
+
+  isAdmin(): boolean {
+    const roles = this.getUserRoles();
+    return roles.includes("ADMIN") || roles.includes("ROLE_ADMIN");
+  },
 };

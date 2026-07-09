@@ -49,6 +49,9 @@ public class ProductEntity {
     @Column(columnDefinition = "TEXT")
     private String subImages;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(length = 100)
     private LocalDateTime deletedAt;
 

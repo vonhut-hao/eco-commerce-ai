@@ -290,21 +290,27 @@ Expose a single handler method for both creation and update, checking the presen
    - `DELETE /v1/catalog/cart/{id}` (Remove item)
 
 ### Phase 3: Implement PaymentMethod & Order Features
-1. **PaymentMethod**:
-   - Create `PaymentMethodEntity` and `PaymentMethodRepository`.
-2. **OrderStatus**:
-   - Create `OrderStatus` enum (`PENDING`, `COMPLETED`, `CANCELLED`).
-3. **Order & OrderItem Entities**:
-   - Create `OrderEntity` and `OrderItemEntity`.
-4. **Repositories**:
-   - Create `OrderRepository` and `OrderItemRepository`.
-5. **DTOs**:
-   - Create `OrderRequest`, `OrderResponse`, `OrderItemRequest`, and `OrderItemResponse` (without `id` in request objects).
-6. **Service & Controller**:
-   - Create `OrderService` and `OrderController`. Endpoints:
-     - `POST /v1/catalog/orders` / `POST /v1/catalog/orders/{id}` (Place order, or update order status via optional path variable ID)
-     - `GET /v1/catalog/orders` (List user orders)
-     - `GET /v1/catalog/orders/{id}` (Get order detail)
+1. **PaymentMethod**: Create `PaymentMethodEntity` and `PaymentMethodRepository`.
+2. **OrderStatus**: Create `OrderStatus` enum (`PENDING`, `COMPLETED`, `CANCELLED`).
+3. **Order & OrderItem Entities**: Create `OrderEntity` and `OrderItemEntity`.
+4. **Repositories**: Create `OrderRepository` and `OrderItemRepository`.
+5. **DTOs**: Create `OrderRequest`, `OrderResponse`, `OrderItemRequest`, and `OrderItemResponse` (without `id` in request objects).
+6. **Service & Controller**: Create `OrderService` and `OrderController`. Endpoints:
+   - `POST /v1/catalog/orders` / `POST /v1/catalog/orders/{id}` (Place order, or update order status via optional path variable ID)
+   - `GET /v1/catalog/orders` (List user orders)
+   - `GET /v1/catalog/orders/{id}` (Get order detail)
+
+### Phase 4: Implement Paginated Products List & Product Detail (Backend)
+1. **DTO**: Create `ProductSimpleResponse` (basic fields: `id`, `name`, `price`, `avgRating`, `mainImage`, `greenPoints`).
+2. **Repository**: Update `ProductRepository` to support `Pageable` queries.
+3. **Service & Controller**: Refactor `listProducts` to accept `page`/`size` parameters and return `Page<ProductSimpleResponse>`; add `GET /v1/catalog/products/{id}` endpoint returning `ProductEntityResponse` (full detail).
+
+### Phase 5: Implement React Frontend Storefront (Frontend)
+1. **API Services**: Create `product.service.ts`, `cart.service.ts`, and `order.service.ts` to interface with the catalog APIs.
+2. **Shop Page (`/` or `/shop`)**: Fetch paginated product grids returning simple info product cards.
+3. **Product Detail Page (`/products/:id`)**: Render details based on design mockup (large image + thumbnails, Carbon Footprint widget, pill tags, comments/replies listing, active tabs, and curated selections at the bottom).
+4. **Cart Page (`/cart`)**: Manage cart quantities and removals.
+5. **Checkout Page (`/checkout`)**: Choose payment method, display points, place order, and transition to orders history page (`/orders`).
 
 ---
 
@@ -319,3 +325,6 @@ Update existing integration test templates and add new tests:
 * Verify that posting to `/v1/catalog/{resource}` with no ID in URI successfully creates a resource.
 * Verify that posting to `/v1/catalog/{resource}/{id}` with a valid ID in URI successfully updates the resource.
 * Verify that ID values provided in request bodies are completely rejected by validation/ignored.
+* Verify pagination logic returns exactly up to size limit, and only simple info keys are serialized.
+* Verify checkout accurately reduces stock, clears cart, and credits green points.
+

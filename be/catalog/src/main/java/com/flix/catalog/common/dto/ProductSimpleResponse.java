@@ -10,7 +10,9 @@ public record ProductSimpleResponse(
         Long price,
         Double avgRating,
         String mainImage,
-        Integer greenPoints
+        Integer greenPoints,
+        Integer stock,
+        String description
 ) {
     public static ProductSimpleResponse from(ProductEntity entity) {
         if (entity == null) {
@@ -22,7 +24,9 @@ public record ProductSimpleResponse(
                 entity.getPrice(),
                 entity.getAvgRating(),
                 entity.getMainImage(),
-                entity.getGreenPoints()
+                entity.getGreenPoints(),
+                entity.getStock(),
+                entity.getDescription()
         );
     }
 }

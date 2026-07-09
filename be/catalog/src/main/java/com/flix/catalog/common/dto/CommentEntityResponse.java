@@ -2,7 +2,6 @@ package com.flix.catalog.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.flix.catalog.entity.CommentEntity;
-import com.flix.common.util.FileConvert;
 
 import java.util.List;
 
@@ -16,7 +15,8 @@ public record CommentEntityResponse(
         List<String> mediaUrls,
         Long userId,
         Long productId,
-        Long parentId
+        Long parentId,
+        String userName
 ) {
     public static CommentEntityResponse from(CommentEntity entity) {
         if (entity == null) {
@@ -24,8 +24,10 @@ public record CommentEntityResponse(
         }
 
         Long userId = null;
+        String userName = null;
         if (entity.getUserEntity() != null) {
             userId = entity.getUserEntity().getId();
+            userName = entity.getUserEntity().getUsername();
         }
 
         Long productId = null;
@@ -45,7 +47,8 @@ public record CommentEntityResponse(
                 deserializeFile(entity.getMediaUrls()),
                 userId,
                 productId,
-                parentId
+                parentId,
+                userName
         );
     }
 }
