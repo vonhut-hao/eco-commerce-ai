@@ -1,0 +1,27 @@
+package com.flix.catalog.common.dto;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.flix.catalog.entity.CartItemEntity;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record CartItemResponse(
+        Long id,
+        int quantity,
+        Long productId,
+        String productName,
+        Long price
+) {
+    public static CartItemResponse from(CartItemEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return new CartItemResponse(
+                entity.getId(),
+                entity.getQuantity(),
+                entity.getProduct().getId(),
+                entity.getProduct().getName(),
+                entity.getProduct().getPrice()
+        );
+    }
+}

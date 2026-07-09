@@ -22,7 +22,9 @@ public enum ErrorCode {
     MATERIAL_NOT_FOUND("Material not found", HttpStatus.NOT_FOUND),
     CERTIFICATE_NOT_FOUND("Certificate not found", HttpStatus.NOT_FOUND),
     COMMENT_NOT_FOUND("Comment not found", HttpStatus.NOT_FOUND),
-    PARENT_COMMENT_NOT_FOUND("Parent comment not found", HttpStatus.NOT_FOUND);
+    PARENT_COMMENT_NOT_FOUND("Parent comment not found", HttpStatus.NOT_FOUND),
+    CART_ITEM_NOT_FOUND("Cart item not found", HttpStatus.NOT_FOUND),
+    INSUFFICIENT_PRODUCT_STOCK("Insufficient product stock", HttpStatus.BAD_REQUEST);
 
     String message;
     HttpStatus httpStatus;
