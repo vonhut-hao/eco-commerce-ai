@@ -19,12 +19,12 @@ import java.util.List;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
-    public CategoryEntityResponse createOrUpdateCategory(CategoryEntityRequest request) {
+    public CategoryEntityResponse createOrUpdateCategory(Long id, CategoryEntityRequest request) {
         CategoryEntity categoryEntity;
-        if (request.id() != null) {
-            categoryEntity = categoryRepository.findById(request.id())
+        if (id != null) {
+            categoryEntity = categoryRepository.findById(id)
                     .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
-            log.info("Updated category with ID: {}", request.id());
+            log.info("Updated category with ID: {}", id);
         } else {
             categoryEntity = new CategoryEntity();
             log.info("Created category with name: {}", request.name());

@@ -18,11 +18,13 @@ import java.util.List;
 public class CategoryController {
     private final CategoryService categoryService;
 
-    @PostMapping
+    @PostMapping(value = {"", "/{id}"})
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<CategoryEntityResponse> createOrUpdateCategory(@Valid @RequestBody CategoryEntityRequest request) {
-        return ApiResponse.success(categoryService.createOrUpdateCategory(request));
+    public ApiResponse<CategoryEntityResponse> createOrUpdateCategory(
+            @PathVariable(value = "id", required = false) Long id,
+            @Valid @RequestBody CategoryEntityRequest request) {
+        return ApiResponse.success(categoryService.createOrUpdateCategory(id, request));
     }
 
     @GetMapping

@@ -20,15 +20,15 @@ public class GreenCertificateService {
     private final GreenCertificateRepository greenCertificateRepository;
     private final ProductRepository productRepository;
 
-    public GreenCertificateEntityResponse createOrUpdateGreenCertificate(GreenCertificateEntityRequest request) {
+    public GreenCertificateEntityResponse createOrUpdateGreenCertificate(Long id, GreenCertificateEntityRequest request) {
         var productEntity = productRepository.findById(request.productId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
         GreenCertificateEntity greenCertificateEntity;
-        if (request.id() != null) {
-            greenCertificateEntity = greenCertificateRepository.findById(request.id())
+        if (id != null) {
+            greenCertificateEntity = greenCertificateRepository.findById(id)
                     .orElseThrow(() -> new BusinessException(ErrorCode.CERTIFICATE_NOT_FOUND));
-            log.info("Updated green certificate with ID: {}", request.id());
+            log.info("Updated green certificate with ID: {}", id);
         } else {
             greenCertificateEntity = new GreenCertificateEntity();
             log.info("Created green certificate with name: {}", request.name());

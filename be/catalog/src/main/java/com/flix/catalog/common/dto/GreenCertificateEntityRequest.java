@@ -9,7 +9,6 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record GreenCertificateEntityRequest(
-        Long id,
         @NotBlank String name,
         @NotBlank String issuer,
         @NotNull LocalDate issueDate,

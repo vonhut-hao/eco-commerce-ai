@@ -15,7 +15,6 @@ import java.util.Set;
 import static com.flix.common.util.FileConvert.serializeFile;
 
 public record ProductEntityRequest(
-        Long id,
         @NotBlank String name,
         @NotNull @PositiveOrZero Long price,
         @NotNull @Min(0) Integer stock,

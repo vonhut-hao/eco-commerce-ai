@@ -21,11 +21,13 @@ import java.util.List;
 public class MaterialController {
     MaterialService materialService;
 
-    @PostMapping
+    @PostMapping(value = {"", "/{id}"})
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<MaterialEntityResponse> createOrUpdateMaterial(@Valid @RequestBody MaterialEntityRequest request) {
-        return ApiResponse.success(materialService.createOrUpdateMaterial(request));
+    public ApiResponse<MaterialEntityResponse> createOrUpdateMaterial(
+            @PathVariable(value = "id", required = false) Long id,
+            @Valid @RequestBody MaterialEntityRequest request) {
+        return ApiResponse.success(materialService.createOrUpdateMaterial(id, request));
     }
 
     @GetMapping

@@ -21,13 +21,14 @@ import java.util.List;
 public class GreenCertificateController {
     GreenCertificateService greenCertificateService;
 
-    @PostMapping
+    @PostMapping(value = {"", "/{id}"})
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<GreenCertificateEntityResponse> createOrUpdateGreenCertificate(
+            @PathVariable(value = "id", required = false) Long id,
             @Valid @RequestBody GreenCertificateEntityRequest request
     ) {
-        return ApiResponse.success(greenCertificateService.createOrUpdateGreenCertificate(request));
+        return ApiResponse.success(greenCertificateService.createOrUpdateGreenCertificate(id, request));
     }
 
     @GetMapping

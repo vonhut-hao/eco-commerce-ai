@@ -21,11 +21,13 @@ import java.util.List;
 public class ProductController {
     ProductService productService;
 
-    @PostMapping
+    @PostMapping(value = {"", "/{id}"})
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<ProductEntityResponse> createOrUpdateProduct(@Valid @RequestBody ProductEntityRequest request) {
-        return ApiResponse.success(productService.createOrUpdateProduct(request));
+    public ApiResponse<ProductEntityResponse> createOrUpdateProduct(
+            @PathVariable(value = "id", required = false) Long id,
+            @Valid @RequestBody ProductEntityRequest request) {
+        return ApiResponse.success(productService.createOrUpdateProduct(id, request));
     }
 
     @GetMapping

@@ -19,12 +19,12 @@ import java.util.List;
 public class MaterialService {
     private final MaterialRepository materialRepository;
 
-    public MaterialEntityResponse createOrUpdateMaterial(MaterialEntityRequest request) {
+    public MaterialEntityResponse createOrUpdateMaterial(Long id, MaterialEntityRequest request) {
         MaterialEntity materialEntity;
-        if (request.id() != null) {
-            materialEntity = materialRepository.findById(request.id())
+        if (id != null) {
+            materialEntity = materialRepository.findById(id)
                     .orElseThrow(() -> new BusinessException(ErrorCode.MATERIAL_NOT_FOUND));
-            log.info("Updated material with ID: {}", request.id());
+            log.info("Updated material with ID: {}", id);
         } else {
             materialEntity = new MaterialEntity();
             log.info("Created material with name: {}", request.name());

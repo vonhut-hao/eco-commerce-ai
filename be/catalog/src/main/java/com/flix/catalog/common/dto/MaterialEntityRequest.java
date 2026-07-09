@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record MaterialEntityRequest(
-        Long id,
         @NotBlank @Size(max = 100) String name,
         @Size(max = 50) String type,
         @NotNull @PositiveOrZero Double ecoRating

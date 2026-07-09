@@ -30,15 +30,15 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final MaterialRepository materialRepository;
 
-    public ProductEntityResponse createOrUpdateProduct(ProductEntityRequest request) {
+    public ProductEntityResponse createOrUpdateProduct(Long id, ProductEntityRequest request) {
         var categories = resolveCategories(request.categoryIds());
         var materials = resolveMaterials(request.materialIds());
 
         ProductEntity productEntity;
-        if (request.id() != null) {
-            productEntity = productRepository.findById(request.id())
+        if (id != null) {
+            productEntity = productRepository.findById(id)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-            log.info("Updated product with ID: {}", request.id());
+            log.info("Updated product with ID: {}", id);
         } else {
             productEntity = new ProductEntity();
             log.info("Created product with name: {}", request.name());
