@@ -2,6 +2,7 @@ package com.flix.catalog.product.service;
 
 import com.flix.catalog.common.dto.ProductEntityRequest;
 import com.flix.catalog.common.dto.ProductEntityResponse;
+import com.flix.catalog.common.dto.ProductSimpleResponse;
 import com.flix.catalog.dao.CategoryRepository;
 import com.flix.catalog.dao.MaterialRepository;
 import com.flix.catalog.dao.ProductRepository;
@@ -12,6 +13,8 @@ import com.flix.common.enums.ErrorCode;
 import com.flix.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -50,12 +53,17 @@ public class ProductService {
         return ProductEntityResponse.from(savedProduct);
     }
 
-    public List<ProductEntityResponse> listProducts() {
-        log.info("List all products");
-        var productEntities = productRepository.findByDeletedAtIsNull();
-        return productEntities.stream()
+    public Page<ProductSimpleResponse> listProducts(Pageable pageable) {
+        log.info("List paginated products: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        return productRepository.findByDeletedAtIsNull(pageable)
+                .map(ProductSimpleResponse::from);
+    }
+
+    public ProductEntityResponse getProductDetail(Long id) {
+        log.info("Get product details for ID: {}", id);
+        return productRepository.findByIdAndDeletedAtIsNull(id)
                 .map(ProductEntityResponse::from)
-                .toList();
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
     }
 
     public void deleteProduct(Long id) {

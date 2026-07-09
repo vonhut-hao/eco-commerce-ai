@@ -20,7 +20,8 @@ public record ProductEntityResponse(
         String mainImage,
         List<String> subImages,
         List<CategoryEntityResponse> categories,
-        List<MaterialEntityResponse> materials
+        List<MaterialEntityResponse> materials,
+        List<GreenCertificateEntityResponse> greenCertificates
 ) {
     public static ProductEntityResponse from(ProductEntity entity) {
         if (entity == null) {
@@ -44,6 +45,10 @@ public record ProductEntityResponse(
                 entity.getMaterials().stream()
                         .filter(materialEntity -> materialEntity.getDeleteAt() == null)
                         .map(MaterialEntityResponse::from)
+                        .toList(),
+                entity.getGreenCertificates().stream()
+                        .filter(greenCertificateEntity -> greenCertificateEntity.getDeletedAt() == null)
+                        .map(GreenCertificateEntityResponse::from)
                         .toList()
         );
     }
