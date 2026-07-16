@@ -4,10 +4,10 @@ import { productService } from "@/services/product.service";
 import { commentService } from "@/services/comment.service";
 import {
   ShieldCheck, ShoppingBag, Layers, Users, BarChart3,
-  Plus, Edit, Trash2, Search, X, Loader2, ArrowUpDown
+  Plus, Edit, Trash2, Search, X, Loader2, ArrowUpDown, ClipboardList
 } from "lucide-react";
 
-type Tab = "products" | "categories" | "materials" | "greencerts" | "comments";
+type Tab = "products" | "categories" | "materials" | "greencerts" | "comments" | "orders";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("products");
@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [materials, setMaterials] = useState<any[]>([]);
   const [greencerts, setGreencerts] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Selection states (for bulk delete)
@@ -31,6 +32,8 @@ export default function AdminPage() {
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
   // Form states
   const [productForm, setProductForm] = useState<ProductEntityRequest>({
@@ -67,6 +70,9 @@ export default function AdminPage() {
       } else if (activeTab === "comments") {
         const res = await commentService.listComments();
         setComments(res.data || []);
+      } else if (activeTab === "orders") {
+        const res = await adminService.listAllOrders();
+        setOrders(res.data || []);
       }
     } catch (err) {
       console.error("Failed to fetch data for tab " + activeTab, err);
@@ -209,6 +215,25 @@ export default function AdminPage() {
     setModalOpen(true);
   };
 
+  const handleViewOrderDetails = (order: any) => {
+    setSelectedOrder(order);
+    setOrderDetailsOpen(true);
+  };
+
+  const handleUpdateOrderStatus = async (orderId: number, status: string) => {
+    if (!confirm(`Are you sure you want to mark order #${orderId} as ${status}?`)) return;
+    try {
+      setLoading(true);
+      await adminService.updateOrderStatus(orderId, status);
+      fetchData();
+      alert(`Order status updated to ${status} successfully.`);
+    } catch (err: any) {
+      alert("Failed to update status: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter & Sort Logic
   const getFilteredAndSorted = () => {
     let list: any[] = [];
@@ -217,6 +242,7 @@ export default function AdminPage() {
     else if (activeTab === "materials") list = [...materials];
     else if (activeTab === "greencerts") list = [...greencerts];
     else if (activeTab === "comments") list = [...comments];
+    else if (activeTab === "orders") list = [...orders];
 
     // Search query filter
     if (searchQuery) {
@@ -227,6 +253,7 @@ export default function AdminPage() {
         if (activeTab === "materials") return item.name.toLowerCase().includes(q) || item.type.toLowerCase().includes(q);
         if (activeTab === "greencerts") return item.name.toLowerCase().includes(q) || item.issuer.toLowerCase().includes(q);
         if (activeTab === "comments") return item.content.toLowerCase().includes(q) || item.userName?.toLowerCase().includes(q);
+        if (activeTab === "orders") return String(item.id).includes(q) || item.username?.toLowerCase().includes(q) || item.status.toLowerCase().includes(q);
         return false;
       });
     }
@@ -273,12 +300,13 @@ export default function AdminPage() {
           <h2 className="text-xl font-bold text-[#1a1c19]">Console Dashboard</h2>
         </div>
 
-        {(["products", "categories", "materials", "greencerts", "comments"] as Tab[]).map((tab) => {
+        {(["products", "categories", "materials", "greencerts", "comments", "orders"] as Tab[]).map((tab) => {
           const Icon =
             tab === "products" ? ShoppingBag :
             tab === "categories" ? Layers :
             tab === "materials" ? BarChart3 :
-            tab === "greencerts" ? ShieldCheck : Users;
+            tab === "greencerts" ? ShieldCheck : 
+            tab === "comments" ? Users : ClipboardList;
           return (
             <button
               key={tab}
@@ -314,7 +342,7 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {selectedIds.length > 0 && (
+            {selectedIds.length > 0 && activeTab !== "orders" && (
               <button
                 onClick={handleBulkDelete}
                 className="h-10 px-4 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-md transition-colors flex items-center gap-2 cursor-pointer"
@@ -322,7 +350,7 @@ export default function AdminPage() {
                 <Trash2 size={14} /> Bulk Delete ({selectedIds.length})
               </button>
             )}
-            {activeTab !== "comments" && (
+            {activeTab !== "comments" && activeTab !== "orders" && (
               <button
                 onClick={handleCreateNew}
                 className="h-10 px-4 bg-[#25521f] hover:bg-[#1a1c19] text-white font-bold text-xs uppercase tracking-wider rounded-md transition-colors flex items-center gap-2 cursor-pointer"
@@ -427,6 +455,24 @@ export default function AdminPage() {
                     </>
                   )}
 
+                  {activeTab === "orders" && (
+                    <>
+                      <th className="p-3 cursor-pointer" onClick={() => toggleSort("id")}>
+                        ID <ArrowUpDown size={12} className="inline ml-1" />
+                      </th>
+                      <th className="p-3 cursor-pointer" onClick={() => toggleSort("username")}>
+                        Customer <ArrowUpDown size={12} className="inline ml-1" />
+                      </th>
+                      <th className="p-3 cursor-pointer" onClick={() => toggleSort("totalAmount")}>
+                        Total <ArrowUpDown size={12} className="inline ml-1" />
+                      </th>
+                      <th className="p-3">Payment</th>
+                      <th className="p-3 cursor-pointer" onClick={() => toggleSort("status")}>
+                        Status <ArrowUpDown size={12} className="inline ml-1" />
+                      </th>
+                    </>
+                  )}
+
                   <th className="p-3 w-28 text-center">Actions</th>
                 </tr>
               </thead>
@@ -494,23 +540,70 @@ export default function AdminPage() {
                       </>
                     )}
 
+                    {activeTab === "orders" && (
+                      <>
+                        <td className="p-3 font-semibold">{item.id}</td>
+                        <td className="p-3 font-bold text-gray-800">{item.username || `User #${item.userId}`}</td>
+                        <td className="p-3 font-semibold text-[#25521f]">{(item.totalAmount || 0).toLocaleString("vi-VN")} VND</td>
+                        <td className="p-3 text-xs">{item.paymentMethodName || "Default"}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            item.status === "COMPLETED" ? "bg-green-100 text-green-800" :
+                            item.status === "CANCELLED" ? "bg-red-100 text-red-800" :
+                            "bg-amber-100 text-amber-800"
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                      </>
+                    )}
+
                     <td className="p-3 text-center flex items-center justify-center gap-2">
-                      {activeTab !== "comments" && (
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-1.5 border border-[#c2c9bb] text-[#42493e] hover:bg-[#bcf1ad]/15 hover:border-[#25521f] rounded-md transition-colors cursor-pointer"
-                          aria-label="Edit"
-                        >
-                          <Edit size={14} />
-                        </button>
+                      {activeTab === "orders" ? (
+                        <>
+                          <button
+                            onClick={() => handleViewOrderDetails(item)}
+                            className="px-2.5 py-1 text-xs font-bold border border-[#c2c9bb] text-[#42493e] hover:bg-[#bcf1ad]/15 rounded-md transition-colors cursor-pointer"
+                          >
+                            View Items
+                          </button>
+                          {item.status === "PENDING" && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateOrderStatus(item.id, "COMPLETED")}
+                                className="px-2.5 py-1 text-xs font-bold bg-[#25521f] text-white hover:bg-[#1a1c19] rounded-md transition-colors cursor-pointer"
+                              >
+                                Complete
+                              </button>
+                              <button
+                                onClick={() => handleUpdateOrderStatus(item.id, "CANCELLED")}
+                                className="px-2.5 py-1 text-xs font-bold bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {activeTab !== "comments" && (
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="p-1.5 border border-[#c2c9bb] text-[#42493e] hover:bg-[#bcf1ad]/15 hover:border-[#25521f] rounded-md transition-colors cursor-pointer"
+                              aria-label="Edit"
+                            >
+                              <Edit size={14} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-1.5 border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-500 rounded-md transition-colors cursor-pointer"
+                            aria-label="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-1.5 border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-500 rounded-md transition-colors cursor-pointer"
-                        aria-label="Delete"
-                      >
-                        <Trash2 size={14} />
-                      </button>
                     </td>
                   </tr>
                 ))}
@@ -799,6 +892,87 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Order Details Modal */}
+      {orderDetailsOpen && selectedOrder && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#c2c9bb] rounded-md w-full max-w-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Header */}
+            <div className="bg-[#eff2eb] border-b border-[#c2c9bb]/60 p-4 flex items-center justify-between">
+              <h3 className="font-bold text-[#1a1c19]">
+                Order Details #{selectedOrder.id}
+              </h3>
+              <button onClick={() => setOrderDetailsOpen(false)} className="text-[#42493e] hover:text-black">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto flex flex-col gap-4 text-xs font-semibold text-[#42493e]">
+              <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-4">
+                <div>
+                  <p className="text-gray-400">Customer</p>
+                  <p className="text-sm font-bold text-gray-800">{selectedOrder.username || `User #${selectedOrder.userId}`}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Status</p>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    selectedOrder.status === "COMPLETED" ? "bg-green-100 text-green-800" :
+                    selectedOrder.status === "CANCELLED" ? "bg-red-100 text-red-800" :
+                    "bg-amber-100 text-amber-800"
+                  }`}>
+                    {selectedOrder.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-gray-400">Total Amount</p>
+                  <p className="text-sm font-bold text-[#25521f]">{(selectedOrder.totalAmount || 0).toLocaleString("vi-VN")} VND</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Payment Method</p>
+                  <p className="text-sm font-bold text-gray-800">{selectedOrder.paymentMethodName || "Default"}</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-sm text-[#1a1c19] mb-2">Purchased Items</h4>
+                <div className="border border-[#c2c9bb] rounded-md overflow-hidden">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="bg-[#eff2eb] text-[#42493e] font-bold border-b border-[#c2c9bb]/60">
+                      <tr>
+                        <th className="p-2">Product</th>
+                        <th className="p-2 text-center">Qty</th>
+                        <th className="p-2 text-right">Unit Price</th>
+                        <th className="p-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {selectedOrder.orderItems?.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="p-2 font-bold text-gray-800">{item.productName || `Product #${item.productId}`}</td>
+                          <td className="p-2 text-center">{item.quantity}</td>
+                          <td className="p-2 text-right">{((item.price || 0) / (item.quantity || 1)).toLocaleString("vi-VN")} VND</td>
+                          <td className="p-2 text-right font-semibold text-[#25521f]">{(item.price || 0).toLocaleString("vi-VN")} VND</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-[#c2c9bb]/60 p-4 bg-[#eff2eb] flex justify-end">
+              <button
+                onClick={() => setOrderDetailsOpen(false)}
+                className="px-4 py-2 bg-[#25521f] text-white rounded-sm hover:bg-[#1a1c19] cursor-pointer uppercase tracking-wider text-[11px] font-bold"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

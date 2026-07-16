@@ -58,7 +58,7 @@ export default function CartPage() {
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const greenPointsEstimation = Math.floor(subtotal / 20000); // 1 point per 20,000 VND
+  const greenPointsEstimation = cartItems.reduce((acc, item) => acc + (item.greenPoints || 0) * item.quantity, 0);
 
   if (loading) {
     return (

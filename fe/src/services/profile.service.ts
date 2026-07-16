@@ -8,6 +8,8 @@ interface UserProfile {
   userId: number;
   userName: string;
   email: string;
+  greenPoints?: number;
+  totalCarbonIndex?: number;
 }
 
 interface CreateOrUpdateProfile {

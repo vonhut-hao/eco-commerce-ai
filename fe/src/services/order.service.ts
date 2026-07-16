@@ -17,6 +17,10 @@ export interface OrderResponse {
   id: number;
   totalAmount: number;
   status: string;
+  userId?: number;
+  username?: string;
+  paymentMethodId?: number;
+  paymentMethodName?: string;
   orderItems: OrderItemResponse[];
 }
 

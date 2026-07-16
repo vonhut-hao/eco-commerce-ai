@@ -1,5 +1,6 @@
 import { api } from "./api";
 import { ProductEntityResponse, CategoryEntityResponse, MaterialEntityResponse } from "./product.service";
+import { OrderResponse } from "./order.service";
 
 export interface CategoryEntityRequest {
   name: string;
@@ -66,4 +67,9 @@ export const adminService = {
   createOrUpdateProduct: (id: number | null, request: ProductEntityRequest) =>
     api.post<ProductEntityResponse>(id ? `/v1/catalog/products/${id}` : "/v1/catalog/products", request),
   deleteProduct: (id: number) => api.delete<void>(`/v1/catalog/products/${id}`),
+
+  // Orders
+  listAllOrders: () => api.get<OrderResponse[]>("/v1/catalog/orders/admin"),
+  updateOrderStatus: (id: number, status: string) =>
+    api.post<OrderResponse>(`/v1/catalog/orders/${id}`, { status }),
 };

@@ -4,6 +4,7 @@ import { Search, X, User } from "lucide-react";
 import { CartIcon } from "./CartIcon";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
+import { profileService } from "@/services/profile.service";
 
 export function DesktopHeader() {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ export function DesktopHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [cartCount, setCartCount] = useState(0);
+  const [greenPoints, setGreenPoints] = useState<number | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const fetchCartCount = async () => {
     if (!authService.isAuthenticated()) {
@@ -26,11 +29,33 @@ export function DesktopHeader() {
     }
   };
 
+  const fetchGreenPoints = async () => {
+    if (!authService.isAuthenticated()) {
+      setGreenPoints(null);
+      setAvatarUrl(null);
+      return;
+    }
+    try {
+      const userId = authService.getUserId();
+      if (userId) {
+        const profile = await profileService.getProfile(userId);
+        setGreenPoints(profile.greenPoints ?? 0);
+        setAvatarUrl(profile.avatarUrl || null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchCartCount();
     window.addEventListener("cart-updated", fetchCartCount);
     return () => window.removeEventListener("cart-updated", fetchCartCount);
   }, []);
+
+  useEffect(() => {
+    fetchGreenPoints();
+  }, [location.pathname]);
 
   useEffect(() => { if (searchOpen) inputRef.current?.focus(); }, [searchOpen]);
 
@@ -77,9 +102,11 @@ export function DesktopHeader() {
 
         {/* Right – Green Points + search + account */}
         <div className="flex items-center gap-4 shrink-0">
-          <div className="bg-[#bcf1ad] text-[#25521f] text-[14px] px-3 py-1 rounded-sm whitespace-nowrap cursor-default">
-            Green Points: 1,250
-          </div>
+          {authService.isAuthenticated() && greenPoints !== null && (
+            <div className="bg-[#bcf1ad] text-[#25521f] text-[14px] px-3 py-1 rounded-sm whitespace-nowrap cursor-default">
+              Green Points: {greenPoints.toLocaleString()}
+            </div>
+          )}
 
           {/* Search */}
           {searchOpen ? (
@@ -128,7 +155,16 @@ export function DesktopHeader() {
             }`}
             aria-label="User Profile"
           >
-            <User size={20} />
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-10 h-10 rounded-full object-cover border border-[#c2c9bb]"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <User size={40} />
+            )}
             {location.pathname === "/profile" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#25521f]" />
             )}

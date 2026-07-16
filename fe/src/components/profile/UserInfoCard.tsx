@@ -3,17 +3,22 @@ import { useNavigate } from "react-router";
 import { Leaf } from "lucide-react";
 import { profileService, UserProfile, CreateOrUpdateProfile } from "@/services/profile.service";
 import { authService } from "@/services/auth.service";
+import { orderService } from "@/services/order.service";
 import { EditProfilePanel } from "./EditProfilePanel";
 
 export function UserInfoCard() {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [ordersCount, setOrdersCount] = useState(0);
 
   useEffect(() => {
     const userId = authService.getUserId();
     if (userId) {
       profileService.getProfile(userId).then(setProfile).catch(console.error);
+      orderService.listOrders()
+        .then((res) => setOrdersCount(res.data ? res.data.length : 0))
+        .catch(console.error);
     }
   }, []);
 
@@ -117,15 +122,21 @@ export function UserInfoCard() {
 
           <div className="flex items-start">
             <div className="flex flex-col gap-0.5 pr-6 border-r border-[#e2e3de]">
-              <span className="text-[#1a1c19] font-['Nimbus_Sans',sans-serif] font-bold text-[20px] leading-tight">1,250</span>
+              <span className="text-[#1a1c19] font-['Nimbus_Sans',sans-serif] font-bold text-[20px] leading-tight">
+                {(profile.greenPoints ?? 0).toLocaleString()}
+              </span>
               <span className="text-[#6b7280] text-[12px]">Green Points</span>
             </div>
             <div className="flex flex-col gap-0.5 px-6 border-r border-[#e2e3de]">
-              <span className="text-[#1a1c19] font-['Nimbus_Sans',sans-serif] font-bold text-[20px] leading-tight">32.4kg</span>
+              <span className="text-[#1a1c19] font-['Nimbus_Sans',sans-serif] font-bold text-[20px] leading-tight">
+                {(profile.totalCarbonIndex ?? 0).toFixed(1)}kg
+              </span>
               <span className="text-[#6b7280] text-[12px]">CO2e Saved</span>
             </div>
             <div className="flex flex-col gap-0.5 pl-6">
-              <span className="text-[#1a1c19] font-['Nimbus_Sans',sans-serif] font-bold text-[20px] leading-tight">3</span>
+              <span className="text-[#1a1c19] font-['Nimbus_Sans',sans-serif] font-bold text-[20px] leading-tight">
+                {ordersCount}
+              </span>
               <span className="text-[#6b7280] text-[12px]">Orders</span>
             </div>
           </div>

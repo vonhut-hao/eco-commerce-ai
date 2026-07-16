@@ -312,6 +312,20 @@ Expose a single handler method for both creation and update, checking the presen
 4. **Cart Page (`/cart`)**: Manage cart quantities and removals.
 5. **Checkout Page (`/checkout`)**: Choose payment method, display points, place order, and transition to orders history page (`/orders`).
 
+### Phase 6: Product Descriptions, Nested Comments, and Admin Panel
+1. **Product Description Field**: Add `description` text column to `products` table via Flyway migration, and update entity/DTOs and detail page.
+2. **Comment Enhancements**: Include author name (`userName`) in Comment response, and render replies nested beneath parent comments in a threaded view.
+3. **Admin Panel Shell & RBAC**: Implement `/admin` protected route guard restricting access to `ADMIN` role, and add Admin Panel button to profile card.
+
+### Phase 7: Admin Dashboard Management
+1. **Consolidated Admin Dashboard**: Extend `/admin` view in `AdminPage.tsx` with sidebar navigation to manage 5 core catalog entities: Products, Categories, Materials, Green Certifications, and Comments.
+2. **Entity Operations**: Display paginated/sortable tables, keywords search filter, CRUD modals, and single/bulk deletion operations.
+
+### Phase 8: Admin Order Management
+1. **Consolidated Orders Control**: Extend `/admin` page in `AdminPage.tsx` with an "Orders" tab displaying all customer orders.
+2. **Order Management Actions**: Render details modal for purchased items, and provide controls to transition `PENDING` orders to `COMPLETED` or `CANCELLED`.
+3. **Backend API Endpoints**: Expose `GET /v1/catalog/orders/admin` and status updates in `POST /v1/catalog/orders/{id}` restricted to users with the `ADMIN` role.
+
 ---
 
 ## 4. Class & DTO Details (New Features)

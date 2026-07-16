@@ -1,7 +1,22 @@
+import { useState, useEffect } from "react";
+import { authService } from "@/services/auth.service";
+import { profileService, UserProfile } from "@/services/profile.service";
+
 export function GreenImpactMetrics() {
-  const current = 1250;
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const userId = authService.getUserId();
+    if (userId) {
+      profileService.getProfile(userId).then(setProfile).catch(console.error);
+    }
+  }, []);
+
+  const current = profile?.greenPoints ?? 0;
   const target = 3000;
-  const progress = Math.round((current / target) * 100);
+  const progress = Math.min(100, Math.round((current / target) * 100));
+  const carbonOffset = profile?.totalCarbonIndex ?? 0.0;
+  const equivalentTrees = Math.round(carbonOffset / 15.0); // 15kg CO2 offset per tree
 
   return (
     <div className="bg-white border border-[#c2c9bb] rounded-md p-5 flex flex-col gap-4">
@@ -20,7 +35,7 @@ export function GreenImpactMetrics() {
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[#1a1c19] font-['Liberation_Mono',monospace] font-bold text-[26px] leading-tight">
-              1,250
+              {current.toLocaleString()}
             </span>
             <span className="text-[#42493e] text-[13px]">pts</span>
           </div>
@@ -31,9 +46,11 @@ export function GreenImpactMetrics() {
             Total Carbon Offset
           </span>
           <span className="text-[#1a1c19] font-['Liberation_Mono',monospace] font-bold text-[18px] leading-tight">
-            Saved 32.4 kg CO2e
+            Saved {carbonOffset.toFixed(1)} kg CO2e
           </span>
-          <span className="text-[#25521f] text-[11px] italic">Equivalent to planting 2 trees</span>
+          <span className="text-[#25521f] text-[11px] italic">
+            Equivalent to planting {equivalentTrees} {equivalentTrees === 1 ? "tree" : "trees"}
+          </span>
         </div>
       </div>
 

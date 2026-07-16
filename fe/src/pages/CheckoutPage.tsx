@@ -53,7 +53,7 @@ export default function CheckoutPage() {
   };
 
   const totalAmount = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const pointsEarned = Math.floor(totalAmount / 20000);
+  const pointsEarned = cartItems.reduce((acc, item) => acc + (item.greenPoints || 0) * item.quantity, 0);
 
   if (loading) {
     return (
