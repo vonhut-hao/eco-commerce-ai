@@ -11,6 +11,7 @@ import com.flix.catalog.entity.MaterialEntity;
 import com.flix.catalog.entity.ProductEntity;
 import com.flix.common.enums.ErrorCode;
 import com.flix.common.exception.BusinessException;
+import com.flix.common.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.flix.common.util.SecurityUtils.isAdminRole;
 
 @Service
 @RequiredArgsConstructor
@@ -54,8 +57,13 @@ public class ProductService {
     }
 
     public Page<ProductSimpleResponse> listProducts(Pageable pageable) {
+        if (isAdminRole()) {
+            log.info("Admin role has been granted");
+            return productRepository.findByDeletedAtIsNull(pageable)
+                    .map(ProductSimpleResponse::from);
+        }
         log.info("List paginated products: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
-        return productRepository.findByDeletedAtIsNull(pageable)
+        return productRepository.findByDeletedAtIsNullAndStockIsGreaterThan(pageable, 0)
                 .map(ProductSimpleResponse::from);
     }
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Search, X, User } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { CartIcon } from "./CartIcon";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
@@ -64,6 +64,7 @@ export function DesktopHeader() {
     { label: "Shop", path: "/" },
     { label: "Green AI", path: "/" },
     { label: "Impact Tracker", path: "/" },
+    { label: "Chat with admin", path: "/chat-page" },
   ];
 
   return (
@@ -76,7 +77,6 @@ export function DesktopHeader() {
         >
           GreenLife
         </button>
-
         {/* Centre – Nav */}
         <nav className="flex-1 flex items-center justify-center gap-6">
           {navLinks.map((link) => {
@@ -163,7 +163,11 @@ export function DesktopHeader() {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <User size={40} />
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8fbf8a] to-[#3d7035] flex items-center justify-center text-white text-sm font-bold shadow-xs select-none">
+                {authService.isAuthenticated()
+                  ? (authService.getUsername()?.charAt(0).toUpperCase() || "U")
+                  : "U"}
+              </div>
             )}
             {location.pathname === "/profile" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#25521f]" />

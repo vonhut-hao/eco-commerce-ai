@@ -1,6 +1,8 @@
+import { tokenStorage } from '@/utils/tokenStorage'; // <-- Thêm dòng này
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   code?: number;
   status?: string;
   message?: string;
@@ -8,10 +10,11 @@ interface ApiResponse<T> {
 }
 
 async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
+    endpoint: string,
+    options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const token = localStorage.getItem('accessToken');
+  // Thay đổi ở đây: Dùng tokenStorage để lấy token
+  const token = tokenStorage.getToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -26,7 +29,7 @@ async function request<T>(
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
     let errorMessage = errorBody.detail || errorBody.message || `HTTP ${res.status}`;
-    
+
     if (errorBody.errors) {
       const firstErrorKey = Object.keys(errorBody.errors)[0];
       if (firstErrorKey) {
@@ -50,10 +53,13 @@ export const api = {
   get: <T>(endpoint: string) => request<T>(endpoint, { method: 'GET' }),
 
   post: <T>(endpoint: string, body: unknown) =>
-    request<T>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
+      request<T>(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+
+  put: <T>(endpoint: string, body?: unknown, customHeaders?: Record<string, string>) =>
+      request<T>(endpoint, { method: 'PUT', ...(body ? { body: JSON.stringify(body) } : {}), headers: customHeaders }),
 
   delete: <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
 };

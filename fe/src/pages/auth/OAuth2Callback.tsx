@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
+import { tokenStorage } from "@/utils/tokenStorage";
 
 export default function OAuth2Callback() {
   const navigate = useNavigate();
@@ -11,10 +12,7 @@ export default function OAuth2Callback() {
     const expiresIn = params.get("expiresIn");
 
     if (token) {
-      localStorage.setItem("accessToken", token);
-      if (expiresIn) {
-        localStorage.setItem("expiresIn", expiresIn);
-      }
+      tokenStorage.setToken(token, expiresIn ? parseInt(expiresIn, 10) : 3600);
       navigate("/profile", { replace: true });
     } else {
       // OAuth failed or no token — go back to sign in
