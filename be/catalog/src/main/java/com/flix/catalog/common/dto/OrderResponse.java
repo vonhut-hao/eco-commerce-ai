@@ -11,6 +11,7 @@ public record OrderResponse(
         Long totalAmount,
         String status,
         Long userId,
+        String username,
         Long paymentMethodId,
         String paymentMethodName,
         List<OrderItemResponse> orderItems
@@ -25,6 +26,7 @@ public record OrderResponse(
                 entity.getTotalAmount(),
                 entity.getStatus().name(),
                 entity.getUser().getId(),
+                entity.getUser().getUsername(),
                 entity.getPaymentMethodEntity().getId(),
                 entity.getPaymentMethodEntity().getMethodName(),
                 entity.getOrderItems().stream()

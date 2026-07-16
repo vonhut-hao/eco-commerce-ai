@@ -5,6 +5,7 @@ import com.flix.identity.auth.handler.JwtAuthenticationEntryPoint;
 import com.flix.identity.auth.handler.OAuth2AuthenticationFailureHandler;
 import com.flix.identity.auth.handler.OAuth2AuthenticationSuccessHandler;
 import com.flix.identity.auth.service.CustomOidcUserService;
+import com.flix.identity.common.enums.PublicEndpoint;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,7 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v1/auth/**", "/error", "/v1/internal/auth/register/admin").permitAll()
+                        .requestMatchers(PublicEndpoint.getAllValues()).permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )

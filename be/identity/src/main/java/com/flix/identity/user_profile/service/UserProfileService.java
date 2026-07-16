@@ -52,7 +52,8 @@ public class UserProfileService {
         }
         return new ResponseUserProfile(
                 null, null, null, null,
-                user.getId(), user.getUsername(), user.getEmail()
+                user.getId(), user.getUsername(), user.getEmail(),
+                0, 0.0
         );
     }
 

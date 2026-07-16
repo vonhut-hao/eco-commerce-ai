@@ -9,7 +9,8 @@ public record CartItemResponse(
         int quantity,
         Long productId,
         String productName,
-        Long price
+        Long price,
+        Integer greenPoints
 ) {
     public static CartItemResponse from(CartItemEntity entity) {
         if (entity == null) {
@@ -21,7 +22,8 @@ public record CartItemResponse(
                 entity.getQuantity(),
                 entity.getProduct().getId(),
                 entity.getProduct().getName(),
-                entity.getProduct().getPrice()
+                entity.getProduct().getPrice(),
+                entity.getProduct().getGreenPoints()
         );
     }
 }

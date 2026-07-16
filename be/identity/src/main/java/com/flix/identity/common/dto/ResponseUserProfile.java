@@ -11,7 +11,9 @@ public record ResponseUserProfile(
         String phoneNumber,
         Long userId,
         String userName,
-        String email
+        String email,
+        Integer greenPoints,
+        Double totalCarbonIndex
 ) {
     public static ResponseUserProfile from(UserProfile entity) {
         if (entity == null) {
@@ -35,8 +37,9 @@ public record ResponseUserProfile(
                 entity.getPhoneNumber(),
                 userId,
                 userName,
-                email
-
+                email,
+                entity.getGreenPoints(),
+                entity.getTotalCarbonIndex()
         );
     }
 }

@@ -44,6 +44,13 @@ public class OrderController {
         return ApiResponse.success(orderService.listOrders(userId));
     }
 
+    @GetMapping("/admin")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<OrderResponse>> listAllOrders() {
+        return ApiResponse.success(orderService.listAllOrders());
+    }
+
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("isAuthenticated()")

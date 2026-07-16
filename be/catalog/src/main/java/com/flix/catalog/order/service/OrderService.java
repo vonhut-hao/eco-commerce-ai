@@ -7,11 +7,7 @@ import com.flix.catalog.dao.CartItemRepository;
 import com.flix.catalog.dao.OrderRepository;
 import com.flix.catalog.dao.PaymentMethodRepository;
 import com.flix.catalog.dao.ProductRepository;
-import com.flix.catalog.entity.OrderEntity;
-import com.flix.catalog.entity.OrderItemEntity;
-import com.flix.catalog.entity.OrderStatus;
-import com.flix.catalog.entity.PaymentMethodEntity;
-import com.flix.catalog.entity.ProductEntity;
+import com.flix.catalog.entity.*;
 import com.flix.common.enums.ErrorCode;
 import com.flix.common.exception.BusinessException;
 import com.flix.common.util.SecurityUtils;
@@ -53,6 +49,13 @@ public class OrderService {
     public List<OrderResponse> listOrders(Long userId) {
         log.info("List orders for user ID: {}", userId);
         return orderRepository.findByUserIdOrderByIdDesc(userId).stream()
+                .map(OrderResponse::from)
+                .toList();
+    }
+
+    public List<OrderResponse> listAllOrders() {
+        log.info("List all orders for admin");
+        return orderRepository.findAllByOrderByIdDesc().stream()
                 .map(OrderResponse::from)
                 .toList();
     }
@@ -128,12 +131,52 @@ public class OrderService {
         OrderEntity orderEntity = orderRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
+        if (orderEntity.getStatus() == OrderStatus.COMPLETED || orderEntity.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
         if (request.paymentMethodId() != null) {
             orderEntity.setPaymentMethodEntity(resolvePaymentMethod(request.paymentMethodId()));
         }
-        orderEntity.setStatus(OrderStatus.COMPLETED);
 
-        log.info("Updated order with ID: {}", id);
+        if (request.status() != null) {
+            OrderStatus newStatus = request.status();
+
+            if (newStatus == OrderStatus.CANCELLED && orderEntity.getStatus() == OrderStatus.PENDING) {
+                // Restore stock
+                for (OrderItemEntity item : orderEntity.getOrderItems()) {
+                    ProductEntity product = item.getProductEntity();
+                    product.setStock(product.getStock() + item.getQuantity());
+                    productRepository.save(product);
+                }
+
+                // Deduct points/carbon footprint from profile
+                int greenPointsDeducted = 0;
+                double carbonFootprintDeducted = 0.0;
+                for (OrderItemEntity item : orderEntity.getOrderItems()) {
+                    ProductEntity product = item.getProductEntity();
+                    greenPointsDeducted += (product.getGreenPoints() == null ? 0 : product.getGreenPoints()) * item.getQuantity();
+                    carbonFootprintDeducted += (product.getCarbonIndex() == null ? 0.0 : product.getCarbonIndex()) * item.getQuantity();
+                }
+
+                User user = orderEntity.getUser();
+                UserProfile userProfile = userProfileRepository.findByUserId(user.getId())
+                        .orElseGet(() -> createDefaultUserProfile(user));
+
+                int currentGreenPoints = userProfile.getGreenPoints() == null ? 0 : userProfile.getGreenPoints();
+                double currentCarbonIndex = userProfile.getTotalCarbonIndex() == null ? 0.0 : userProfile.getTotalCarbonIndex();
+
+                userProfile.setGreenPoints(Math.max(0, currentGreenPoints - greenPointsDeducted));
+                userProfile.setTotalCarbonIndex(Math.max(0.0, currentCarbonIndex - carbonFootprintDeducted));
+                userProfileRepository.save(userProfile);
+            }
+
+            orderEntity.setStatus(newStatus);
+        } else {
+            orderEntity.setStatus(OrderStatus.COMPLETED);
+        }
+
+        log.info("Updated order with ID: {} to status: {}", id, orderEntity.getStatus());
         return OrderResponse.from(orderRepository.save(orderEntity));
     }
 
@@ -162,7 +205,7 @@ public class OrderService {
     private PaymentMethodEntity resolvePaymentMethod(Long paymentMethodId) {
         if (paymentMethodId != null) {
             return paymentMethodRepository.findById(paymentMethodId)
-                    .filter(paymentMethodEntity -> Boolean.TRUE.equals(paymentMethodEntity.getIsActive()))
+                    .filter(PaymentMethodEntity::getIsActive)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_METHOD_NOT_FOUND));
         }
 
