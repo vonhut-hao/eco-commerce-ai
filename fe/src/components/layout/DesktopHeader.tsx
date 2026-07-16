@@ -1,13 +1,36 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Search, X } from "lucide-react";
+import { Search, X, User } from "lucide-react";
 import { CartIcon } from "./CartIcon";
+import { cartService } from "@/services/cart.service";
+import { authService } from "@/services/auth.service";
 
 export function DesktopHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [cartCount, setCartCount] = useState(0);
+
+  const fetchCartCount = async () => {
+    if (!authService.isAuthenticated()) {
+      setCartCount(0);
+      return;
+    }
+    try {
+      const response = await cartService.getCart();
+      const count = response.data ? response.data.reduce((acc, item) => acc + item.quantity, 0) : 0;
+      setCartCount(count);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCartCount();
+    window.addEventListener("cart-updated", fetchCartCount);
+    return () => window.removeEventListener("cart-updated", fetchCartCount);
+  }, []);
 
   useEffect(() => { if (searchOpen) inputRef.current?.focus(); }, [searchOpen]);
 
@@ -85,24 +108,27 @@ export function DesktopHeader() {
             </button>
           )}
 
-          <CartIcon count={3} />
+          <div onClick={() => navigate("/cart")} className="cursor-pointer">
+            <CartIcon count={cartCount} />
+          </div>
 
           {/* Account icon */}
           <button
             onClick={() => {
               if (location.pathname === "/profile") {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              } else if (authService.isAuthenticated()) {
+                navigate("/profile");
               } else {
                 navigate("/signin");
               }
             }}
-            className={`cursor-pointer relative transition-colors pb-1 ${
+            className={`cursor-pointer relative transition-colors pb-1 flex items-center justify-center ${
               location.pathname === "/profile" ? "text-[#25521f]" : "text-[#42493e] hover:text-[#25521f]"
             }`}
+            aria-label="User Profile"
           >
-            <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
-              <path d="M8 8C6.9 8 5.95833 7.60833 5.175 6.825C4.39167 6.04167 4 5.1 4 4C4 2.9 4.39167 1.95833 5.175 1.175C5.95833 0.391667 6.9 0 8 0C9.1 0 10.0417 0.391667 10.825 1.175C11.6083 1.95833 12 2.9 12 4C12 5.1 11.6083 6.04167 10.825 6.825C10.0417 7.60833 9.1 8 8 8V8M0 16V13.2C0 12.6333 0.145833 12.1125 0.4375 11.6375C0.729167 11.1625 1.11667 10.8 1.6 10.55C2.63333 10.0333 3.68333 9.64583 4.75 9.3875C5.81667 9.12917 6.9 9 8 9C9.1 9 10.1833 9.12917 11.25 9.3875C12.3167 9.64583 13.3667 10.0333 14.4 10.55C14.8833 10.8 15.2708 11.1625 15.5625 11.6375C15.8542 12.1125 16 12.6333 16 13.2V16H0V16" fill={location.pathname === "/profile" ? "#25521f" : "#42493E"} />
-            </svg>
+            <User size={20} />
             {location.pathname === "/profile" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#25521f]" />
             )}

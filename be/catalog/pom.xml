@@ -36,5 +36,18 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.flix</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.flix</groupId>
+            <artifactId>identity</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

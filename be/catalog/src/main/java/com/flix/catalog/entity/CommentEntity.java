@@ -23,9 +23,8 @@ public class CommentEntity {
 
     private Integer rating;
 
-    @Convert(converter = StringListConverter.class)
     @Column(columnDefinition = "TEXT")
-    private List<String> mediaUrls = new ArrayList<>();
+    private String mediaUrls;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

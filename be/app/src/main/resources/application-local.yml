@@ -6,8 +6,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: true
+      ddl-auto: none
+    show-sql: false
 
 # Health check for local env
 management:
@@ -24,4 +24,3 @@ logging:
   level:
     root: INFO
     com.flix: DEBUG
-    org.hibernate.SQL: DEBUG
