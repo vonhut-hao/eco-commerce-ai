@@ -88,8 +88,8 @@ export const useChat = (conversationId: number | undefined, userId: number | nul
     }, [conversationId, userId, fetchMessages]);
 
     // 3. Hàm gửi tin nhắn
-    const sendMessage = async (content: string) => {
-        if (!content.trim() || !userId || !conversationId || isForbidden) return;
+    const sendMessage = async (content: string, fileUrl?: string) => {
+        if ((!content.trim() && !fileUrl) || !userId || !conversationId || isForbidden) return;
 
         try {
             await messageService.sendMessage(
@@ -97,6 +97,7 @@ export const useChat = (conversationId: number | undefined, userId: number | nul
                     conversationId,
                     content,
                     senderId: userId,
+                    fileUrl,
                 },
                 userId
             );

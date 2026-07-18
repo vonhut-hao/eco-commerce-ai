@@ -89,6 +89,21 @@ export default function AdminPage() {
     }));
   };
 
+  const [uploadingCert, setUploadingCert] = useState(false);
+
+  const handleCertImageUpload = async (file: File) => {
+    if (!file) return;
+    setUploadingCert(true);
+    try {
+      const res = await uploadService.uploadFile(file);
+      setCertForm(prev => ({ ...prev, imageUrl: res.data.url }));
+    } catch (err: any) {
+      alert("Failed to upload certificate image: " + err.message);
+    } finally {
+      setUploadingCert(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
     setSelectedIds([]);
@@ -795,14 +810,47 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block mb-1">Image URL</label>
-                    <input
-                      required
-                      type="url"
-                      value={certForm.imageUrl}
-                      onChange={(e) => setCertForm({ ...certForm, imageUrl: e.target.value })}
-                      className="w-full border border-[#c2c9bb] rounded-sm p-2 bg-[#fafaf5] outline-none focus:border-[#25521f]"
-                    />
+                    <label className="block mb-1 font-medium text-gray-700">Image URL</label>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          required
+                          placeholder="Paste image URL here..."
+                          value={certForm.imageUrl || ""}
+                          onChange={(e) => setCertForm({ ...certForm, imageUrl: e.target.value })}
+                          className="flex-1 border border-[#c2c9bb] rounded-sm p-2 bg-[#fafaf5] outline-none focus:border-[#25521f]"
+                        />
+                        <label className="flex items-center justify-center px-4 border border-[#c2c9bb] rounded-sm cursor-pointer bg-[#fafaf5] hover:bg-gray-100 transition-colors">
+                          {uploadingCert ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-[#25521f]" />
+                          ) : (
+                            <Upload className="w-4 h-4 text-gray-500" />
+                          )}
+                          <span className="ml-2 text-[11px] font-bold uppercase tracking-wider text-gray-600">Upload</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={uploadingCert}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleCertImageUpload(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      {certForm.imageUrl && (
+                        <div className="relative w-20 h-20 border border-[#c2c9bb] rounded bg-white flex items-center justify-center overflow-hidden">
+                          <img
+                            src={formatImageUrl(certForm.imageUrl)}
+                            alt="Certificate preview"
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block mb-1">Product ID</label>
