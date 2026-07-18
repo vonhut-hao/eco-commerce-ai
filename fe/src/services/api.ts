@@ -17,7 +17,7 @@ async function request<T>(
   const token = tokenStorage.getToken();
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
@@ -62,6 +62,12 @@ export const api = {
       request<T>(endpoint, { method: 'PUT', ...(body ? { body: JSON.stringify(body) } : {}), headers: customHeaders }),
 
   delete: <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
+
+  upload: <T>(endpoint: string, formData: FormData) =>
+      request<T>(endpoint, {
+        method: 'POST',
+        body: formData,
+      }),
 };
 
 export { API_BASE };
