@@ -5,7 +5,8 @@ import { formatImageUrl } from "@/utils/image";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
 import { commentService } from "@/services/comment.service";
-import { Star, ShoppingCart, Loader2, Heart, Plus, Minus, ArrowLeft } from "lucide-react";
+import { uploadService } from "@/services/upload.service";
+import { Star, ShoppingCart, Loader2, Heart, Plus, Minus, ArrowLeft, Upload, Trash2 } from "lucide-react";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +26,30 @@ export default function ProductDetailPage() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [activeReplyCommentId, setActiveReplyCommentId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
+  
+  const [commentMediaUrls, setCommentMediaUrls] = useState<string[]>([]);
+  const [uploadingCommentMedia, setUploadingCommentMedia] = useState(false);
+
+  const handleCommentMediaUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    setUploadingCommentMedia(true);
+    try {
+      const urls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const res = await uploadService.uploadFile(files[i]);
+        urls.push(res.data.url);
+      }
+      setCommentMediaUrls(prev => [...prev, ...urls]);
+    } catch (err: any) {
+      alert("Failed to upload review image: " + err.message);
+    } finally {
+      setUploadingCommentMedia(false);
+    }
+  };
+
+  const handleRemoveCommentMedia = (idxToRemove: number) => {
+    setCommentMediaUrls(prev => prev.filter((_, idx) => idx !== idxToRemove));
+  };
 
   // Related products
   const [relatedProducts, setRelatedProducts] = useState<ProductSimpleResponse[]>([]);
@@ -113,13 +138,14 @@ export default function ProductDetailPage() {
       await commentService.createOrUpdateComment(null, {
         content: newCommentText,
         rating: newRating,
-        mediaUrls: [],
+        mediaUrls: commentMediaUrls,
         userId: userId,
         productId: product.id,
         parentId: null
       });
       setNewCommentText("");
       setNewRating(5);
+      setCommentMediaUrls([]);
       fetchComments(String(product.id));
       alert("Review posted successfully!");
     } catch (err: any) {
@@ -471,6 +497,19 @@ export default function ProductDetailPage() {
                           </div>
                         </div>
                         <p className="text-sm text-[#42493e]">{comment.content}</p>
+                        {comment.mediaUrls && comment.mediaUrls.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {comment.mediaUrls.map((url: string, i: number) => (
+                              <a key={i} href={formatImageUrl(url)} target="_blank" rel="noreferrer">
+                                <img
+                                  src={formatImageUrl(url)}
+                                  alt={`attachment ${i}`}
+                                  className="w-16 h-16 object-cover border border-[#c2c9bb] rounded bg-white hover:opacity-85 transition-opacity"
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         
                         {/* Reply Action */}
                         <div className="mt-2 flex items-center gap-4">
@@ -563,6 +602,54 @@ export default function ProductDetailPage() {
                     placeholder="Tell us what you like about this product..."
                     className="w-full border border-[#c2c9bb] rounded-sm p-3 text-sm focus:outline-none focus:border-[#25521f] focus:ring-1 focus:ring-[#25521f] bg-[#fafaf5]"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#42493e] uppercase tracking-wider mb-1">
+                    Add Photos
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center justify-center w-full h-12 border-2 border-dashed border-[#c2c9bb] rounded-sm cursor-pointer bg-[#fafaf5] hover:bg-gray-100 transition-colors">
+                      {uploadingCommentMedia ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#25521f]" />
+                      ) : (
+                        <Upload className="w-4 h-4 text-gray-500" />
+                      )}
+                      <span className="ml-2 text-xs font-bold uppercase tracking-wider text-gray-600">Upload Photos</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={uploadingCommentMedia}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handleCommentMediaUpload(e.target.files);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {commentMediaUrls.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {commentMediaUrls.map((url, idx) => (
+                          <div key={idx} className="relative w-12 h-12 border border-[#c2c9bb] rounded bg-white flex items-center justify-center overflow-hidden group">
+                            <img
+                              src={formatImageUrl(url)}
+                              alt={`attachment preview ${idx}`}
+                              className="object-cover w-full h-full"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCommentMedia(idx)}
+                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <button
