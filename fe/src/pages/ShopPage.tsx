@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { productService, ProductSimpleResponse } from "@/services/product.service";
+import { formatImageUrl } from "@/utils/image";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
 import { Star, ShoppingCart, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
@@ -101,7 +102,7 @@ export default function ShopPage() {
                 {/* Image */}
                 <div className="aspect-square bg-[#fafaf5] relative overflow-hidden flex items-center justify-center p-4 border-b border-[#c2c9bb]/50">
                   <img
-                    src={product.mainImage || "/placeholder-product.png"}
+                    src={formatImageUrl(product.mainImage) || "/placeholder-product.png"}
                     alt={product.name}
                     className="object-contain max-h-full max-w-full transition-transform group-hover:scale-105 duration-300"
                     onError={(e) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { productService, ProductEntityResponse, ProductSimpleResponse } from "@/services/product.service";
+import { formatImageUrl } from "@/utils/image";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
 import { commentService } from "@/services/comment.service";
@@ -41,8 +42,13 @@ export default function ProductDetailPage() {
     setError(null);
     try {
       const response = await productService.getProductDetail(productId);
-      setProduct(response.data);
-      setSelectedImage(response.data.mainImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600");
+      const data = response.data;
+      if (data) {
+        if (data.mainImage) data.mainImage = formatImageUrl(data.mainImage);
+        if (data.subImages) data.subImages = data.subImages.map(formatImageUrl);
+      }
+      setProduct(data);
+      setSelectedImage(data.mainImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600");
     } catch (err: any) {
       setError(err.message || "Failed to load product details");
     } finally {
@@ -66,7 +72,12 @@ export default function ProductDetailPage() {
   const fetchRelatedProducts = async () => {
     try {
       const response = await productService.listProducts(0, 4);
-      setRelatedProducts(response.data.content.filter((p) => p.id !== Number(id)).slice(0, 4));
+      const content = response.data.content || [];
+      const formattedContent = content.map(p => ({
+        ...p,
+        mainImage: formatImageUrl(p.mainImage)
+      }));
+      setRelatedProducts(formattedContent.filter((p) => p.id !== Number(id)).slice(0, 4));
     } catch (err) {
       console.error("Failed to load related products", err);
     }

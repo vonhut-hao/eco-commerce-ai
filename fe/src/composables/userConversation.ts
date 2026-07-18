@@ -35,7 +35,6 @@ export const useConversation = (currentUserId: number | null) => {
     const startChatWithUser = async (targetUserId: number): Promise<number | null> => {
         if (!currentUserId) return null;
         try {
-            // Đã đổi lại tên hàm cho khớp với service: createOrGetConversation
             const conversation = await conversationService.createOrGetConversation(currentUserId, targetUserId);
 
             // Reload danh sách nếu phòng mới chưa có trong State

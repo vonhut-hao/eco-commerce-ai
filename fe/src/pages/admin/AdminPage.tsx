@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { adminService, ProductEntityRequest, CategoryEntityRequest, MaterialEntityRequest, GreenCertificateEntityRequest } from "@/services/admin.service";
 import { productService } from "@/services/product.service";
 import { commentService } from "@/services/comment.service";
+import { uploadService } from "@/services/upload.service";
+import { formatImageUrl } from "@/utils/image";
 import {
   ShieldCheck, ShoppingBag, Layers, Users, BarChart3,
-  Plus, Edit, Trash2, Search, X, Loader2, ArrowUpDown, ClipboardList
+  Plus, Edit, Trash2, Search, X, Loader2, ArrowUpDown, ClipboardList, Upload
 } from "lucide-react";
 
 type Tab = "products" | "categories" | "materials" | "greencerts" | "comments" | "orders";
@@ -43,6 +45,49 @@ export default function AdminPage() {
   const [categoryForm, setCategoryForm] = useState<CategoryEntityRequest>({ name: "", description: "" });
   const [materialForm, setMaterialForm] = useState<MaterialEntityRequest>({ name: "", type: "ORGANIC", ecoRating: 5.0 });
   const [certForm, setCertForm] = useState<GreenCertificateEntityRequest>({ name: "", issuer: "", issueDate: "", imageUrl: "", productId: 0 });
+
+  const [uploadingMain, setUploadingMain] = useState(false);
+  const [uploadingSubs, setUploadingSubs] = useState(false);
+
+  const handleMainImageUpload = async (file: File) => {
+    if (!file) return;
+    setUploadingMain(true);
+    try {
+      const res = await uploadService.uploadFile(file);
+      setProductForm(prev => ({ ...prev, mainImage: res.data.url }));
+    } catch (err: any) {
+      alert("Failed to upload main image: " + err.message);
+    } finally {
+      setUploadingMain(false);
+    }
+  };
+
+  const handleSubImagesUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    setUploadingSubs(true);
+    try {
+      const urls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const res = await uploadService.uploadFile(files[i]);
+        urls.push(res.data.url);
+      }
+      setProductForm(prev => ({
+        ...prev,
+        subImages: [...(prev.subImages || []), ...urls]
+      }));
+    } catch (err: any) {
+      alert("Failed to upload sub images: " + err.message);
+    } finally {
+      setUploadingSubs(false);
+    }
+  };
+
+  const handleRemoveSubImage = (indexToRemove: number) => {
+    setProductForm(prev => ({
+      ...prev,
+      subImages: prev.subImages ? prev.subImages.filter((_, idx) => idx !== indexToRemove) : []
+    }));
+  };
 
   useEffect(() => {
     fetchData();
@@ -842,26 +887,103 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block mb-1">Main Image URL</label>
-                    <input
-                      type="url"
-                      value={productForm.mainImage}
-                      onChange={(e) => setProductForm({ ...productForm, mainImage: e.target.value })}
-                      className="w-full border border-[#c2c9bb] rounded-sm p-2 bg-[#fafaf5] outline-none focus:border-[#25521f]"
-                    />
+                    <label className="block mb-1 font-medium text-gray-700">Main Image</label>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="Paste image URL here..."
+                          value={productForm.mainImage || ""}
+                          onChange={(e) => setProductForm({ ...productForm, mainImage: e.target.value })}
+                          className="flex-1 border border-[#c2c9bb] rounded-sm p-2 bg-[#fafaf5] outline-none focus:border-[#25521f]"
+                        />
+                        <label className="flex items-center justify-center px-4 border border-[#c2c9bb] rounded-sm cursor-pointer bg-[#fafaf5] hover:bg-gray-100 transition-colors">
+                          {uploadingMain ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-[#25521f]" />
+                          ) : (
+                            <Upload className="w-4 h-4 text-gray-500" />
+                          )}
+                          <span className="ml-2 text-[11px] font-bold uppercase tracking-wider text-gray-600">Upload</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={uploadingMain}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleMainImageUpload(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      {productForm.mainImage && (
+                        <div className="relative w-20 h-20 border border-[#c2c9bb] rounded bg-white flex items-center justify-center overflow-hidden">
+                          <img
+                            src={formatImageUrl(productForm.mainImage)}
+                            alt="Main product preview"
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
-                    <label className="block mb-1">Sub Images URLs (comma separated)</label>
-                    <input
-                      type="text"
-                      placeholder="http://example.com/img1.png, http://example.com/img2.png"
-                      value={productForm.subImages ? productForm.subImages.join(", ") : ""}
-                      onChange={(e) => {
-                        const urls = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
-                        setProductForm({ ...productForm, subImages: urls });
-                      }}
-                      className="w-full border border-[#c2c9bb] rounded-sm p-2 bg-[#fafaf5] outline-none focus:border-[#25521f]"
-                    />
+                    <label className="block mb-1 font-medium text-gray-700">Sub Images</label>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Paste image URLs (comma separated) or click upload..."
+                          value={productForm.subImages ? productForm.subImages.join(", ") : ""}
+                          onChange={(e) => {
+                            const urls = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
+                            setProductForm({ ...productForm, subImages: urls });
+                          }}
+                          className="flex-1 border border-[#c2c9bb] rounded-sm p-2 bg-[#fafaf5] outline-none focus:border-[#25521f]"
+                        />
+                        <label className="flex items-center justify-center px-4 border border-[#c2c9bb] rounded-sm cursor-pointer bg-[#fafaf5] hover:bg-gray-100 transition-colors">
+                          {uploadingSubs ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-[#25521f]" />
+                          ) : (
+                            <Upload className="w-4 h-4 text-gray-500" />
+                          )}
+                          <span className="ml-2 text-[11px] font-bold uppercase tracking-wider text-gray-600">Upload Multi</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            disabled={uploadingSubs}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files.length > 0) {
+                                handleSubImagesUpload(e.target.files);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      {productForm.subImages && productForm.subImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {productForm.subImages.map((url, idx) => (
+                            <div key={idx} className="relative w-16 h-16 border border-[#c2c9bb] rounded bg-white flex items-center justify-center overflow-hidden group">
+                              <img
+                                src={formatImageUrl(url)}
+                                alt={`Sub preview ${idx}`}
+                                className="object-cover w-full h-full"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSubImage(idx)}
+                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block mb-1">Description</label>
