@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { cartService, CartItemResponse } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
+import { formatImageUrl } from "@/utils/image";
 import { Trash2, Plus, Minus, ArrowLeft, Loader2, CreditCard } from "lucide-react";
 
 export default function CartPage() {
@@ -111,9 +112,13 @@ export default function CartPage() {
                 <div className="flex items-center gap-4 flex-1">
                   <div className="h-16 w-16 bg-[#fafaf5] rounded-sm border border-[#c2c9bb]/40 flex items-center justify-center p-2">
                     <img
-                      src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=200"
+                      src={formatImageUrl(item.mainImage) || "/placeholder-product.png"}
                       alt={item.productName}
                       className="object-contain max-h-full max-w-full"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=200";
+                      }}
                     />
                   </div>
                   <div>

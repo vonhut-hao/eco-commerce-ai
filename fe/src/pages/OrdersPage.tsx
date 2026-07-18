@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { orderService, OrderResponse } from "@/services/order.service";
 import { authService } from "@/services/auth.service";
+import { formatImageUrl } from "@/utils/image";
 import { Loader2, ShoppingBag, ChevronDown, ChevronUp, PackageCheck } from "lucide-react";
 
 export default function OrdersPage() {
@@ -139,9 +140,13 @@ export default function OrdersPage() {
                           <div className="flex items-center gap-4">
                             <div className="h-10 w-10 bg-white border border-[#c2c9bb]/35 rounded-sm p-1.5 flex items-center justify-center">
                               <img
-                                src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=200"
+                                src={formatImageUrl(item.mainImage) || "/placeholder-product.png"}
                                 alt={item.productName}
                                 className="object-contain max-h-full max-w-full"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=200";
+                                }}
                               />
                             </div>
                             <div>
