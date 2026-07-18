@@ -11,6 +11,7 @@ export interface OrderItemResponse {
   lineCarbonFootprint: number;
   productId: number;
   productName: string;
+  mainImage?: string | null;
 }
 
 export interface OrderResponse {

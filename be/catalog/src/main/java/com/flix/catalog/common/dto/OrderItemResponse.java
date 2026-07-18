@@ -10,7 +10,8 @@ public record OrderItemResponse(
         Long price,
         Double lineCarbonFootprint,
         Long productId,
-        String productName
+        String productName,
+        String mainImage
 ) {
     public static OrderItemResponse from(OrderItemEntity entity) {
         if (entity == null) {
@@ -23,7 +24,8 @@ public record OrderItemResponse(
                 entity.getPrice(),
                 entity.getLineCarbonFootprint(),
                 entity.getProductEntity().getId(),
-                entity.getProductEntity().getName()
+                entity.getProductEntity().getName(),
+                entity.getProductEntity().getMainImage()
         );
     }
 }

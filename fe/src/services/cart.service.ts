@@ -13,6 +13,7 @@ export interface CartItemResponse {
   productName: string;
   price: number;
   greenPoints?: number;
+  mainImage?: string | null;
 }
 
 export const cartService = {

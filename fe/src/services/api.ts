@@ -46,7 +46,8 @@ async function request<T>(
     throw new Error(errorMessage);
   }
 
-  return res.json();
+  const responseText = await res.text();
+  return responseText ? JSON.parse(responseText) : ({} as T);
 }
 
 export const api = {
