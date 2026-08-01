@@ -9,7 +9,7 @@ type ProductCardProps = {
   wishlisted?: boolean;
   onWishlist?: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
-  onNavigate?: () => void;
+  onNavigate?: (id: number) => void;
   compareSelected?: boolean;
   onToggleCompare?: (product: Product) => void;
   featured?: boolean;
@@ -36,7 +36,7 @@ export function ProductCard({
 
   return (
     <div
-      onClick={onNavigate}
+      onClick={() => onNavigate?.(product.id)}
       className={`group cursor-pointer rounded-2xl overflow-hidden flex flex-col
         bg-white/75 backdrop-blur-sm
         border border-[#dde8d8]

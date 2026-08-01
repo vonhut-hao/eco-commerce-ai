@@ -10,7 +10,6 @@ import imgHero3 from "../../imports/Homepage/fd3c27e888c95fc4c471ae218112f085bb1
 import imgHero4 from "../../imports/Homepage/cb597c14aa466186896b0278899817127b88c8ab.png";
 
 const CATEGORIES = ["All", "Home & Kitchen", "Personal Care", "Fashion", "Food & Beverage", "Office", "Travel", "Pet"];
-const TRENDING = ALL_PRODUCTS.slice(0, 5);
 
 // ─── Hero ──────────────────────────────────────────────────────────────────
 function HeroSection({ onNavigate }: { onNavigate: (p: string) => void }) {
@@ -113,18 +112,21 @@ function TrendingSection({
   onAddToCart,
   wishlistIds,
   onWishlist,
+  products = ALL_PRODUCTS,
 }: {
-  onNavigate: (p: string) => void;
+  onNavigate: (p: string, id?: number) => void;
   activeCategory: string;
   onAddToCart: (p: Product) => void;
   wishlistIds: number[];
   onWishlist: (p: Product) => void;
+  products?: Product[];
 }) {
-  const products = activeCategory === "All"
+  const TRENDING = products.slice(0, 5);
+  const displayProducts = activeCategory === "All"
     ? TRENDING
-    : ALL_PRODUCTS.filter((p) => p.category === activeCategory).slice(0, 5);
+    : products.filter((p) => p.category === activeCategory).slice(0, 5);
 
-  const display = products.length ? products : TRENDING;
+  const display = displayProducts.length ? displayProducts : TRENDING;
 
   return (
     <section className="max-w-[1280px] mx-auto w-full px-4 md:px-16 py-10 md:py-12 flex flex-col gap-6">
@@ -155,7 +157,7 @@ function TrendingSection({
               key={p.id}
               product={p}
               featured
-              onNavigate={() => onNavigate("product")}
+              onNavigate={(id) => onNavigate("product", id)}
               onAddToCart={onAddToCart}
               onWishlist={onWishlist}
               wishlisted={wishlistIds.includes(p.id)}
@@ -167,7 +169,7 @@ function TrendingSection({
             <ProductCard
               key={p.id}
               product={p}
-              onNavigate={() => onNavigate("product")}
+              onNavigate={(id) => onNavigate("product", id)}
               onAddToCart={onAddToCart}
               onWishlist={onWishlist}
               wishlisted={wishlistIds.includes(p.id)}
@@ -182,7 +184,7 @@ function TrendingSection({
           <div key={p.id} className="shrink-0 w-[200px]">
             <ProductCard
               product={p}
-              onNavigate={() => onNavigate("product")}
+              onNavigate={(id) => onNavigate("product", id)}
               onAddToCart={onAddToCart}
               onWishlist={onWishlist}
               wishlisted={wishlistIds.includes(p.id)}
@@ -253,11 +255,13 @@ export function HomePage({
   onAddToCart,
   wishlistIds,
   onWishlist,
+  products = ALL_PRODUCTS,
 }: {
-  onNavigate: (p: string) => void;
+  onNavigate: (p: string, id?: number) => void;
   onAddToCart: (p: Product) => void;
   wishlistIds: number[];
   onWishlist: (p: Product) => void;
+  products?: Product[];
 }) {
   const [activeCategory, setActiveCategory] = useState("All");
 
@@ -271,6 +275,7 @@ export function HomePage({
         onAddToCart={onAddToCart}
         wishlistIds={wishlistIds}
         onWishlist={onWishlist}
+        products={products}
       />
       <ImpactBanner onNavigate={onNavigate} />
     </main>
