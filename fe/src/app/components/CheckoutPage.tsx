@@ -1,0 +1,355 @@
+import { useState } from "react";
+import { Check, ChevronDown, MapPin, CreditCard, Banknote, Smartphone, ArrowRight, Package, Leaf } from "lucide-react";
+import type { CartItem } from "./CartPage";
+
+type Step = "address" | "payment" | "confirm";
+
+function fmt(n: number) { return n.toLocaleString("vi-VN") + " VND"; }
+
+const PROVINCES = [
+  "TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng",
+  "Bình Dương", "Đồng Nai", "Khánh Hòa", "Thừa Thiên Huế", "Quảng Nam",
+];
+
+// ─── Step Indicator ────────────────────────────────────────────────────────────
+function StepBar({ current }: { current: Step }) {
+  const steps: { key: Step; label: string }[] = [
+    { key: "address", label: "Địa chỉ" },
+    { key: "payment", label: "Thanh toán" },
+    { key: "confirm", label: "Xác nhận" },
+  ];
+  const idx = steps.findIndex((s) => s.key === current);
+
+  return (
+    <div className="flex items-center gap-0 mb-8">
+      {steps.map((step, i) => {
+        const done = i < idx;
+        const active = i === idx;
+        return (
+          <div key={step.key} className="flex items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] transition-colors ${done ? "bg-[#25521f] text-white" : active ? "bg-[#25521f] text-white ring-4 ring-[#25521f]/20" : "border-2 border-[#c2c9bb] text-[#6b7280]"}`}>
+                {done ? <Check size={14} /> : i + 1}
+              </div>
+              <span className={`text-[11px] whitespace-nowrap ${active ? "text-[#25521f] font-medium" : "text-[#6b7280]"}`}>{step.label}</span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={`h-0.5 w-16 md:w-24 mx-1 mb-5 transition-colors ${i < idx ? "bg-[#25521f]" : "bg-[#e2e3de]"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Address Step ──────────────────────────────────────────────────────────────
+function AddressStep({
+  onNext,
+  savedAddress,
+  onSave,
+}: {
+  onNext: () => void;
+  savedAddress: AddressForm | null;
+  onSave: (form: AddressForm) => void;
+}) {
+  const [form, setForm] = useState<AddressForm>(
+    savedAddress ?? { name: "", phone: "", province: "", address: "", note: "" }
+  );
+  const [showProvince, setShowProvince] = useState(false);
+
+  const set = (key: keyof AddressForm, v: string) => setForm((f) => ({ ...f, [key]: v }));
+  const valid = form.name && form.phone && form.province && form.address;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-2 mb-2">
+        <MapPin size={18} className="text-[#25521f]" />
+        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Địa chỉ giao hàng</h2>
+      </div>
+
+      <Field label="Họ và tên *">
+        <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Nguyễn Văn An" className={inputCls} />
+      </Field>
+
+      <Field label="Số điện thoại *">
+        <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="0912 345 678" className={inputCls} />
+      </Field>
+
+      <Field label="Tỉnh / Thành phố *">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowProvince((v) => !v)}
+            className={`${inputCls} flex items-center justify-between text-left`}
+          >
+            <span className={form.province ? "text-[#1a1c19]" : "text-[#9ca3af]"}>{form.province || "Chọn tỉnh / thành phố"}</span>
+            <ChevronDown size={15} className="text-[#6b7280] shrink-0" />
+          </button>
+          {showProvince && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#c2c9bb] rounded-xl shadow-lg z-20 max-h-[200px] overflow-y-auto py-1">
+              {PROVINCES.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { set("province", p); setShowProvince(false); }}
+                  className="w-full text-left px-4 py-2 text-[13px] text-[#1a1c19] hover:bg-[#f0f7ee] transition-colors"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </Field>
+
+      <Field label="Địa chỉ cụ thể *">
+        <input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Số nhà, tên đường, phường/xã, quận/huyện" className={inputCls} />
+      </Field>
+
+      <Field label="Ghi chú (tùy chọn)">
+        <textarea
+          value={form.note}
+          onChange={(e) => set("note", e.target.value)}
+          placeholder="Hướng dẫn giao hàng..."
+          rows={2}
+          className={`${inputCls} resize-none`}
+        />
+      </Field>
+
+      <button
+        disabled={!valid}
+        onClick={() => { onSave(form); onNext(); }}
+        className="w-full bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3.5 rounded-full shadow-md disabled:opacity-40 hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-2"
+      >
+        Tiếp tục <ArrowRight size={14} />
+      </button>
+    </div>
+  );
+}
+
+// ─── Payment Step ──────────────────────────────────────────────────────────────
+type PaymentMethod = "cod" | "bank" | "momo" | "zalopay";
+type AddressForm = { name: string; phone: string; province: string; address: string; note: string };
+
+const PAYMENT_OPTS: { key: PaymentMethod; label: string; desc: string; Icon: React.ElementType; color: string }[] = [
+  { key: "cod", label: "Thanh toán khi nhận hàng", desc: "Trả tiền mặt khi shipper giao tới", Icon: Banknote, color: "#42493e" },
+  { key: "bank", label: "Chuyển khoản ngân hàng", desc: "Chuyển khoản qua QR / số tài khoản", Icon: CreditCard, color: "#1d4ed8" },
+  { key: "momo", label: "Ví MoMo", desc: "Quét mã QR MoMo để thanh toán", Icon: Smartphone, color: "#a21caf" },
+  { key: "zalopay", label: "ZaloPay", desc: "Thanh toán qua ứng dụng ZaloPay", Icon: Smartphone, color: "#0284c7" },
+];
+
+function PaymentStep({ onNext, onBack, total }: { onNext: (method: PaymentMethod) => void; onBack: () => void; total: number }) {
+  const [selected, setSelected] = useState<PaymentMethod>("cod");
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-2 mb-2">
+        <CreditCard size={18} className="text-[#25521f]" />
+        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Phương thức thanh toán</h2>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {PAYMENT_OPTS.map((opt) => {
+          const Icon = opt.Icon;
+          const active = selected === opt.key;
+          return (
+            <button
+              key={opt.key}
+              onClick={() => setSelected(opt.key)}
+              className={`flex items-center gap-4 border rounded-xl p-4 text-left transition-all ${active ? "border-[#25521f] bg-[#f0f7ee]" : "border-[#c2c9bb] hover:border-[#42493e]"}`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${active ? "bg-[#25521f]" : "bg-[#f4f4ef]"}`}>
+                <Icon size={18} color={active ? "white" : opt.color} />
+              </div>
+              <div className="flex-1">
+                <p className={`text-[14px] ${active ? "text-[#25521f] font-medium" : "text-[#1a1c19]"}`}>{opt.label}</p>
+                <p className="text-[#6b7280] text-[12px]">{opt.desc}</p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${active ? "border-[#25521f]" : "border-[#c2c9bb]"}`}>
+                {active && <div className="w-2.5 h-2.5 rounded-full bg-[#25521f]" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {selected === "bank" && (
+        <div className="bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#42493e]">
+          <p className="font-medium text-[#1a1c19]">Thông tin chuyển khoản:</p>
+          <p>Ngân hàng: <span className="font-medium">Vietcombank</span></p>
+          <p>Số TK: <span className="font-medium">1234567890</span></p>
+          <p>Tên TK: <span className="font-medium">GREENLIFE COMPANY</span></p>
+          <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+        </div>
+      )}
+
+      <div className="border-t border-[#e2e3de] pt-4 flex justify-between items-center">
+        <span className="text-[#6b7280] text-[13px]">Tổng thanh toán</span>
+        <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#25521f] text-[20px]">{fmt(total)}</span>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={onBack} className="flex-1 border border-[#c2c9bb] text-[#42493e] text-[13px] tracking-widest uppercase py-3 rounded-full hover:bg-[#fafaf5] transition-colors">
+          Quay lại
+        </button>
+        <button
+          onClick={() => onNext(selected)}
+          className="flex-1 bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3 rounded-full shadow-md hover:shadow-lg transition-all"
+        >
+          Đặt hàng
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Confirm Step ──────────────────────────────────────────────────────────────
+function ConfirmStep({
+  orderId,
+  address,
+  paymentMethod,
+  total,
+  co2,
+  greenPts,
+  onContinue,
+}: {
+  orderId: string;
+  address: AddressForm;
+  paymentMethod: PaymentMethod;
+  total: number;
+  co2: number;
+  greenPts: number;
+  onContinue: () => void;
+}) {
+  const payLabel = PAYMENT_OPTS.find((o) => o.key === paymentMethod)?.label ?? "";
+  return (
+    <div className="flex flex-col items-center gap-6 py-4 text-center">
+      {/* Success icon */}
+      <div className="w-20 h-20 rounded-full bg-[#f0f7ee] flex items-center justify-center shadow-md">
+        <Check size={36} className="text-[#25521f]" strokeWidth={2.5} />
+      </div>
+      <div>
+        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[24px] mb-1">Đặt hàng thành công!</h2>
+        <p className="text-[#6b7280] text-[14px]">Cảm ơn bạn đã mua hàng tại GreenLife 🌿</p>
+      </div>
+
+      <div className="w-full bg-white/80 border border-[#e2e3de] rounded-2xl p-5 flex flex-col gap-3 text-left">
+        <div className="flex justify-between text-[13px]">
+          <span className="text-[#6b7280]">Mã đơn hàng</span>
+          <span className="font-medium text-[#1a1c19]">{orderId}</span>
+        </div>
+        <div className="flex justify-between text-[13px]">
+          <span className="text-[#6b7280]">Giao tới</span>
+          <span className="text-[#1a1c19] text-right max-w-[200px]">{address.name} · {address.address}, {address.province}</span>
+        </div>
+        <div className="flex justify-between text-[13px]">
+          <span className="text-[#6b7280]">Thanh toán</span>
+          <span className="text-[#1a1c19]">{payLabel}</span>
+        </div>
+        <div className="flex justify-between text-[13px]">
+          <span className="text-[#6b7280]">Tổng tiền</span>
+          <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#25521f]">{fmt(total)}</span>
+        </div>
+        <div className="border-t border-[#e2e3de] pt-3">
+          <div className="bg-[#f0f7ee] rounded-xl p-3 flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Leaf size={13} className="text-[#25521f]" />
+              <span className="text-[#25521f] text-[12px] font-medium">Tác động xanh của đơn hàng</span>
+            </div>
+            <div className="flex justify-between text-[12px] text-[#42493e]">
+              <span>Carbon footprint</span><span className="font-medium">{co2.toFixed(2)} kg CO₂</span>
+            </div>
+            <div className="flex justify-between text-[12px] text-[#42493e]">
+              <span>Green Points tích lũy</span><span className="font-medium text-[#25521f]">+{greenPts} pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex items-center gap-3">
+        <Package size={18} className="text-[#25521f] shrink-0" />
+        <div className="text-left">
+          <p className="text-[#1a1c19] text-[13px] font-medium">Dự kiến giao hàng: 3–5 ngày làm việc</p>
+          <p className="text-[#6b7280] text-[11px]">Bạn sẽ nhận được email xác nhận và cập nhật trạng thái.</p>
+        </div>
+      </div>
+
+      <button
+        onClick={onContinue}
+        className="w-full bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3.5 rounded-full shadow-md hover:shadow-lg transition-all"
+      >
+        Tiếp tục mua sắm
+      </button>
+    </div>
+  );
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+const inputCls = "w-full border border-[#c2c9bb] rounded-xl px-4 py-3 text-[14px] text-[#1a1c19] placeholder-[#9ca3af] outline-none focus:border-[#25521f] transition-colors bg-white";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[12px] text-[#6b7280] tracking-wide">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+// ─── Checkout Page ─────────────────────────────────────────────────────────────
+export function CheckoutPage({
+  items,
+  onComplete,
+  onNavigate,
+}: {
+  items: CartItem[];
+  onComplete: () => void;
+  onNavigate: (page: string) => void;
+}) {
+  const [step, setStep] = useState<Step>("address");
+  const [address, setAddress] = useState<AddressForm | null>(null);
+  const [payMethod, setPayMethod] = useState<PaymentMethod>("cod");
+  const [orderId] = useState(() => "#GL-" + Math.floor(9000 + Math.random() * 9000));
+
+  const subtotal = items.reduce((s, i) => s + i.product.price * i.quantity, 0);
+  const shipping = subtotal >= 200000 ? 0 : 30000;
+  const total = subtotal + shipping;
+  const co2 = items.reduce((s, i) => s + i.product.carbonIndex * i.quantity, 0);
+  const greenPts = items.reduce((s, i) => s + i.product.greenPoints * i.quantity, 0);
+
+  return (
+    <main className="flex-1 pb-20 md:pb-0">
+      <div className="max-w-[680px] mx-auto px-4 md:px-8 py-8 md:py-12">
+        <StepBar current={step} />
+
+        {step === "address" && (
+          <AddressStep
+            savedAddress={address}
+            onSave={(form) => setAddress(form)}
+            onNext={() => setStep("payment")}
+          />
+        )}
+
+        {step === "payment" && (
+          <PaymentStep
+            total={total}
+            onBack={() => setStep("address")}
+            onNext={(method) => { setPayMethod(method); setStep("confirm"); }}
+          />
+        )}
+
+        {step === "confirm" && address && (
+          <ConfirmStep
+            orderId={orderId}
+            address={address}
+            paymentMethod={payMethod}
+            total={total}
+            co2={co2}
+            greenPts={greenPts}
+            onContinue={() => { onComplete(); onNavigate("shop"); }}
+          />
+        )}
+      </div>
+    </main>
+  );
+}
