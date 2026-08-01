@@ -19,15 +19,3 @@
   scrollbar-width: thin;
   scrollbar-color: #c2c9bb transparent;
 }
-
-/* Safe area for bottom nav on iOS */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-body {
-  margin: 0;
-  font-family: 'Nimbus Sans', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
