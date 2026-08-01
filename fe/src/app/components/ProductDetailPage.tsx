@@ -143,14 +143,14 @@ export function ProductDetailPage({
             </h1>
             <div className="flex items-center gap-4">
               <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-xl md:text-2xl">
-                {product.price.toLocaleString("vi-VN")} VND
+                {(product.price || 0).toLocaleString("vi-VN")} VND
               </span>
               <div className="flex items-center gap-1">
                 <svg width="15" height="14" viewBox="0 0 15 14.25" fill="none">
                   <path d={svgPaths.p389def00} fill="#6B5D3F" />
                 </svg>
                 <span className="text-[#6b5d3f] text-[14px]">
-                  {product.avgRating.toFixed(1)} ({product.comments?.length || 0} reviews)
+                  {(product.avgRating || 0).toFixed(1)} ({product.comments?.length || 0} reviews)
                 </span>
               </div>
             </div>
@@ -166,15 +166,15 @@ export function ProductDetailPage({
                 CARBON FOOTPRINT
               </span>
               <span className="text-[#25521f] text-[14px] font-['Liberation_Mono:Bold',monospace] font-bold">
-                {product.carbonIndex} kg CO2 / unit
+                {product.carbonIndex || 0} kg CO2 / unit
               </span>
             </div>
             <div className="flex flex-col gap-2">
               <div className="relative bg-[#e2e3de] h-6 rounded-xl overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 bg-[#25521f]" style={{ width: `${Math.min(100, (product.carbonIndex / 2.0) * 100)}%` }} />
+                <div className="absolute left-0 top-0 bottom-0 bg-[#25521f]" style={{ width: `${Math.min(100, ((product.carbonIndex || 0) / 2.0) * 100)}%` }} />
                 <div className="absolute inset-0 flex items-center px-4 justify-end">
                   <span className="text-[10px] font-['Nimbus_Sans:Bold',sans-serif] text-[#42493e]">
-                    YOUR CHOICE: {product.carbonIndex}kg
+                    YOUR CHOICE: {product.carbonIndex || 0}kg
                   </span>
                 </div>
               </div>
@@ -268,11 +268,11 @@ export function ProductDetailPage({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-[#f4f4ef] border border-[#c2c9bb] rounded-md p-4">
                 <div className="text-[#42493e] text-[11px] tracking-widest uppercase mb-1">Carbon Footprint</div>
-                <div className="text-[#25521f] font-bold text-[16px] font-['Liberation_Mono:Bold',monospace]">{product.carbonIndex} kg CO2</div>
+                <div className="text-[#25521f] font-bold text-[16px] font-['Liberation_Mono:Bold',monospace]">{product.carbonIndex || 0} kg CO2</div>
               </div>
               <div className="bg-[#f4f4ef] border border-[#c2c9bb] rounded-md p-4">
                 <div className="text-[#42493e] text-[11px] tracking-widest uppercase mb-1">Green Points</div>
-                <div className="text-[#25521f] font-bold text-[16px] font-['Liberation_Mono:Bold',monospace]">+{product.greenPoints}</div>
+                <div className="text-[#25521f] font-bold text-[16px] font-['Liberation_Mono:Bold',monospace]">+{product.greenPoints || 0}</div>
               </div>
               <div className="bg-[#f4f4ef] border border-[#c2c9bb] rounded-md p-4">
                 <div className="text-[#42493e] text-[11px] tracking-widest uppercase mb-1">Materials</div>
@@ -287,11 +287,11 @@ export function ProductDetailPage({
         {activeTab === "reviews" && (
           <div className="flex flex-col gap-5 max-w-[768px]">
             <div className="flex items-center gap-3">
-              <span className="text-[#1a1c19] text-4xl font-['Nimbus_Sans:Bold',sans-serif]">{product.avgRating.toFixed(1)}</span>
+              <span className="text-[#1a1c19] text-4xl font-['Nimbus_Sans:Bold',sans-serif]">{(product.avgRating || 0).toFixed(1)}</span>
               <div className="flex flex-col gap-1">
                 <div className="flex gap-1">
                   {[1,2,3,4,5].map((s) => (
-                    <Star key={s} size={16} fill={s <= Math.round(product.avgRating) ? "#6B5D3F" : "none"} className="text-[#6b5d3f]" />
+                    <Star key={s} size={16} fill={s <= Math.round(product.avgRating || 0) ? "#6B5D3F" : "none"} className="text-[#6b5d3f]" />
                   ))}
                 </div>
                 <span className="text-[#6b5d3f] text-[13px]">{product.comments?.length || 0} reviews</span>

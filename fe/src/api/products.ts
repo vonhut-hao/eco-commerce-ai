@@ -60,6 +60,13 @@ export interface PageResponse<T> {
   empty: boolean;
 }
 
+export interface ApiResponse<T> {
+  status: string;
+  message: string;
+  data: T;
+  timestamp: string;
+}
+
 export function mapProductBeToFe(be: ProductBE): any {
   return {
     id: be.id,
@@ -84,17 +91,17 @@ export function mapProductBeToFe(be: ProductBE): any {
 
 export const productsApi = {
   getProducts: async (page = 0, size = 20) => {
-    const res = await client.get<PageResponse<ProductBE>>(`/v1/catalog/products?page=${page}&size=${size}`);
-    return res.data;
+    const res = await client.get<ApiResponse<PageResponse<ProductBE>>>(`/v1/catalog/products?page=${page}&size=${size}`);
+    return res.data.data;
   },
   
   getProductById: async (id: number) => {
-    const res = await client.get<ProductBE>(`/v1/catalog/products/${id}`);
-    return res.data;
+    const res = await client.get<ApiResponse<ProductBE>>(`/v1/catalog/products/${id}`);
+    return res.data.data;
   },
   
   getCategories: async () => {
-    const res = await client.get<CategoryBE[]>('/v1/catalog/categories');
-    return res.data;
+    const res = await client.get<ApiResponse<CategoryBE[]>>('/v1/catalog/categories');
+    return res.data.data;
   }
 };
