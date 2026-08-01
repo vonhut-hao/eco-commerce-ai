@@ -34,7 +34,15 @@ public enum ErrorCode {
     PAYMENT_METHOD_NOT_FOUND("Payment method not found", HttpStatus.NOT_FOUND),
     CART_EMPTY("Cart is empty", HttpStatus.BAD_REQUEST),
     INSUFFICIENT_STOCK("Insufficient stock", HttpStatus.BAD_REQUEST),
-    INVALID_REQUEST("Invalid request", HttpStatus.BAD_REQUEST);
+    INVALID_REQUEST("Invalid request", HttpStatus.BAD_REQUEST),
+    INVALID_DATE("Invalid date provided", HttpStatus.BAD_REQUEST),
+    INVALID_MONTH("Month must be between 1 and 12", HttpStatus.BAD_REQUEST),
+    INVALID_DAY("Day must be between 1 and 31", HttpStatus.BAD_REQUEST),
+    INVALID_YEAR("Year provided is invalid", HttpStatus.BAD_REQUEST),
+    FUTURE_DATE_NOT_ALLOWED("Cannot calculate revenue for future dates", HttpStatus.BAD_REQUEST),
+    INVALID_CALENDAR_DATE("The specified date, month, or year does not exist in the calendar", HttpStatus.BAD_REQUEST),
+    STATISTIC_FILTER_REQUIRED("At least year filter must be provided", HttpStatus.BAD_REQUEST);
+
 
     String message;
     HttpStatus httpStatus;
