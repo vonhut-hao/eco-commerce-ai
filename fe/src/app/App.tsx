@@ -34,6 +34,7 @@ import { CartPage } from "./components/CartPage";
 import type { CartItem } from "./components/CartPage";
 import { CheckoutPage } from "./components/CheckoutPage";
 import { ImpactPage } from "./components/ImpactPage";
+import { useAuthStore } from "../store/authStore";
 
 export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact";
 
@@ -800,6 +801,23 @@ export default function App() {
 
   // Chatbot control — increment a counter so useEffect in AIChatbot fires each time
   const [chatbotTrigger, setChatbotTrigger] = useState(0);
+
+  const setToken = useAuthStore(state => state.setToken);
+
+  useEffect(() => {
+    // Handle OAuth2 redirect from backend (e.g. /oauth2/callback#token=...)
+    if (window.location.pathname === "/oauth2/callback") {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const token = params.get("token");
+      if (token) {
+        setToken(token);
+        toast.success("Welcome back!", "Signed in with Google successfully");
+      }
+      window.history.replaceState({}, document.title, "/");
+      setActivePage("home");
+    }
+  }, [setToken]);
 
   const navigate = (page: Page, productId?: number) => {
     setActivePage(page);

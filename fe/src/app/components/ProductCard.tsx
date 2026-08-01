@@ -53,29 +53,23 @@ export function ProductCard({
           className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
         />
 
-        {/* Compare checkbox */}
-        {onToggleCompare && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleCompare(product); }}
-            className={`absolute top-3 left-3 w-5 h-5 rounded-md flex items-center justify-center transition-all backdrop-blur-sm ${
-              compareSelected
-                ? "bg-[#25521f] border-transparent"
-                : "bg-white/75 border border-white/60 hover:border-[#25521f]"
-            }`}
-            title="So sánh"
-          >
-            {compareSelected && <Check size={11} className="text-white" />}
-          </button>
-        )}
-
-        {/* Low stock indicator */}
-        {product.stock <= 20 && (
-          <div className="absolute top-3 left-3">
-            <span className="bg-[#fffbf0]/90 backdrop-blur-sm text-[#6f6143] text-[9px] px-2 py-1 rounded-full border border-[#f1deb8]/60">
-              Còn {product.stock}
-            </span>
-          </div>
-        )}
+        {/* Top-left corner items */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
+          {/* Compare checkbox */}
+          {onToggleCompare && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleCompare(product); }}
+              className={`w-5 h-5 rounded-md flex items-center justify-center transition-all backdrop-blur-sm ${
+                compareSelected
+                  ? "bg-[#25521f] border-transparent"
+                  : "bg-white/75 border border-white/60 hover:border-[#25521f]"
+              }`}
+              title="So sánh"
+            >
+              {compareSelected && <Check size={11} className="text-white" />}
+            </button>
+          )}
+        </div>
 
         {/* Eco badge */}
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/30 to-transparent">

@@ -1,12 +1,13 @@
 import client from './client';
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password?: string;
   provider?: string;
 }
 
 export interface RegisterRequest {
+  username: string;
   email: string;
   password?: string;
   provider?: string;
@@ -20,12 +21,12 @@ export interface AuthResponse {
 export const authApi = {
   login: async (data: LoginRequest) => {
     const res = await client.post<any>('/v1/auth/login', data);
-    return res.data;
+    return res.data.data;
   },
   
   registerNormal: async (data: RegisterRequest) => {
     const res = await client.post<any>('/v1/auth/register/normal', data);
-    return res.data;
+    return res.data.data;
   },
   
   checkProvider: async (email: string) => {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { GreenLifeBrand } from "./GreenLifeBrand";
 import { authApi } from "../../api/auth";
 import { toast } from "./Toast";
@@ -40,21 +41,41 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
   const [showConfirm, setShowConfirm]         = useState(false);
   const [agreed, setAgreed]                   = useState(false);
   const [submitted, setSubmitted]             = useState(false);
+  const [errorMsg, setErrorMsg]               = useState("");
 
   const strength = getStrength(password);
   const confirmMismatch = !!confirmPassword && confirmPassword !== password;
-  const canSubmit = agreed && !!username && !!email && !!password && !!confirmPassword && !confirmMismatch;
+  const isFormFilled = agreed && !!username && !!email && !!password && !!confirmPassword;
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!isFormFilled) return;
+
+    if (confirmMismatch) {
+      setErrorMsg("Passwords do not match");
+      return;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setErrorMsg("Please enter a valid email address");
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters long");
+      return;
+    }
+
     setSubmitted(true);
+    setErrorMsg("");
     try {
-      await authApi.registerNormal({ email, password });
+      await authApi.registerNormal({ username, email, password });
       toast.success("Account created!", "Please sign in");
       onNavigate("signin");
     } catch (e: any) {
       console.error(e);
-      toast.error("Sign Up Failed", e.response?.data?.message || "Could not create account");
+      const msg = e.response?.data?.detail || e.response?.data?.message || "Could not create account";
+      setErrorMsg(msg);
+      toast.error("Sign Up Failed", msg);
     } finally {
       setSubmitted(false);
     }
@@ -134,6 +155,12 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
             <p className="text-[#42493e] text-[16px] leading-[24px]">Start your GreenLife journey today</p>
           </div>
 
+          {errorMsg && (
+            <div className="p-3 bg-[#fef2f2] border border-[#f87171] rounded-[4px] text-[#b91c1c] text-[14px] text-center font-medium">
+              {errorMsg}
+            </div>
+          )}
+
           {/* Form */}
           <div className="flex flex-col gap-5">
 
@@ -169,7 +196,11 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="hello@example.com"
-                  className="w-full border border-[#c2c9bb] pl-10 pr-4 py-3 text-[16px] text-[#1a1c19] placeholder-[#6b7280] outline-none focus:border-[#25521f] transition-colors bg-white"
+                  className={`w-full border pl-10 pr-4 py-3 text-[16px] placeholder-[#6b7280] outline-none transition-colors bg-white ${
+                    email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+                      ? "border-[#f87171] text-[#b91c1c] focus:border-[#f87171]"
+                      : "border-[#c2c9bb] text-[#1a1c19] focus:border-[#25521f]"
+                  }`}
                 />
               </div>
             </div>
@@ -195,9 +226,7 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#42493e] hover:text-[#25521f] transition-colors"
                 >
-                  <svg width="18" height="16" viewBox="0 0 18.3333 16.5" fill="none">
-                    <path d={svgPaths.pf0742c0} fill="#42493E" />
-                  </svg>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {/* Strength bars */}
@@ -244,9 +273,7 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
                   onClick={() => setShowConfirm((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#42493e] hover:text-[#25521f] transition-colors"
                 >
-                  <svg width="18" height="16" viewBox="0 0 18.3333 16.5" fill="none">
-                    <path d={svgPaths.pf0742c0} fill="#42493E" />
-                  </svg>
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {confirmMismatch && (
@@ -273,7 +300,7 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
             {/* Submit */}
             <button
               onClick={handleSubmit}
-              disabled={!canSubmit}
+              disabled={!isFormFilled}
               className="w-full bg-[#3d6b35] text-white font-['Nimbus_Sans:Bold',sans-serif] text-[14px] tracking-[0.7px] py-3 rounded-[4px] hover:bg-[#25521f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {submitted ? "Creating Account…" : "Create Account"}
@@ -287,7 +314,11 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
             </div>
 
             {/* Google */}
-            <button className="w-full border border-[#c2c9bb] flex items-center justify-center gap-2 py-3 rounded-[4px] hover:bg-[#fafaf5] transition-colors">
+            <button 
+              type="button"
+              onClick={() => window.location.href = "http://localhost:8080/oauth2/authorization/google"}
+              className="w-full border border-[#c2c9bb] flex items-center justify-center gap-2 py-3 rounded-[4px] hover:bg-[#fafaf5] transition-colors"
+            >
               <GoogleIcon />
               <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[14px] tracking-[0.7px]">Google</span>
             </button>
