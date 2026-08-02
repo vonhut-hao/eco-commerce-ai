@@ -889,7 +889,7 @@ export default function App() {
       {activePage === "home" && (
         <HomePage
           onNavigate={navigate}
-          onAddToCart={addToCart}
+          onAddToCart={handleAddToCart}
           wishlistIds={wishlistIds}
           onWishlist={toggleWishlist}
           products={products}
@@ -899,7 +899,7 @@ export default function App() {
       {activePage === "shop" && (
         <ShopPage
           onNavigate={navigate}
-          onAddToCart={addToCart}
+          onAddToCart={handleAddToCart}
           onWishlist={toggleWishlist}
           wishlistIds={wishlistIds}
           products={products}
