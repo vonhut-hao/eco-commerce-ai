@@ -11,7 +11,10 @@ public record CartItemResponse(
         String productName,
         Long price,
         Integer greenPoints,
-        String mainImage
+        Double carbonIndex,
+        String category,
+        String mainImage,
+        int stock
 ) {
     public static CartItemResponse from(CartItemEntity entity) {
         if (entity == null) {
@@ -25,7 +28,11 @@ public record CartItemResponse(
                 entity.getProduct().getName(),
                 entity.getProduct().getPrice(),
                 entity.getProduct().getGreenPoints(),
-                entity.getProduct().getMainImage()
+                entity.getProduct().getCarbonIndex(),
+                (entity.getProduct().getCategories() != null && !entity.getProduct().getCategories().isEmpty()) ? 
+                        entity.getProduct().getCategories().iterator().next().getName() : "N/A",
+                entity.getProduct().getMainImage(),
+                entity.getProduct().getStock()
         );
     }
 }

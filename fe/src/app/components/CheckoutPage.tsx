@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Check, ChevronDown, MapPin, CreditCard, Banknote, Smartphone, ArrowRight, Package, Leaf } from "lucide-react";
-import type { CartItem } from "./CartPage";
-
+import { CartItem, useCartStore } from "../../store/cartStore";
+import { ordersApi } from "../../api/orders";
+import { useAuthStore } from "../../store/authStore";
+import { toast } from "./Toast";
 type Step = "address" | "payment" | "confirm";
 
 function fmt(n: number) { return n.toLocaleString("vi-VN") + " VND"; }
@@ -141,6 +143,8 @@ const PAYMENT_OPTS: { key: PaymentMethod; label: string; desc: string; Icon: Rea
 function PaymentStep({ onNext, onBack, total }: { onNext: (method: PaymentMethod) => void; onBack: () => void; total: number }) {
   const [selected, setSelected] = useState<PaymentMethod>("cod");
 
+  const [loading, setLoading] = useState(false);
+  
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-2 mb-2">
@@ -189,14 +193,19 @@ function PaymentStep({ onNext, onBack, total }: { onNext: (method: PaymentMethod
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onBack} className="flex-1 border border-[#c2c9bb] text-[#42493e] text-[13px] tracking-widest uppercase py-3 rounded-full hover:bg-[#fafaf5] transition-colors">
+        <button onClick={onBack} disabled={loading} className="flex-1 border border-[#c2c9bb] text-[#42493e] text-[13px] tracking-widest uppercase py-3 rounded-full hover:bg-[#fafaf5] transition-colors disabled:opacity-50">
           Quay lại
         </button>
         <button
-          onClick={() => onNext(selected)}
-          className="flex-1 bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3 rounded-full shadow-md hover:shadow-lg transition-all"
+          onClick={async () => {
+            setLoading(true);
+            await onNext(selected);
+            setLoading(false);
+          }}
+          disabled={loading}
+          className="flex-1 bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3 rounded-full shadow-md hover:shadow-lg transition-all disabled:opacity-50"
         >
-          Đặt hàng
+          {loading ? "Đang xử lý..." : "Đặt hàng"}
         </button>
       </div>
     </div>
@@ -299,23 +308,61 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ─── Checkout Page ─────────────────────────────────────────────────────────────
 export function CheckoutPage({
   items,
-  onComplete,
   onNavigate,
 }: {
   items: CartItem[];
-  onComplete: () => void;
   onNavigate: (page: string) => void;
 }) {
   const [step, setStep] = useState<Step>("address");
   const [address, setAddress] = useState<AddressForm | null>(null);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("cod");
-  const [orderId] = useState(() => "#GL-" + Math.floor(9000 + Math.random() * 9000));
+  const [orderId, setOrderId] = useState(() => "#GL-" + Math.floor(9000 + Math.random() * 9000));
+  const { isAuthenticated } = useAuthStore();
+  const { clearCart } = useCartStore();
 
-  const subtotal = items.reduce((s, i) => s + i.product.price * i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const shipping = subtotal >= 200000 ? 0 : 30000;
   const total = subtotal + shipping;
-  const co2 = items.reduce((s, i) => s + i.product.carbonIndex * i.quantity, 0);
-  const greenPts = items.reduce((s, i) => s + i.product.greenPoints * i.quantity, 0);
+  const co2 = items.reduce((s, i) => s + i.carbonIndex * i.quantity, 0);
+  const greenPts = items.reduce((s, i) => s + (i.greenPoints || 0) * i.quantity, 0);
+
+  // If not authenticated, we could force login
+  if (!isAuthenticated) {
+    return (
+      <main className="flex-1 pb-20 md:pb-0 flex items-center justify-center">
+        <div className="text-center py-20">
+          <h2 className="text-[20px] font-['Nimbus_Sans:Bold',sans-serif] mb-4">Vui lòng đăng nhập</h2>
+          <p className="text-[#6b7280] mb-6">Bạn cần đăng nhập để tiến hành đặt hàng.</p>
+          <button
+            onClick={() => onNavigate("signin")}
+            className="bg-[#25521f] text-white px-8 py-3 rounded-full hover:bg-[#1e4219] transition-colors"
+          >
+            Đăng nhập ngay
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  const handlePlaceOrder = async (method: PaymentMethod) => {
+    setPayMethod(method);
+    try {
+      const res = await ordersApi.createOrder({
+        // Hardcode paymentMethodId to 1 for now if BE uses default
+        paymentMethodId: 1, 
+        status: "PENDING"
+      });
+      if (res && res.id) {
+        setOrderId("#GL-" + res.id);
+      }
+      clearCart();
+      setStep("confirm");
+    } catch (e) {
+      console.error("Failed to place order", e);
+      // BUG FIX: Do NOT proceed to confirm step if placing order fails!
+      toast.error("Thất bại", "Không thể đặt hàng, vui lòng thử lại.");
+    }
+  };
 
   return (
     <main className="flex-1 pb-20 md:pb-0">
@@ -334,7 +381,7 @@ export function CheckoutPage({
           <PaymentStep
             total={total}
             onBack={() => setStep("address")}
-            onNext={(method) => { setPayMethod(method); setStep("confirm"); }}
+            onNext={handlePlaceOrder}
           />
         )}
 
@@ -346,7 +393,7 @@ export function CheckoutPage({
             total={total}
             co2={co2}
             greenPts={greenPts}
-            onContinue={() => { onComplete(); onNavigate("shop"); }}
+            onContinue={() => onNavigate("shop")}
           />
         )}
       </div>

@@ -17,7 +17,7 @@ export function ProductDetailPage({
 }: {
   productId: number;
   onNavigate: (page: Page, id?: number, category?: string) => void;
-  onAddToCart: (p: Product) => void;
+  onAddToCart: (product: Product, quantity?: number) => void;
   wishlistIds: number[];
   onWishlist: (p: Product) => void;
 }) {
@@ -87,10 +87,8 @@ export function ProductDetailPage({
       greenPoints: product.greenPoints,
       description: product.description,
     };
-    // Add multiple quantity
-    for(let i=0; i<quantity; i++) {
-      onAddToCart(p);
-    }
+    
+    onAddToCart(p, quantity);
   };
 
   const isWishlisted = wishlistIds.includes(product.id);
@@ -215,14 +213,19 @@ export function ProductDetailPage({
                 <span className="w-10 text-center text-[15px] font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19]">
                   {quantity}
                 </span>
-                <button onClick={() => setQuantity(quantity + 1)} className="px-4 text-[#1a1c19] hover:bg-[#eeeee9] h-full transition-colors">
-                  <Plus size={14} />
+                <button 
+                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                  className="w-12 h-full flex items-center justify-center text-[#42493e] hover:bg-[#f3f7ee] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={quantity >= product.stock}
+                >
+                  <Plus size={16} />
                 </button>
               </div>
               <button
                 onClick={handleAddToCart}
+                disabled={product.stock === 0}
                 className={`flex-1 h-11 rounded-full text-[13px] tracking-widest uppercase font-['Nimbus_Sans:Regular',sans-serif] transition-all ${
-                  addedToCart ? "bg-[#42493e] text-white" : "bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white shadow-md shadow-[#25521f]/25 hover:shadow-lg active:scale-[0.98]"
+                  addedToCart ? "bg-[#42493e] text-white" : "bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white shadow-md shadow-[#25521f]/25 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 }`}
               >
                 {addedToCart ? "ADDED ✓" : "ADD TO CART"}

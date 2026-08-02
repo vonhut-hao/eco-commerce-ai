@@ -4,6 +4,7 @@ import svgPaths from "../../imports/SignIn/svg-70ii59n453";
 import { GreenLifeBrand } from "./GreenLifeBrand";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
+import { useCartStore } from "../../store/cartStore";
 import { toast } from "./Toast";
 
 function GoogleIcon() {
@@ -40,6 +41,8 @@ export function SignInPage({ onNavigate }: { onNavigate: (page: string) => void 
       const res = await authApi.login({ username, password });
       if (res.accessToken) {
         setToken(res.accessToken);
+        await useCartStore.getState().syncGuestCart();
+        await useCartStore.getState().fetchCart();
         toast.success("Welcome back!", "Signed in successfully");
         onNavigate("home");
       }

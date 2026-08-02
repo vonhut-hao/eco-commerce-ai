@@ -35,6 +35,7 @@ import type { CartItem } from "./components/CartPage";
 import { CheckoutPage } from "./components/CheckoutPage";
 import { ImpactPage } from "./components/ImpactPage";
 import { useAuthStore } from "../store/authStore";
+import { useCartStore } from "../store/cartStore";
 
 export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact";
 
@@ -71,7 +72,7 @@ function MobileHeader({
 }: {
   searchOpen: boolean;
   setSearchOpen: (v: boolean) => void;
-  onNavigate: (page: Page) => void;
+  onNavigate: (page: Page, id?: number, cat?: string, search?: string) => void;
   cartCount: number;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,46 +81,82 @@ function MobileHeader({
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && inputRef.current?.value.trim()) {
       setSearchOpen(false);
-      onNavigate("shop");
+      onNavigate("shop", undefined, undefined, inputRef.current.value.trim());
+      inputRef.current.value = "";
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#fafaf5]/80 backdrop-blur-md border-b border-[#dbe3d3] md:hidden">
-      <div className="flex items-center justify-between px-4 h-14">
-        <GreenLifeBrand onClick={() => onNavigate("home")} textSize="text-xl" iconSize={20} />
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="text-[#42493e]"
-            aria-label="Tìm kiếm"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d={svgPaths.p8a35e00} fill="#42493E" />
-            </svg>
-          </button>
-          <CartIcon count={cartCount} onClick={() => onNavigate("cart")} />
-        </div>
-      </div>
-
-      {searchOpen && (
-        <div className="px-4 pb-3">
-          <div className="flex items-center bg-white border border-[#c2c9bb] rounded-full px-3 gap-2 h-9 shadow-sm">
-            <Search size={14} className="text-[#9ca3af] shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Tìm kiếm sản phẩm xanh..."
-              className="flex-1 text-[13px] text-gray-700 outline-none placeholder-[#9ca3af] bg-transparent"
-              onKeyDown={handleSearch}
-            />
-            <button onClick={() => setSearchOpen(false)} className="text-[#9ca3af] hover:text-[#42493e] transition-colors">
-              <X size={14} />
+    <>
+      <header className="sticky top-0 z-40 bg-[#fafaf5]/80 backdrop-blur-md border-b border-[#dbe3d3] md:hidden">
+        <div className="flex items-center justify-between px-4 h-14">
+          <GreenLifeBrand onClick={() => onNavigate("home")} textSize="text-xl" iconSize={20} />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="text-[#42493e]"
+              aria-label="Tìm kiếm"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d={svgPaths.p8a35e00} fill="#42493E" />
+              </svg>
             </button>
+            <CartIcon count={cartCount} onClick={() => onNavigate("cart")} />
           </div>
         </div>
-      )}
-    </header>
+      </header>
+
+      <div 
+        className={`fixed inset-0 z-[60] bg-[#fafaf5] transition-all duration-200 ease-in-out md:hidden ${
+          searchOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+        }`}
+      >
+          <div className="px-6 pt-12 pb-6">
+            <button
+              onClick={() => setSearchOpen(false)}
+              className="absolute top-4 right-4 p-2 text-[#42493e] hover:text-[#1a1c19]"
+            >
+              <X size={24} strokeWidth={1.5} />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-[#c2c9bb] pb-2 mt-4">
+              <Search size={22} className="text-[#6b7280] shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Tìm kiếm..."
+                className="flex-1 text-[22px] font-['Nimbus_Sans:Regular',sans-serif] text-[#1a1c19] outline-none placeholder-[#9ca3af] bg-transparent"
+                onKeyDown={handleSearch}
+              />
+            </div>
+
+            <div className="mt-8">
+              <h4 className="text-[#9ca3af] text-[11px] tracking-widest uppercase mb-4">Liên Kết Nhanh</h4>
+              <ul className="flex flex-col gap-5">
+                {[
+                  "Bàn chải tre tự phân hủy",
+                  "Túi vải dệt hữu cơ",
+                  "Đồ dùng bếp không nhựa",
+                  "Sản phẩm chứng nhận FSC"
+                ].map((link, idx) => (
+                  <li key={idx}>
+                    <button
+                      onClick={() => {
+                        setSearchOpen(false);
+                        onNavigate("shop", undefined, undefined, link);
+                      }}
+                      className="flex items-center gap-3 text-[15px] font-medium text-[#42493e] hover:text-[#25521f] transition-colors"
+                    >
+                      <span className="text-[#9ca3af] text-[18px] leading-none mb-0.5">→</span>
+                      {link}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+    </>
   );
 }
 
@@ -134,7 +171,7 @@ function DesktopHeader({
 }: {
   searchOpen: boolean;
   setSearchOpen: (v: boolean) => void;
-  onNavigate: (page: Page) => void;
+  onNavigate: (page: Page, id?: number, cat?: string, search?: string) => void;
   activePage: Page;
   cartCount: number;
   onOpenChatbot: () => void;
@@ -143,9 +180,10 @@ function DesktopHeader({
   useEffect(() => { if (searchOpen) inputRef.current?.focus(); }, [searchOpen]);
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && inputRef.current?.value.trim()) {
       setSearchOpen(false);
-      onNavigate("shop");
+      onNavigate("shop", undefined, undefined, inputRef.current.value.trim());
+      inputRef.current.value = "";
     }
   };
 
@@ -158,9 +196,19 @@ function DesktopHeader({
 
   return (
     <header className="sticky top-0 z-40 hidden md:block">
-      {/* Main bar */}
-      <div className="bg-[#fafaf5]/80 backdrop-blur-md border-b border-[#dbe3d3]">
-        <div className="max-w-[1280px] mx-auto px-16 h-20 flex items-center">
+      {/* Apple-style Search Backdrop */}
+      <div
+        className={`fixed inset-0 top-20 z-[60] bg-[#fafaf5]/60 backdrop-blur-xl transition-opacity duration-200 ease-in-out ${
+          searchOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setSearchOpen(false)}
+        onMouseEnter={() => setSearchOpen(false)}
+      />
+      
+      <div>
+        {/* Main bar */}
+        <div className="relative z-40 bg-[#fafaf5]/80 backdrop-blur-md border-b border-[#dbe3d3]">
+          <div className="max-w-[1280px] mx-auto px-16 h-20 flex items-center">
           <GreenLifeBrand onClick={() => onNavigate("home")} textSize="text-2xl" iconSize={26} />
 
           <nav className="flex-1 flex items-center justify-center gap-6">
@@ -193,7 +241,7 @@ function DesktopHeader({
               Green Points: 1,250
             </div>
 
-            {/* Search icon — always in place, dropdown opens below */}
+            {/* Search icon */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className={`transition-colors ${searchOpen ? "text-[#25521f]" : "text-[#42493e] hover:text-[#25521f]"}`}
@@ -223,43 +271,51 @@ function DesktopHeader({
         </div>
       </div>
 
-      {/* Search dropdown panel — slides under the nav bar */}
-      {searchOpen && (
-        <>
-          {/* Backdrop to close */}
-          <div
-            className="fixed inset-0 top-20 z-30"
-            onClick={() => setSearchOpen(false)}
-          />
-          <div className="relative z-40 bg-[#fafaf5]/95 backdrop-blur-md border-b border-[#dbe3d3] shadow-lg">
-            <div className="max-w-[1280px] mx-auto px-16 py-4 flex items-center gap-3">
-              <div className="flex items-center bg-white border border-[#c2c9bb] rounded-full px-4 gap-2 h-11 shadow-sm flex-1 max-w-[600px]">
-                <Search size={15} className="text-[#9ca3af] shrink-0" />
+      {/* Apple-style Search Dropdown */}
+      <div 
+        className={`absolute top-full left-0 right-0 bg-[#fafaf5] z-[60] border-t border-[#dbe3d3] shadow-sm transition-all duration-200 ease-in-out origin-top overflow-hidden ${
+          searchOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+        }`}
+      >
+            <div className="max-w-[700px] mx-auto px-8 pt-10 pb-12">
+              <div className="flex items-center gap-4 border-b border-[#c2c9bb] pb-2">
+                <Search size={22} className="text-[#6b7280] shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Tìm kiếm sản phẩm xanh... (Enter để tìm)"
-                  className="flex-1 text-[14px] text-gray-700 outline-none placeholder-[#9ca3af] bg-transparent"
+                  placeholder="Tìm kiếm trên GreenLife..."
+                  className="flex-1 text-[22px] font-['Nimbus_Sans:Regular',sans-serif] text-[#1a1c19] outline-none placeholder-[#9ca3af] bg-transparent"
                   onKeyDown={handleSearch}
                 />
-                <button
-                  onClick={() => setSearchOpen(false)}
-                  className="text-[#9ca3af] hover:text-[#42493e] transition-colors"
-                >
-                  <X size={14} />
-                </button>
               </div>
-              <span className="text-[#6b7280] text-[13px]">Nhấn Enter hoặc</span>
-              <button
-                onClick={() => { setSearchOpen(false); onNavigate("shop"); }}
-                className="text-[#25521f] text-[13px] border border-[#25521f] px-4 py-2 rounded-full hover:bg-[#f0f7ee] transition-colors whitespace-nowrap"
-              >
-                Xem tất cả sản phẩm
-              </button>
+
+              <div className="mt-8 pl-1">
+                <h4 className="text-[#9ca3af] text-[11px] tracking-widest uppercase mb-4">Liên Kết Nhanh</h4>
+                <ul className="flex flex-col gap-3">
+                  {[
+                    "Bàn chải tre tự phân hủy",
+                    "Túi vải dệt hữu cơ",
+                    "Đồ dùng bếp không nhựa",
+                    "Sản phẩm chứng nhận FSC"
+                  ].map((link, idx) => (
+                    <li key={idx}>
+                      <button
+                        onClick={() => {
+                          setSearchOpen(false);
+                          onNavigate("shop", undefined, undefined, link);
+                        }}
+                        className="flex items-center gap-3 text-[13px] text-[#42493e] hover:text-[#25521f] transition-colors"
+                      >
+                        <span className="text-[#9ca3af] text-[16px] leading-none mb-0.5">→</span>
+                        {link}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
-        </>
-      )}
+      </div>
     </header>
   );
 }
@@ -785,6 +841,7 @@ export default function App() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [activeProductId, setActiveProductId] = useState<number>(1);
   const [activeShopCategory, setActiveShopCategory] = useState<string>("All");
+  const [globalSearchTerm, setGlobalSearchTerm] = useState<string>("");
 
   useEffect(() => {
     productsApi.getProducts(0, 100).then(res => {
@@ -800,8 +857,13 @@ export default function App() {
   }, []);
 
   // Cart & wishlist state
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { items: cartItems, fetchCart, addToCart, removeFromCart, updateQuantity: updateQty } = useCartStore();
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
+
+  // Fetch cart if authenticated
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
   // Chatbot control — increment a counter so useEffect in AIChatbot fires each time
   const [chatbotTrigger, setChatbotTrigger] = useState(0);
@@ -823,10 +885,18 @@ export default function App() {
     }
   }, [setToken]);
 
-  const navigate = (page: Page, productId?: number, category?: string) => {
+  const navigate = (page: Page, productId?: number, category?: string, searchTerm?: string) => {
     setActivePage(page);
-    if (productId) setActiveProductId(productId);
-    if (category) setActiveShopCategory(category);
+    if (productId !== undefined) setActiveProductId(productId);
+    
+    if (page === "shop") {
+      setActiveShopCategory(category !== undefined ? category : "All");
+      setGlobalSearchTerm(searchTerm !== undefined ? searchTerm : "");
+    } else {
+      if (category !== undefined) setActiveShopCategory(category);
+      if (searchTerm !== undefined) setGlobalSearchTerm(searchTerm);
+    }
+    
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -835,24 +905,33 @@ export default function App() {
   };
 
   // Cart helpers
-  const addToCart = (product: Product) => {
-    setCartItems((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
-      if (existing) {
-        return prev.map((i) => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      }
-      return [...prev, { product, quantity: 1 }];
-    });
-    toast.success("Thêm vào giỏ!", `${product.name} đã được thêm vào giỏ hàng.`);
-  };
+  const handleAddToCart = async (product: Product, quantity = 1) => {
+    const existingItem = cartItems.find(i => i.productId === product.id);
+    const existingQty = existingItem ? existingItem.quantity : 0;
 
-  const removeFromCart = (productId: number) => {
-    setCartItems((prev) => prev.filter((i) => i.product.id !== productId));
-  };
+    if (existingQty + quantity > product.stock) {
+      toast.error(
+        "Vượt quá giới hạn",
+        `Bạn đã có ${existingQty} sản phẩm trong giỏ hàng. Không thể thêm số lượng đã chọn vào giỏ hàng vì sẽ vượt quá giới hạn tồn kho của sản phẩm.`
+      );
+      return;
+    }
 
-  const updateQty = (productId: number, qty: number) => {
-    if (qty <= 0) { removeFromCart(productId); return; }
-    setCartItems((prev) => prev.map((i) => i.product.id === productId ? { ...i, quantity: qty } : i));
+    try {
+      await addToCart({
+        productId: product.id,
+        quantity: quantity,
+        productName: product.name,
+        price: product.price,
+        greenPoints: product.greenPoints,
+        carbonIndex: product.carbonIndex,
+        category: product.category,
+        mainImage: product.img
+      });
+      toast.success("Thêm vào giỏ!", `${product.name} đã được thêm vào giỏ hàng.`);
+    } catch (e) {
+      toast.error("Thất bại", "Không đủ số lượng trong kho hoặc có lỗi xảy ra.");
+    }
   };
 
   const toggleWishlist = (product: Product) => {
@@ -889,7 +968,7 @@ export default function App() {
       {activePage === "home" && (
         <HomePage
           onNavigate={navigate}
-          onAddToCart={addToCart}
+          onAddToCart={handleAddToCart}
           wishlistIds={wishlistIds}
           onWishlist={toggleWishlist}
           products={products}
@@ -899,11 +978,12 @@ export default function App() {
       {activePage === "shop" && (
         <ShopPage
           onNavigate={navigate}
-          onAddToCart={addToCart}
+          onAddToCart={handleAddToCart}
           onWishlist={toggleWishlist}
           wishlistIds={wishlistIds}
           products={products}
           initialCategory={activeShopCategory}
+          initialSearch={globalSearchTerm}
         />
       )}
 
@@ -919,7 +999,6 @@ export default function App() {
       {activePage === "checkout" && (
         <CheckoutPage
           items={cartItems}
-          onComplete={() => { setCartItems([]); navigate("home"); }}
           onNavigate={navigate}
         />
       )}
@@ -933,7 +1012,7 @@ export default function App() {
           onNavigate={navigate}
           wishlistIds={wishlistIds}
           onWishlist={toggleWishlist}
-          onAddToCart={addToCart}
+          onAddToCart={handleAddToCart}
         />
       )}
 
@@ -943,13 +1022,13 @@ export default function App() {
             <ProductDetailPage
               productId={activeProductId}
               onNavigate={navigate}
-              onAddToCart={addToCart}
+              onAddToCart={handleAddToCart}
               wishlistIds={wishlistIds}
               onWishlist={toggleWishlist}
             />
             <RelatedProducts
               onNavigate={navigate}
-              onAddToCart={addToCart}
+              onAddToCart={handleAddToCart}
               wishlistIds={wishlistIds}
               onWishlist={toggleWishlist}
               products={products}

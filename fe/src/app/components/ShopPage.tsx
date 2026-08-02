@@ -415,6 +415,7 @@ export function ShopPage({
   wishlistIds,
   products = ALL_PRODUCTS,
   initialCategory = "All",
+  initialSearch = "",
 }: {
   onNavigate: (page: string, id?: number) => void;
   onAddToCart: (p: Product) => void;
@@ -422,9 +423,14 @@ export function ShopPage({
   wishlistIds: number[];
   products?: Product[];
   initialCategory?: string;
+  initialSearch?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory === "All" ? [] : [initialCategory]);
+
+  useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [carbonFilter, setCarbonFilter] = useState("all");
   const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
@@ -483,6 +489,7 @@ export function ShopPage({
           <div className="flex-1 flex items-center bg-white border border-[#c2c9bb] rounded-md px-3 gap-2 h-9">
             <Search size={14} className="text-[#9ca3af] shrink-0" />
             <input
+              id="shop-search-input"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm sản phẩm xanh..."
