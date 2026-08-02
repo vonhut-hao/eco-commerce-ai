@@ -40,6 +40,14 @@ public class SecurityUtils {
         return isAdminRole(jwt);
     }
 
+    public static boolean isAdminRoleWithOutThrowException() {
+        Jwt jwt = currentJwtWithOutThrowException();
+        if (jwt == null) {
+            return false;
+        }
+        return isAdminRole(jwt);
+    }
+
     public static void validateOwnership(Long userId, Jwt jwt) {
         if (isAdminRole(jwt)) {
             log.debug("User {} is admin, accept to get resource", userId);
@@ -56,6 +64,14 @@ public class SecurityUtils {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
             throw new BusinessException(ErrorCode.UNAUTHENTICATED);
+        }
+        return jwt;
+    }
+
+    public static Jwt currentJwtWithOutThrowException() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            return null;
         }
         return jwt;
     }
