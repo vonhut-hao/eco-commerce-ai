@@ -58,6 +58,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.flix</groupId>
+            <artifactId>statistics</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>
         </dependency>

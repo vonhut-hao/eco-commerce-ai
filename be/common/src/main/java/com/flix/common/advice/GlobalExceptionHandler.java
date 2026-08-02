@@ -13,8 +13,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.net.URI;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +50,31 @@ public class GlobalExceptionHandler {
                 errorCode.getMessage()
         );
         problemDetail.setTitle("Business Error");
+        problemDetail.setProperty(TIME_STAMP, Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(DateTimeException.class)
+    public ProblemDetail handleDateTimeException(DateTimeException exception) {
+        log.warn("Date/Time exception: {}", exception.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Invalid date/time parameter: " + exception.getMessage()
+        );
+        problemDetail.setTitle("Invalid Date/Time");
+        problemDetail.setProperty(TIME_STAMP, Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exception) {
+        log.warn("Method argument type mismatch: parameter={}, value={}", exception.getName(), exception.getValue());
+        String detail = String.format("Invalid value '%s' for parameter '%s'", exception.getValue(), exception.getName());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                detail
+        );
+        problemDetail.setTitle("Type Mismatch");
         problemDetail.setProperty(TIME_STAMP, Instant.now());
         return problemDetail;
     }

@@ -1,0 +1,3 @@
+-- V11__Add_Created_At_To_Orders.sql
+ALTER TABLE orders
+    ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL;
