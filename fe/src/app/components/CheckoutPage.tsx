@@ -3,6 +3,7 @@ import { Check, ChevronDown, MapPin, CreditCard, Banknote, Smartphone, ArrowRigh
 import { CartItem, useCartStore } from "../../store/cartStore";
 import { ordersApi } from "../../api/orders";
 import { useAuthStore } from "../../store/authStore";
+import { toast } from "./Toast";
 type Step = "address" | "payment" | "confirm";
 
 function fmt(n: number) { return n.toLocaleString("vi-VN") + " VND"; }
@@ -358,9 +359,8 @@ export function CheckoutPage({
       setStep("confirm");
     } catch (e) {
       console.error("Failed to place order", e);
-      // For fallback if api fails, just proceed to confirm step
-      clearCart();
-      setStep("confirm");
+      // BUG FIX: Do NOT proceed to confirm step if placing order fails!
+      toast.error("Thất bại", "Không thể đặt hàng, vui lòng thử lại.");
     }
   };
 

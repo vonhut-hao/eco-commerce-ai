@@ -26,6 +26,7 @@ interface CartState {
   updateQuantity: (productId: number, quantity: number) => Promise<void>;
   removeFromCart: (productId: number) => Promise<void>;
   clearCart: () => void;
+  syncGuestCart: () => Promise<void>;
 }
 
 export const useCartStore = create<CartState>()(
@@ -33,6 +34,29 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       loading: false,
+
+      syncGuestCart: async () => {
+        const { isAuthenticated, user } = useAuthStore.getState();
+        if (isAuthenticated && user) {
+          const guestItems = get().items.filter(i => !i.cartItemId); // items without backend IDs
+          if (guestItems.length === 0) return;
+          
+          set({ loading: true });
+          try {
+            for (const item of guestItems) {
+              await cartApi.createOrUpdateCartItem({
+                productId: item.productId,
+                quantity: item.quantity,
+                userId: user.id
+              });
+            }
+          } catch (e) {
+            console.error('Failed to sync guest cart', e);
+          } finally {
+            set({ loading: false });
+          }
+        }
+      },
 
       fetchCart: async () => {
         const { isAuthenticated } = useAuthStore.getState();
