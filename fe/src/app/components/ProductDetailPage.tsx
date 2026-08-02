@@ -16,7 +16,7 @@ export function ProductDetailPage({
   onWishlist,
 }: {
   productId: number;
-  onNavigate: (page: Page) => void;
+  onNavigate: (page: Page, id?: number, category?: string) => void;
   onAddToCart: (p: Product) => void;
   wishlistIds: number[];
   onWishlist: (p: Product) => void;
@@ -99,16 +99,25 @@ export function ProductDetailPage({
     <div className="flex flex-col gap-8 md:gap-10">
       {/* Breadcrumb */}
       <nav className="hidden md:flex items-center gap-1 text-[13px]">
-        {["HOME", (product.categories?.[0]?.name || "SHOP").toUpperCase()].map((item) => (
-          <span key={item} className="flex items-center gap-1">
-            <button onClick={() => onNavigate("shop")} className="text-[#42493e] font-['Nimbus_Sans:Bold',sans-serif] tracking-wide hover:text-[#25521f] transition-colors">
-              {item}
-            </button>
-            <svg width="4" height="7" viewBox="0 0 4.31667 7" fill="none">
-              <path d={svgPaths.p35022f90} fill="#42493E" />
-            </svg>
-          </span>
-        ))}
+        {["SHOP", (product.categories?.[0]?.name || "SHOP").toUpperCase()].map((item, index) => {
+          if (index === 1 && item === "SHOP") return null; // Avoid SHOP > SHOP
+          return (
+            <span key={item + index} className="flex items-center gap-1">
+              <button 
+                onClick={() => {
+                  if (index === 0) onNavigate("shop", undefined, "All");
+                  else onNavigate("shop", undefined, product.categories?.[0]?.name);
+                }} 
+                className="text-[#42493e] font-['Nimbus_Sans:Bold',sans-serif] tracking-wide hover:text-[#25521f] transition-colors"
+              >
+                {item}
+              </button>
+              <svg width="4" height="7" viewBox="0 0 4.31667 7" fill="none">
+                <path d={svgPaths.p35022f90} fill="#42493E" />
+              </svg>
+            </span>
+          );
+        })}
         <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] tracking-wide uppercase">
           {product.name}
         </span>
@@ -141,7 +150,7 @@ export function ProductDetailPage({
             <h1 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-3xl md:text-[40px] md:leading-[48px] tracking-tight">
               {product.name}
             </h1>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-xl md:text-2xl">
                 {(product.price || 0).toLocaleString("vi-VN")} VND
               </span>
@@ -153,6 +162,9 @@ export function ProductDetailPage({
                   {(product.avgRating || 0).toFixed(1)} ({product.comments?.length || 0} reviews)
                 </span>
               </div>
+              <span className="text-[#25521f] text-[13px] bg-[#f0f7ee] px-2 py-0.5 rounded-full border border-[#c2c9bb] tracking-wide">
+                Còn {product.stock}
+              </span>
             </div>
           </div>
 

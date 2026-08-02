@@ -169,7 +169,10 @@ function DesktopHeader({
               return (
                 <button
                   key={link.label}
-                  onClick={link.action}
+                  onClick={() => {
+                    if (link.label === "Shop") onNavigate("shop", undefined, "All");
+                    else link.action();
+                  }}
                   className={`relative text-[15px] pb-1 whitespace-nowrap transition-colors ${
                     isActive
                       ? "text-[#25521f] font-['Nimbus_Sans:Regular',sans-serif]"
@@ -781,6 +784,7 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(ALL_PRODUCTS);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [activeProductId, setActiveProductId] = useState<number>(1);
+  const [activeShopCategory, setActiveShopCategory] = useState<string>("All");
 
   useEffect(() => {
     productsApi.getProducts(0, 100).then(res => {
@@ -819,9 +823,10 @@ export default function App() {
     }
   }, [setToken]);
 
-  const navigate = (page: Page, productId?: number) => {
+  const navigate = (page: Page, productId?: number, category?: string) => {
     setActivePage(page);
     if (productId) setActiveProductId(productId);
+    if (category) setActiveShopCategory(category);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -898,6 +903,7 @@ export default function App() {
           onWishlist={toggleWishlist}
           wishlistIds={wishlistIds}
           products={products}
+          initialCategory={activeShopCategory}
         />
       )}
 

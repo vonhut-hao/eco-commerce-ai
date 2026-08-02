@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, SlidersHorizontal, X, ChevronDown, GitCompare,
   ArrowUpDown, Check,
@@ -414,18 +414,24 @@ export function ShopPage({
   onWishlist,
   wishlistIds,
   products = ALL_PRODUCTS,
+  initialCategory = "All",
 }: {
   onNavigate: (page: string, id?: number) => void;
   onAddToCart: (p: Product) => void;
   onWishlist: (p: Product) => void;
   wishlistIds: number[];
   products?: Product[];
+  initialCategory?: string;
 }) {
   const [search, setSearch] = useState("");
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory === "All" ? [] : [initialCategory]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [carbonFilter, setCarbonFilter] = useState("all");
   const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedCats(initialCategory === "All" ? [] : [initialCategory]);
+  }, [initialCategory]);
   const [sortBy, setSortBy] = useState("default");
   const [showFilter, setShowFilter] = useState(false);
   const [compareItems, setCompareItems] = useState<Product[]>([]);
