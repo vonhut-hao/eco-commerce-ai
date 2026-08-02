@@ -416,6 +416,8 @@ export function ShopPage({
   products = ALL_PRODUCTS,
   initialCategory = "All",
   initialSearch = "",
+  initialCarbonFilter,
+  initialCerts,
 }: {
   onNavigate: (page: string, id?: number) => void;
   onAddToCart: (p: Product) => void;
@@ -424,20 +426,33 @@ export function ShopPage({
   products?: Product[];
   initialCategory?: string;
   initialSearch?: string;
+  initialCarbonFilter?: string;
+  initialCerts?: string[];
 }) {
-  const [search, setSearch] = useState(initialSearch);
-  const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory === "All" ? [] : [initialCategory]);
+  const [search, setSearch] = useState(initialSearch || "");
+  const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory && initialCategory !== "All" ? [initialCategory] : []);
 
   useEffect(() => {
-    setSearch(initialSearch);
+    if (initialSearch !== undefined) setSearch(initialSearch);
   }, [initialSearch]);
+  
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [carbonFilter, setCarbonFilter] = useState("all");
-  const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
+  const [carbonFilter, setCarbonFilter] = useState(initialCarbonFilter || "all");
+  const [selectedCerts, setSelectedCerts] = useState<string[]>(initialCerts || []);
 
   useEffect(() => {
-    setSelectedCats(initialCategory === "All" ? [] : [initialCategory]);
+    if (initialCategory) {
+      setSelectedCats(initialCategory === "All" ? [] : [initialCategory]);
+    }
   }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialCarbonFilter !== undefined) setCarbonFilter(initialCarbonFilter);
+  }, [initialCarbonFilter]);
+
+  useEffect(() => {
+    if (initialCerts !== undefined) setSelectedCerts(initialCerts);
+  }, [initialCerts]);
   const [sortBy, setSortBy] = useState("default");
   const [showFilter, setShowFilter] = useState(false);
   const [compareItems, setCompareItems] = useState<Product[]>([]);
@@ -483,7 +498,7 @@ export function ShopPage({
   return (
     <main className="flex-1 pb-[120px] md:pb-20">
       {/* Top bar */}
-      <div className="border-b border-[#dbe3d3] bg-white/60 backdrop-blur-sm sticky top-[56px] md:top-[80px] z-20">
+      <div className="border-b border-[#dbe3d3] bg-white/60 backdrop-blur-sm sticky top-[56px] md:top-[80px] z-30">
         <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-3 flex items-center gap-3">
           {/* Search */}
           <div className="flex-1 flex items-center bg-white border border-[#c2c9bb] rounded-md px-3 gap-2 h-9">

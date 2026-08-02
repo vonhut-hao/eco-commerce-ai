@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, TreePine } from "lucide-react";
 import { ProductCard } from "./ProductCard";
 import { ALL_PRODUCTS } from "./ShopPage";
 import type { Product } from "./ShopPage";
@@ -223,7 +223,9 @@ function ImpactBanner({ onNavigate }: { onNavigate: (p: string) => void }) {
           <span className="text-[#42493e] text-[16px]">CO₂ saved</span>
         </div>
 
-        <p className="text-[#25521f] text-[13px] italic -mt-1">Equivalent to planting 1 tree 🌱</p>
+        <p className="text-[#25521f] text-[13px] italic -mt-1 flex items-center justify-center gap-1">
+          Equivalent to planting 1 tree <TreePine size={14} strokeWidth={2} />
+        </p>
 
         <div className="w-full flex flex-col gap-2 mt-1">
           <div className="flex items-center justify-between text-[12px] text-[#6b7280]">

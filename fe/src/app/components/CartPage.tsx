@@ -136,9 +136,14 @@ export function CartPage({
                         <span className="text-[#ba1a1a] text-[11px] mt-1">Còn {item.stock} sản phẩm</span>
                       )}
                     </div>
-                    <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px] mt-1.5">
-                      {fmt(item.price * item.quantity)}
-                    </span>
+                    <div className="flex flex-col items-end justify-center">
+                      {item.quantity > 1 && (
+                        <span className="text-[#6b7280] text-[11px] mt-1">{fmt(item.price)}/sp</span>
+                      )}
+                      <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px]">
+                        {fmt(item.price * item.quantity)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

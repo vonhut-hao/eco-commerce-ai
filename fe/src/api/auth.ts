@@ -13,6 +13,11 @@ export interface RegisterRequest {
   provider?: string;
 }
 
+export interface ChangePasswordRequest {
+  oldPassword?: string;
+  newPassword?: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   userId: number;
@@ -31,6 +36,11 @@ export const authApi = {
   
   checkProvider: async (email: string) => {
     const res = await client.get<any>(`/v1/auth/is-local-provider?email=${email}`);
+    return res.data;
+  },
+  
+  changePassword: async (data: ChangePasswordRequest) => {
+    const res = await client.put<any>('/v1/auth/change-password', data);
     return res.data;
   }
 };

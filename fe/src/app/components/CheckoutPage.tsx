@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Check, ChevronDown, MapPin, CreditCard, Banknote, Smartphone, ArrowRight, Package, Leaf } from "lucide-react";
 import { CartItem, useCartStore } from "../../store/cartStore";
 import { ordersApi } from "../../api/orders";
@@ -320,11 +320,16 @@ export function CheckoutPage({
   const { isAuthenticated } = useAuthStore();
   const { clearCart } = useCartStore();
 
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shipping = subtotal >= 200000 ? 0 : 30000;
-  const total = subtotal + shipping;
-  const co2 = items.reduce((s, i) => s + i.carbonIndex * i.quantity, 0);
-  const greenPts = items.reduce((s, i) => s + (i.greenPoints || 0) * i.quantity, 0);
+  const currentSubtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const currentTotal = currentSubtotal + (currentSubtotal > 0 && currentSubtotal < 200000 ? 30000 : 0);
+  const currentCo2 = items.reduce((s, i) => s + i.carbonIndex * i.quantity, 0);
+  const currentGreenPts = items.reduce((s, i) => s + (i.greenPoints || 0) * i.quantity, 0);
+
+  const summaryRef = useRef({ total: 0, co2: 0, greenPts: 0 });
+  if (items.length > 0) {
+    summaryRef.current = { total: currentTotal, co2: currentCo2, greenPts: currentGreenPts };
+  }
+  const { total, co2, greenPts } = summaryRef.current;
 
   // If not authenticated, we could force login
   if (!isAuthenticated) {
