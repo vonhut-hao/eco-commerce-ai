@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.flix.common.util.SecurityUtils.isAdminRole;
+import static com.flix.common.util.SecurityUtils.isAdminRoleWithOutThrowException;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +58,7 @@ public class ProductService {
     }
 
     public Page<ProductSimpleResponse> listProducts(Pageable pageable) {
-        if (isAdminRole()) {
+        if (isAdminRoleWithOutThrowException()) {
             log.info("Admin role has been granted");
             return productRepository.findByDeletedAtIsNull(pageable)
                     .map(ProductSimpleResponse::from);
