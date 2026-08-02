@@ -2,10 +2,7 @@ import { useState } from "react";
 import { Minus, Plus, X, Tag, ShoppingBag, ArrowRight, Leaf, Trash2 } from "lucide-react";
 import type { Product } from "./ShopPage";
 
-export type CartItem = {
-  product: Product;
-  quantity: number;
-};
+import { CartItem } from "../../store/cartStore";
 
 const COUPONS: Record<string, { type: "pct" | "fixed"; value: number; label: string }> = {
   GREEN10: { type: "pct", value: 10, label: "Giảm 10%" },
@@ -30,9 +27,9 @@ export function CartPage({
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState("");
 
-  const subtotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-  const totalCO2 = items.reduce((sum, i) => sum + i.product.carbonIndex * i.quantity, 0);
-  const totalGreenPts = items.reduce((sum, i) => sum + i.product.greenPoints * i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const totalCO2 = items.reduce((sum, i) => sum + i.carbonIndex * i.quantity, 0);
+  const totalGreenPts = items.reduce((sum, i) => sum + (i.greenPoints || 0) * i.quantity, 0);
 
   const coupon = appliedCoupon ? COUPONS[appliedCoupon] : null;
   const discount = coupon
@@ -96,45 +93,45 @@ export function CartPage({
           {/* Cart items */}
           <div className="flex-1 flex flex-col gap-4">
             {items.map((item) => (
-              <div key={item.product.id} className="flex gap-4 bg-white/70 border border-[#e2e3de] rounded-xl p-4">
+              <div key={item.productId} className="flex gap-4 bg-white/70 border border-[#e2e3de] rounded-xl p-4">
                 <div
                   className="w-20 h-20 md:w-24 md:h-24 bg-[#eeeee9] rounded-lg overflow-hidden shrink-0 cursor-pointer"
                   onClick={() => onNavigate("product")}
                 >
-                  <img src={item.product.img} alt={item.product.name} className="w-full h-full object-cover" />
+                  <img src={item.mainImage} alt={item.productName} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 flex flex-col gap-2 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-[#6b7280] text-[10px] uppercase tracking-wide">{item.product.category}</p>
-                      <p className="text-[#1a1c19] text-[14px] md:text-[15px] leading-snug line-clamp-2">{item.product.name}</p>
+                      <p className="text-[#6b7280] text-[10px] uppercase tracking-wide">{item.category}</p>
+                      <p className="text-[#1a1c19] text-[14px] md:text-[15px] leading-snug line-clamp-2">{item.productName}</p>
                     </div>
-                    <button onClick={() => onRemove(item.product.id)} className="text-[#6b7280] hover:text-[#ba1a1a] shrink-0 transition-colors">
+                    <button onClick={() => onRemove(item.productId)} className="text-[#6b7280] hover:text-[#ba1a1a] shrink-0 transition-colors">
                       <Trash2 size={15} />
                     </button>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="bg-[#3d6b35] text-[#b5eaa6] text-[10px] px-1.5 py-0.5 rounded-sm">CO₂ {item.product.carbonLabel}</span>
-                    <span className="text-[#25521f] text-[10px]">+{item.product.greenPoints} pts/sản phẩm</span>
+                    <span className="bg-[#3d6b35] text-[#b5eaa6] text-[10px] px-1.5 py-0.5 rounded-sm">CO₂ {item.carbonIndex}kg</span>
+                    <span className="text-[#25521f] text-[10px]">+{item.greenPoints || 0} pts/sản phẩm</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center border border-[#c2c9bb] rounded-lg overflow-hidden h-8">
                       <button
-                        onClick={() => onUpdateQty(item.product.id, item.quantity - 1)}
+                        onClick={() => onUpdateQty(item.productId, item.quantity - 1)}
                         className="px-2.5 text-[#1a1c19] hover:bg-[#eeeee9] h-full transition-colors"
                       >
                         <Minus size={12} />
                       </button>
                       <span className="w-8 text-center text-[13px] text-[#1a1c19]">{item.quantity}</span>
                       <button
-                        onClick={() => onUpdateQty(item.product.id, item.quantity + 1)}
+                        onClick={() => onUpdateQty(item.productId, item.quantity + 1)}
                         className="px-2.5 text-[#1a1c19] hover:bg-[#eeeee9] h-full transition-colors"
                       >
                         <Plus size={12} />
                       </button>
                     </div>
                     <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px]">
-                      {fmt(item.product.price * item.quantity)}
+                      {fmt(item.price * item.quantity)}
                     </span>
                   </div>
                 </div>

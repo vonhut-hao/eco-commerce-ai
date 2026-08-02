@@ -35,6 +35,7 @@ import type { CartItem } from "./components/CartPage";
 import { CheckoutPage } from "./components/CheckoutPage";
 import { ImpactPage } from "./components/ImpactPage";
 import { useAuthStore } from "../store/authStore";
+import { useCartStore } from "../store/cartStore";
 
 export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact";
 
@@ -800,8 +801,13 @@ export default function App() {
   }, []);
 
   // Cart & wishlist state
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { items: cartItems, fetchCart, addToCart, removeFromCart, updateQuantity: updateQty } = useCartStore();
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
+
+  // Fetch cart if authenticated
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
   // Chatbot control — increment a counter so useEffect in AIChatbot fires each time
   const [chatbotTrigger, setChatbotTrigger] = useState(0);
@@ -835,24 +841,18 @@ export default function App() {
   };
 
   // Cart helpers
-  const addToCart = (product: Product) => {
-    setCartItems((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
-      if (existing) {
-        return prev.map((i) => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      }
-      return [...prev, { product, quantity: 1 }];
+  const handleAddToCart = (product: Product) => {
+    addToCart({
+      productId: product.id,
+      quantity: 1,
+      productName: product.name,
+      price: product.price,
+      greenPoints: product.greenPoints,
+      carbonIndex: product.carbonIndex,
+      category: product.category,
+      mainImage: product.img
     });
     toast.success("Thêm vào giỏ!", `${product.name} đã được thêm vào giỏ hàng.`);
-  };
-
-  const removeFromCart = (productId: number) => {
-    setCartItems((prev) => prev.filter((i) => i.product.id !== productId));
-  };
-
-  const updateQty = (productId: number, qty: number) => {
-    if (qty <= 0) { removeFromCart(productId); return; }
-    setCartItems((prev) => prev.map((i) => i.product.id === productId ? { ...i, quantity: qty } : i));
   };
 
   const toggleWishlist = (product: Product) => {
@@ -919,7 +919,6 @@ export default function App() {
       {activePage === "checkout" && (
         <CheckoutPage
           items={cartItems}
-          onComplete={() => { setCartItems([]); navigate("home"); }}
           onNavigate={navigate}
         />
       )}
@@ -933,7 +932,7 @@ export default function App() {
           onNavigate={navigate}
           wishlistIds={wishlistIds}
           onWishlist={toggleWishlist}
-          onAddToCart={addToCart}
+          onAddToCart={handleAddToCart}
         />
       )}
 
@@ -943,13 +942,13 @@ export default function App() {
             <ProductDetailPage
               productId={activeProductId}
               onNavigate={navigate}
-              onAddToCart={addToCart}
+              onAddToCart={handleAddToCart}
               wishlistIds={wishlistIds}
               onWishlist={toggleWishlist}
             />
             <RelatedProducts
               onNavigate={navigate}
-              onAddToCart={addToCart}
+              onAddToCart={handleAddToCart}
               wishlistIds={wishlistIds}
               onWishlist={toggleWishlist}
               products={products}
