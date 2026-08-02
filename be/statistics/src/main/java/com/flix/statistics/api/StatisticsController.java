@@ -1,17 +1,27 @@
 package com.flix.statistics.api;
 
 import com.flix.common.dto.ApiResponse;
-import com.flix.statistics.common.dto.RevenueStatisticResponse;
-import com.flix.statistics.common.enums.RevenuePeriodType;
+import com.flix.common.util.SecurityUtils;
+import com.flix.statistics.common.dto.StatisticResponse;
+import com.flix.statistics.common.enums.StatisticPeriodType;
+import com.flix.statistics.service.CarbonStatisticService;
 import com.flix.statistics.service.RevenueStatisticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+
+import static com.flix.common.util.SecurityUtils.getCurrentUserId;
+import static com.flix.common.util.SecurityUtils.validateOwnership;
 
 /**
  * Controller for managing product revenue statistics and analytics endpoints.
@@ -19,9 +29,11 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping({"/api/v1/statistics", "/v1/statistics"})
 @RequiredArgsConstructor
-public class RevenueStatisticsController {
+public class StatisticsController {
 
     private final RevenueStatisticsService revenueStatisticsService;
+    private final CarbonStatisticService carbonStatisticService;
+    private final JwtAuthenticationConverter getJwtAuthenticationConverter;
 
     /**
      * Retrieves total product revenue filtered flexibly by Daily, Monthly, or Yearly periods.
@@ -53,15 +65,35 @@ public class RevenueStatisticsController {
      * </ul>
      *
      * @param periodType the timeframe resolution (DAILY, MONTHLY, YEARLY). Defaults to DAILY.
-     * @param date the reference date in ISO format (YYYY-MM-DD). Defaults to current date.
-     * @return {@link ApiResponse} wrapping {@link RevenueStatisticResponse} containing period metadata, exact datetime bounds, and total revenue.
+     * @param date       the reference date in ISO format (YYYY-MM-DD). Defaults to current date.
+     * @return {@link ApiResponse} wrapping {@link StatisticResponse} containing period metadata, exact datetime bounds, and total revenue.
      */
     @GetMapping("/product/revenue")
-    public ApiResponse<RevenueStatisticResponse> getProductRevenue(
-            @RequestParam(value = "periodType", defaultValue = "DAILY") RevenuePeriodType periodType,
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<StatisticResponse<BigDecimal>> getProductRevenue(
+            @RequestParam(value = "periodType", defaultValue = "DAILY") StatisticPeriodType periodType,
             @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        RevenueStatisticResponse response = revenueStatisticsService.getProductRevenue(periodType, date);
+
+        var response = revenueStatisticsService.getProductRevenue(periodType, date);
         return ApiResponse.success(response);
     }
+
+    /**
+     * Ref to {@link StatisticsController#getProductRevenue(StatisticPeriodType, LocalDate)}
+     */
+    @GetMapping({"/product/carbon-index", "/carbon-index"})
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<StatisticResponse<Double>> getProductCarbonIndex(
+            @RequestParam(value = "periodType", defaultValue = "DAILY") StatisticPeriodType periodType,
+            @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = getCurrentUserId();
+        validateOwnership(userId, jwt);
+
+        StatisticResponse<Double> response = carbonStatisticService.getProductCarbonIndex(periodType, date, userId);
+        return ApiResponse.success(response);
+    }
+
 }
