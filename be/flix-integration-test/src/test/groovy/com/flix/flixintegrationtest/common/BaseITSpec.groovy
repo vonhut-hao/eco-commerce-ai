@@ -41,8 +41,28 @@ abstract class BaseITSpec extends Specification {
 
     void setup() {
         BASE_API = "http://localhost:${port}/v1"
+        cleanupDatabase()
     }
 
+    def cleanup() {
+        cleanupDatabase()
+    }
+
+    protected void cleanupDatabase() {
+        try {
+            def tables = jdbc.queryForList("""
+            SELECT table_name FROM information_schema.tables 
+            WHERE table_schema = DATABASE() 
+            AND table_name != 'flyway_schema_history'
+            """, String)
+
+            jdbc.execute("SET FOREIGN_KEY_CHECKS = 0")
+            tables.each { jdbc.execute("DELETE FROM `${it}`") }
+            jdbc.execute("SET FOREIGN_KEY_CHECKS = 1")
+        } catch (Exception e) {
+            // Ignore if tables are already empty
+        }
+    }
     protected getApiResponse(String endpoint, String token) {
         if (token != null) {
             return client.get()
@@ -114,19 +134,6 @@ abstract class BaseITSpec extends Specification {
         }
     }
 
-
-    def cleanup() {
-        def tables = jdbc.queryForList("""
-        SELECT table_name FROM information_schema.tables 
-        WHERE table_schema = DATABASE() 
-        AND table_name != 'flyway_schema_history'
-        """, String)
-
-        jdbc.execute("SET FOREIGN_KEY_CHECKS = 0")
-        tables.each { jdbc.execute("TRUNCATE TABLE ${it}") }
-        jdbc.execute("SET FOREIGN_KEY_CHECKS = 1")
-    }
-
     protected String loginAndGetToken(String username, String password) {
         def resp = postRequest("/auth/login", [username: username, password: password])
                 .returnResult(ApiResponse)
@@ -135,6 +142,10 @@ abstract class BaseITSpec extends Specification {
     }
 
     protected User createAdminUser() {
+        def existing = userRepository.findByUsername("admin")
+        if (existing.isPresent()) {
+            return existing.get()
+        }
         def passwordEncode = '$2a$12$pmIXxQ7H.iNsd6BrXRbC/..DoMMuuFEfKml33imgyOuZklipEtpZ.'
         def user = new User(
                 username: "admin",
@@ -145,11 +156,15 @@ abstract class BaseITSpec extends Specification {
         )
         user.roles.add(Role.ADMIN)
         user.authProviders.add(AuthProvider.LOCAL)
-        userRepository.save(user)
+        return userRepository.save(user)
     }
 
 
     protected User createNormalUser() {
+        def existing = userRepository.findByUsername("testNormalUser")
+        if (existing.isPresent()) {
+            return existing.get()
+        }
         def passwordEncode = '$2a$12$pmIXxQ7H.iNsd6BrXRbC/..DoMMuuFEfKml33imgyOuZklipEtpZ.'
         def user = new User(
                 username: "testNormalUser",
@@ -160,7 +175,7 @@ abstract class BaseITSpec extends Specification {
         )
         user.roles.add(Role.USER)
         user.authProviders.add(AuthProvider.LOCAL)
-        userRepository.save(user)
+        return userRepository.save(user)
     }
 
     protected String getAdminToken() {
