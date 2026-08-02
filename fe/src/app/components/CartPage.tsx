@@ -114,23 +114,29 @@ export function CartPage({
                     <span className="bg-[#3d6b35] text-[#b5eaa6] text-[10px] px-1.5 py-0.5 rounded-sm">CO₂ {item.carbonIndex}kg</span>
                     <span className="text-[#25521f] text-[10px]">+{item.greenPoints || 0} pts/sản phẩm</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center border border-[#c2c9bb] rounded-lg overflow-hidden h-8">
-                      <button
-                        onClick={() => onUpdateQty(item.productId, item.quantity - 1)}
-                        className="px-2.5 text-[#1a1c19] hover:bg-[#eeeee9] h-full transition-colors"
-                      >
-                        <Minus size={12} />
-                      </button>
-                      <span className="w-8 text-center text-[13px] text-[#1a1c19]">{item.quantity}</span>
-                      <button
-                        onClick={() => onUpdateQty(item.productId, item.quantity + 1)}
-                        className="px-2.5 text-[#1a1c19] hover:bg-[#eeeee9] h-full transition-colors"
-                      >
-                        <Plus size={12} />
-                      </button>
+                  <div className="flex items-start justify-between">
+                    <div className="flex flex-col">
+                      <div className="flex items-center border border-[#c2c9bb] rounded-lg overflow-hidden h-8 w-fit">
+                        <button
+                          onClick={() => onUpdateQty(item.productId, item.quantity - 1)}
+                          className="px-2.5 text-[#1a1c19] hover:bg-[#eeeee9] h-full transition-colors"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <span className="w-8 text-center text-[13px] text-[#1a1c19]">{item.quantity}</span>
+                        <button
+                          onClick={() => onUpdateQty(item.productId, item.quantity + 1)}
+                          className="px-2.5 text-[#1a1c19] hover:bg-[#eeeee9] h-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={item.stock !== undefined && item.quantity >= item.stock && item.stock > 0}
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                      {item.stock !== undefined && item.quantity >= item.stock && item.stock > 0 && (
+                        <span className="text-[#ba1a1a] text-[11px] mt-1">Còn {item.stock} sản phẩm</span>
+                      )}
                     </div>
-                    <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px]">
+                    <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px] mt-1.5">
                       {fmt(item.price * item.quantity)}
                     </span>
                   </div>

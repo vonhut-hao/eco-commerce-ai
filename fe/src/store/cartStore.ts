@@ -14,6 +14,7 @@ export interface CartItem {
   carbonIndex: number;
   category: string;
   mainImage: string;
+  stock: number;
 }
 
 interface CartState {
@@ -74,6 +75,7 @@ export const useCartStore = create<CartState>()(
               carbonIndex: (be as any).carbonIndex || 0,
               category: (be as any).category || 'N/A',
               mainImage: be.mainImage || "https://via.placeholder.com/150",
+              stock: (be as any).stock || 0,
             }));
             set({ items: mappedItems });
           } catch (e) {
@@ -102,6 +104,7 @@ export const useCartStore = create<CartState>()(
             await get().fetchCart();
           } catch (e) {
             console.error('Failed to add to cart', e);
+            throw e;
           }
         } else {
           // Local update

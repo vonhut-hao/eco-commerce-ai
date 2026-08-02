@@ -13,7 +13,8 @@ public record CartItemResponse(
         Integer greenPoints,
         Double carbonIndex,
         String category,
-        String mainImage
+        String mainImage,
+        int stock
 ) {
     public static CartItemResponse from(CartItemEntity entity) {
         if (entity == null) {
@@ -30,7 +31,8 @@ public record CartItemResponse(
                 entity.getProduct().getCarbonIndex(),
                 (entity.getProduct().getCategories() != null && !entity.getProduct().getCategories().isEmpty()) ? 
                         entity.getProduct().getCategories().iterator().next().getName() : "N/A",
-                entity.getProduct().getMainImage()
+                entity.getProduct().getMainImage(),
+                entity.getProduct().getStock()
         );
     }
 }

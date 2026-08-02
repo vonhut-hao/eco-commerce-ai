@@ -82,15 +82,19 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const [scrolled, setScrolled] = useState(false);
+  const [idle, setIdle] = useState(false);
   const [hoveringBtn, setHoveringBtn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const handleActivity = () => setIdle(true);
+    window.addEventListener("scroll", handleActivity, { passive: true });
+    window.addEventListener("mousedown", handleActivity);
+    return () => {
+      window.removeEventListener("scroll", handleActivity);
+      window.removeEventListener("mousedown", handleActivity);
+    };
   }, []);
 
   useEffect(() => {
@@ -335,9 +339,9 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
         </div>
       )}
 
-      {/* Floating button — shrinks when scrolled, expands on hover or when chat is open */}
+      {/* Floating button — shrinks when idle, expands on hover or when chat is open */}
       {(() => {
-        const shrink = scrolled && !chatOpen && !widgetVisible && !hoveringBtn;
+        const shrink = idle && !chatOpen && !widgetVisible && !hoveringBtn;
         return (
           <button
             onClick={() => {

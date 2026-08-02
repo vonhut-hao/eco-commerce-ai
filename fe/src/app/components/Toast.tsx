@@ -64,14 +64,14 @@ function ToastCard({
   useEffect(() => {
     // Slide in
     const t1 = setTimeout(() => setVisible(true), 10);
-    // Auto-dismiss after 4s
-    const t2 = setTimeout(() => dismiss(), 4000);
+    // Auto-dismiss after 2.5s
+    const t2 = setTimeout(() => dismiss(), 2500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [dismiss]);
 
   return (
     <div
-      className="flex items-start gap-3 w-[340px] max-w-[calc(100vw-32px)] rounded-lg shadow-lg px-4 py-3.5 border transition-all duration-300 ease-out"
+      className="flex items-start gap-3 w-[300px] max-w-[calc(100vw-32px)] rounded-xl shadow-lg shadow-black/5 px-4 py-3 border transition-all duration-300 ease-out pointer-events-auto"
       style={{
         backgroundColor: bg,
         borderColor: border,
@@ -108,7 +108,10 @@ export function ToastContainer() {
     const handler = (e: Event) => {
       const { type, title, message } = (e as CustomEvent).detail;
       const id = `${Date.now()}-${Math.random()}`;
-      setToasts((prev) => [...prev, { id, type, title, message }]);
+      setToasts((prev) => {
+        const next = [...prev, { id, type, title, message }];
+        return next.slice(-3); // Keep only the latest 3 toasts
+      });
     };
     window.addEventListener(TOAST_EVENT, handler);
     return () => window.removeEventListener(TOAST_EVENT, handler);
@@ -121,7 +124,7 @@ export function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 items-end">
+    <div className="fixed top-20 right-4 z-[9999] flex flex-col gap-2.5 items-end pointer-events-none">
       {toasts.map((t) => (
         <ToastCard key={t.id} item={t} onRemove={remove} />
       ))}
