@@ -33,7 +33,7 @@ public class ProductController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse<Page<ProductSimpleResponse>> listProducts(
+    public ApiResponse<Page<ProductEntityResponse>> listProducts(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         return ApiResponse.success(productService.listProducts(PageRequest.of(page, size)));

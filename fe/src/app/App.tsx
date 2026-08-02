@@ -27,11 +27,14 @@ import { GreenLifeBrand } from "./components/GreenLifeBrand";
 import { HomePage } from "./components/HomePage";
 import { ShopPage, ALL_PRODUCTS } from "./components/ShopPage";
 import type { Product } from "./components/ShopPage";
+import { productsApi, mapProductBeToFe } from "../api/products";
+import { ProductDetailPage } from "./components/ProductDetailPage";
 import { ProductCard } from "./components/ProductCard";
 import { CartPage } from "./components/CartPage";
 import type { CartItem } from "./components/CartPage";
 import { CheckoutPage } from "./components/CheckoutPage";
 import { ImpactPage } from "./components/ImpactPage";
+import { useAuthStore } from "../store/authStore";
 
 export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact";
 
@@ -166,7 +169,10 @@ function DesktopHeader({
               return (
                 <button
                   key={link.label}
-                  onClick={link.action}
+                  onClick={() => {
+                    if (link.label === "Shop") onNavigate("shop", undefined, "All");
+                    else link.action();
+                  }}
                   className={`relative text-[15px] pb-1 whitespace-nowrap transition-colors ${
                     isActive
                       ? "text-[#25521f] font-['Nimbus_Sans:Regular',sans-serif]"
@@ -598,13 +604,16 @@ function RelatedProducts({
   onAddToCart,
   wishlistIds,
   onWishlist,
+  products = ALL_PRODUCTS,
 }: {
-  onNavigate: (page: Page) => void;
+  onNavigate: (p: Page, id?: number) => void;
   onAddToCart: (p: Product) => void;
   wishlistIds: number[];
   onWishlist: (p: Product) => void;
+  products?: Product[];
 }) {
-  const products = ALL_PRODUCTS.filter((p) => relatedProductIds.includes(p.id));
+  const allProds = products && products.length > 0 ? products : ALL_PRODUCTS;
+  const prods = allProds.filter((p) => relatedProductIds.includes(p.id));
 
   return (
     <section className="w-full flex flex-col gap-8 pt-16 md:pt-24">
@@ -627,11 +636,11 @@ function RelatedProducts({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-        {products.map((p) => (
+        {prods.map((p) => (
           <ProductCard
             key={p.id}
             product={p}
-            onNavigate={() => onNavigate("product")}
+            onNavigate={(id) => onNavigate("product", id)}
             onAddToCart={onAddToCart}
             onWishlist={onWishlist}
             wishlisted={wishlistIds.includes(p.id)}
@@ -772,6 +781,23 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("description");
   const [searchOpen, setSearchOpen] = useState(false);
   const [activePage, setActivePage] = useState<Page>("home");
+  const [products, setProducts] = useState<Product[]>(ALL_PRODUCTS);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [activeProductId, setActiveProductId] = useState<number>(1);
+  const [activeShopCategory, setActiveShopCategory] = useState<string>("All");
+
+  useEffect(() => {
+    productsApi.getProducts(0, 100).then(res => {
+      const fetched = res.content.map(mapProductBeToFe);
+      if (fetched.length > 0) {
+        setProducts(fetched);
+      }
+    }).catch(err => {
+      console.error("Failed to fetch products", err);
+    }).finally(() => {
+      setLoadingProducts(false);
+    });
+  }, []);
 
   // Cart & wishlist state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -780,8 +806,27 @@ export default function App() {
   // Chatbot control — increment a counter so useEffect in AIChatbot fires each time
   const [chatbotTrigger, setChatbotTrigger] = useState(0);
 
-  const navigate = (page: Page) => {
+  const setToken = useAuthStore(state => state.setToken);
+
+  useEffect(() => {
+    // Handle OAuth2 redirect from backend (e.g. /oauth2/callback#token=...)
+    if (window.location.pathname === "/oauth2/callback") {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const token = params.get("token");
+      if (token) {
+        setToken(token);
+        toast.success("Welcome back!", "Signed in with Google successfully");
+      }
+      window.history.replaceState({}, document.title, "/");
+      setActivePage("home");
+    }
+  }, [setToken]);
+
+  const navigate = (page: Page, productId?: number, category?: string) => {
     setActivePage(page);
+    if (productId) setActiveProductId(productId);
+    if (category) setActiveShopCategory(category);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -847,6 +892,7 @@ export default function App() {
           onAddToCart={addToCart}
           wishlistIds={wishlistIds}
           onWishlist={toggleWishlist}
+          products={products}
         />
       )}
 
@@ -856,6 +902,8 @@ export default function App() {
           onAddToCart={addToCart}
           onWishlist={toggleWishlist}
           wishlistIds={wishlistIds}
+          products={products}
+          initialCategory={activeShopCategory}
         />
       )}
 
@@ -892,19 +940,19 @@ export default function App() {
       {activePage === "product" && (
         <main className="flex-1 pb-20 md:pb-0">
           <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-6 md:py-12 flex flex-col gap-8 md:gap-10">
-            <Breadcrumb />
-
-            <section className="flex flex-col md:grid md:grid-cols-12 gap-8 md:gap-10">
-              <ProductGallery selectedThumb={selectedThumb} onThumbSelect={setSelectedThumb} />
-              <ProductInfo quantity={quantity} onQtyChange={setQuantity} onNavigate={navigate} />
-            </section>
-
-            <TabsSection activeTab={activeTab} onTabChange={setActiveTab} />
+            <ProductDetailPage
+              productId={activeProductId}
+              onNavigate={navigate}
+              onAddToCart={addToCart}
+              wishlistIds={wishlistIds}
+              onWishlist={toggleWishlist}
+            />
             <RelatedProducts
               onNavigate={navigate}
               onAddToCart={addToCart}
               wishlistIds={wishlistIds}
               onWishlist={toggleWishlist}
+              products={products}
             />
           </div>
         </main>

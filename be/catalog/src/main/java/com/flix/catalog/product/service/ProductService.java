@@ -57,15 +57,15 @@ public class ProductService {
         return ProductEntityResponse.from(savedProduct);
     }
 
-    public Page<ProductSimpleResponse> listProducts(Pageable pageable) {
+    public Page<ProductEntityResponse> listProducts(Pageable pageable) {
         if (isAdminRoleWithOutThrowException()) {
             log.info("Admin role has been granted");
             return productRepository.findByDeletedAtIsNull(pageable)
-                    .map(ProductSimpleResponse::from);
+                    .map(ProductEntityResponse::from);
         }
         log.info("List paginated products: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
         return productRepository.findByDeletedAtIsNullAndStockIsGreaterThan(pageable, 0)
-                .map(ProductSimpleResponse::from);
+                .map(ProductEntityResponse::from);
     }
 
     public ProductEntityResponse getProductDetail(Long id) {

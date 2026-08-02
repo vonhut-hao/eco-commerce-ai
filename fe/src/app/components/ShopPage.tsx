@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, SlidersHorizontal, X, ChevronDown, GitCompare,
   ArrowUpDown, Check,
@@ -413,17 +413,25 @@ export function ShopPage({
   onAddToCart,
   onWishlist,
   wishlistIds,
+  products = ALL_PRODUCTS,
+  initialCategory = "All",
 }: {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, id?: number) => void;
   onAddToCart: (p: Product) => void;
   onWishlist: (p: Product) => void;
   wishlistIds: number[];
+  products?: Product[];
+  initialCategory?: string;
 }) {
   const [search, setSearch] = useState("");
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory === "All" ? [] : [initialCategory]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [carbonFilter, setCarbonFilter] = useState("all");
   const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedCats(initialCategory === "All" ? [] : [initialCategory]);
+  }, [initialCategory]);
   const [sortBy, setSortBy] = useState("default");
   const [showFilter, setShowFilter] = useState(false);
   const [compareItems, setCompareItems] = useState<Product[]>([]);
@@ -435,26 +443,26 @@ export function ShopPage({
     (priceRange[0] > 0 || priceRange[1] < 1000000 ? 1 : 0);
 
   const filtered = useMemo(() => {
-    let products = ALL_PRODUCTS;
+    let list = products;
     if (search.trim()) {
       const q = search.toLowerCase();
-      products = products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.material.toLowerCase().includes(q));
+      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.material.toLowerCase().includes(q));
     }
-    if (selectedCats.length > 0) products = products.filter((p) => selectedCats.includes(p.category));
-    if (priceRange[0] > 0) products = products.filter((p) => p.price >= priceRange[0]);
-    if (priceRange[1] < 1000000) products = products.filter((p) => p.price <= priceRange[1]);
-    if (carbonFilter === "low") products = products.filter((p) => p.carbonIndex < 0.3);
-    if (carbonFilter === "mid") products = products.filter((p) => p.carbonIndex >= 0.3 && p.carbonIndex <= 0.6);
-    if (carbonFilter === "high") products = products.filter((p) => p.carbonIndex > 0.6);
-    if (selectedCerts.length > 0) products = products.filter((p) => selectedCerts.some((c) => p.certifications.includes(c)));
+    if (selectedCats.length > 0) list = list.filter((p) => selectedCats.includes(p.category));
+    if (priceRange[0] > 0) list = list.filter((p) => p.price >= priceRange[0]);
+    if (priceRange[1] < 1000000) list = list.filter((p) => p.price <= priceRange[1]);
+    if (carbonFilter === "low") list = list.filter((p) => p.carbonIndex < 0.3);
+    if (carbonFilter === "mid") list = list.filter((p) => p.carbonIndex >= 0.3 && p.carbonIndex <= 0.6);
+    if (carbonFilter === "high") list = list.filter((p) => p.carbonIndex > 0.6);
+    if (selectedCerts.length > 0) list = list.filter((p) => selectedCerts.some((c) => p.certifications.includes(c)));
     switch (sortBy) {
-      case "price_asc":   return [...products].sort((a, b) => a.price - b.price);
-      case "price_desc":  return [...products].sort((a, b) => b.price - a.price);
-      case "carbon_asc":  return [...products].sort((a, b) => a.carbonIndex - b.carbonIndex);
-      case "rating_desc": return [...products].sort((a, b) => b.rating - a.rating);
-      default: return products;
+      case "price_asc":   return [...list].sort((a, b) => a.price - b.price);
+      case "price_desc":  return [...list].sort((a, b) => b.price - a.price);
+      case "carbon_asc":  return [...list].sort((a, b) => a.carbonIndex - b.carbonIndex);
+      case "rating_desc": return [...list].sort((a, b) => b.rating - a.rating);
+      default: return list;
     }
-  }, [search, selectedCats, priceRange, carbonFilter, selectedCerts, sortBy]);
+  }, [search, selectedCats, priceRange, carbonFilter, selectedCerts, sortBy, products]);
 
   const toggleCompare = (p: Product) => {
     if (compareItems.find((c) => c.id === p.id)) {
@@ -567,7 +575,7 @@ export function ShopPage({
                   wishlisted={wishlistIds.includes(p.id)}
                   compareSelected={compareItems.some((c) => c.id === p.id)}
                   onToggleCompare={toggleCompare}
-                  onNavigate={() => onNavigate("product")}
+                  onNavigate={(id) => onNavigate("product", id)}
                 />
               ))}
             </div>

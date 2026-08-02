@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import svgPaths from "../../imports/SignIn/svg-70ii59n453";
 import { GreenLifeBrand } from "./GreenLifeBrand";
 import { authApi } from "../../api/auth";
@@ -27,14 +28,16 @@ export function SignInPage({ onNavigate }: { onNavigate: (page: string) => void 
   const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
+  const [errorMsg, setErrorMsg]         = useState("");
 
   const setToken = useAuthStore(state => state.setToken);
 
   const handleSubmit = async () => {
     if (!username || !password) return;
     setLoading(true);
+    setErrorMsg("");
     try {
-      const res = await authApi.login({ email: username, password });
+      const res = await authApi.login({ username, password });
       if (res.accessToken) {
         setToken(res.accessToken);
         toast.success("Welcome back!", "Signed in successfully");
@@ -42,7 +45,9 @@ export function SignInPage({ onNavigate }: { onNavigate: (page: string) => void 
       }
     } catch (e: any) {
       console.error(e);
-      toast.error("Sign In Failed", e.response?.data?.message || "Invalid credentials");
+      const msg = e.response?.data?.detail || e.response?.data?.message || "Invalid credentials";
+      setErrorMsg(msg);
+      toast.error("Sign In Failed", msg);
     } finally {
       setLoading(false);
     }
@@ -106,6 +111,12 @@ export function SignInPage({ onNavigate }: { onNavigate: (page: string) => void 
             <p className="text-[#42493e] text-[16px] leading-[24px]">Enter your credentials to access your account.</p>
           </div>
 
+          {errorMsg && (
+            <div className="p-3 bg-[#fef2f2] border border-[#f87171] rounded-[4px] text-[#b91c1c] text-[14px] text-center font-medium">
+              {errorMsg}
+            </div>
+          )}
+
           {/* Form */}
           <div className="flex flex-col gap-5">
 
@@ -154,9 +165,7 @@ export function SignInPage({ onNavigate }: { onNavigate: (page: string) => void 
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#42493e] hover:text-[#25521f] transition-colors"
                 >
-                  <svg width="18" height="16" viewBox="0 0 18.3333 16.5" fill="none">
-                    <path d={svgPaths.pf0742c0} fill="#42493E" />
-                  </svg>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -178,7 +187,11 @@ export function SignInPage({ onNavigate }: { onNavigate: (page: string) => void 
             </div>
 
             {/* Google */}
-            <button className="w-full border border-[#c2c9bb] flex items-center justify-center gap-2 py-3 rounded-[4px] hover:bg-[#fafaf5] transition-colors">
+            <button 
+              type="button"
+              onClick={() => window.location.href = "http://localhost:8080/oauth2/authorization/google"}
+              className="w-full border border-[#c2c9bb] flex items-center justify-center gap-2 py-3 rounded-[4px] hover:bg-[#fafaf5] transition-colors"
+            >
               <GoogleIcon />
               <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[14px] tracking-[0.7px]">Google</span>
             </button>
