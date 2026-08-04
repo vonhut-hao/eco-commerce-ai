@@ -1,6 +1,6 @@
 package com.flix.statistics.service;
 
-import com.flix.catalog.dao.OrderRepository;
+import com.flix.catalog.dao.OrderItemRepository;
 import com.flix.catalog.entity.OrderStatus;
 import com.flix.statistics.common.dto.StatisticResponse;
 import com.flix.statistics.common.enums.StatisticPeriodType;
@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -18,32 +17,35 @@ import static com.flix.statistics.common.enums.StatisticPeriodType.getDAILYByDef
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RevenueStatisticsService {
+public class CarbonStatisticService {
 
-    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Transactional(readOnly = true)
-    public StatisticResponse<BigDecimal> getProductRevenue(StatisticPeriodType periodType, LocalDate date) {
+    public StatisticResponse<Double> getProductCarbonIndex(StatisticPeriodType periodType, LocalDate date, Long userId) {
         StatisticPeriodType selectedPeriod = getDAILYByDefault(periodType);
         LocalDate targetDate = date != null ? date : LocalDate.now();
 
         LocalDateTime fromDate = selectedPeriod.calculateFromDate(targetDate);
         LocalDateTime toDate = selectedPeriod.calculateToDate(targetDate);
-        log.info("Calculating revenue for period {}: fromDate:{} toDate:{}", selectedPeriod, fromDate, toDate);
 
-        BigDecimal totalRevenue = orderRepository.calculateTotalRevenue(
+        log.info("Calculating carbon index for user {} and period {}: fromDate:{} toDate:{}", userId, selectedPeriod, fromDate, toDate);
+
+        Double totalCarbonIndex = orderItemRepository.calculateTotalCarbonFootprint(
+                userId,
                 fromDate,
                 toDate,
                 OrderStatus.COMPLETED
         );
 
-        log.info("Total revenue for period {}: {}", selectedPeriod, totalRevenue);
+        log.info("Total carbon index for user {} in period {}: {}", userId, selectedPeriod, totalCarbonIndex);
+
         return new StatisticResponse<>(
                 selectedPeriod,
                 targetDate,
                 fromDate,
                 toDate,
-                totalRevenue
+                totalCarbonIndex
         );
     }
 }
