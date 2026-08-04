@@ -10,11 +10,13 @@ public record OrderResponse(
         Long id,
         Long totalAmount,
         String status,
+        String paymentStatus,
         Long userId,
         String username,
         Long paymentMethodId,
         String paymentMethodName,
         String createdAt,
+        Long promotionId,
         List<OrderItemResponse> orderItems
 ) {
     public static OrderResponse from(OrderEntity entity) {
@@ -25,15 +27,17 @@ public record OrderResponse(
         return new OrderResponse(
                 entity.getId(),
                 entity.getTotalAmount(),
-                entity.getStatus().name(),
-                entity.getUser().getId(),
-                entity.getUser().getUsername(),
-                entity.getPaymentMethodEntity().getId(),
-                entity.getPaymentMethodEntity().getMethodName(),
+                entity.getStatus() != null ? entity.getStatus().name() : null,
+                entity.getPaymentStatus() != null ? entity.getPaymentStatus().name() : null,
+                entity.getUser() != null ? entity.getUser().getId() : null,
+                entity.getUser() != null ? entity.getUser().getUsername() : null,
+                entity.getPaymentMethodEntity() != null ? entity.getPaymentMethodEntity().getId() : null,
+                entity.getPaymentMethodEntity() != null ? entity.getPaymentMethodEntity().getMethodName() : null,
                 entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null,
-                entity.getOrderItems().stream()
-                        .map(OrderItemResponse::from)
-                        .toList()
+                entity.getPromotion() != null ? entity.getPromotion().getId() : null,
+                entity.getOrderItems() != null ? entity.getOrderItems().stream()
+                                                 .map(OrderItemResponse::from)
+                                                 .toList() : List.of()
         );
     }
 }

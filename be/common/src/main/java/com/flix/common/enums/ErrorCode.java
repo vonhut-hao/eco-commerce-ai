@@ -30,7 +30,16 @@ public enum ErrorCode {
     PARENT_COMMENT_NOT_FOUND("Parent comment not found", HttpStatus.NOT_FOUND),
     CART_ITEM_NOT_FOUND("Cart item not found", HttpStatus.NOT_FOUND),
     INSUFFICIENT_PRODUCT_STOCK("Insufficient product stock", HttpStatus.BAD_REQUEST),
+
+    // Order Error Codes
     ORDER_NOT_FOUND("Order not found", HttpStatus.NOT_FOUND),
+    ORDER_TOTAL_INVALID("Order total amount is invalid", HttpStatus.BAD_REQUEST),
+    ORDER_ALREADY_COMPLETED("Order is already completed", HttpStatus.BAD_REQUEST),
+    ORDER_IN_DELIVERY("Order is currently in delivery", HttpStatus.BAD_REQUEST),
+    ORDER_CANNOT_CANCEL("Order cannot be cancelled in its current status", HttpStatus.BAD_REQUEST),
+    ORDER_CANNOT_UPDATE_PROMOTION("Cannot update promotion for this order", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_ENOUGH_FOR_PROMOTION("Order total value does not meet the minimum requirement for promotion", HttpStatus.BAD_REQUEST),
+
     PAYMENT_METHOD_NOT_FOUND("Payment method not found", HttpStatus.NOT_FOUND),
     CART_EMPTY("Cart is empty", HttpStatus.BAD_REQUEST),
     INSUFFICIENT_STOCK("Insufficient stock", HttpStatus.BAD_REQUEST),
@@ -41,8 +50,25 @@ public enum ErrorCode {
     INVALID_YEAR("Year provided is invalid", HttpStatus.BAD_REQUEST),
     FUTURE_DATE_NOT_ALLOWED("Cannot calculate revenue for future dates", HttpStatus.BAD_REQUEST),
     INVALID_CALENDAR_DATE("The specified date, month, or year does not exist in the calendar", HttpStatus.BAD_REQUEST),
-    STATISTIC_FILTER_REQUIRED("At least year filter must be provided", HttpStatus.BAD_REQUEST);
+    STATISTIC_FILTER_REQUIRED("At least year filter must be provided", HttpStatus.BAD_REQUEST),
 
+    // Promotion Error Codes
+    PROMOTION_NOT_FOUND("Promotion not found", HttpStatus.NOT_FOUND),
+    PROMOTION_CODE_ALREADY_EXISTS("Promotion code already exists", HttpStatus.BAD_REQUEST),
+    PROMOTION_INACTIVE("Promotion is not active", HttpStatus.BAD_REQUEST),
+    PROMOTION_NOT_ACTIVE("Promotion is not active or has been locked", HttpStatus.BAD_REQUEST),
+    PROMOTION_INVALID_DATE("Promotion start or end date is invalid", HttpStatus.BAD_REQUEST),
+    INVALID_PROMOTION_DATE("Promotion start date must be before end date", HttpStatus.BAD_REQUEST),
+    PROMOTION_NOT_STARTED("Promotion has not started yet", HttpStatus.BAD_REQUEST),
+    PROMOTION_EXPIRED("Promotion has expired", HttpStatus.BAD_REQUEST),
+    PROMOTION_OUT_OF_USAGE("Promotion usage limit has been reached", HttpStatus.BAD_REQUEST),
+    PROMOTION_USAGE_LIMIT_EXCEEDED("Promotion usage limit reached", HttpStatus.BAD_REQUEST),
+    PROMOTION_USAGE_COUNT_INVALID("Promotion usage count is invalid", HttpStatus.BAD_REQUEST),
+    PROMOTION_MIN_ORDER_VALUE_NOT_MET("Order value does not meet the minimum requirement for this promotion", HttpStatus.BAD_REQUEST),
+    INVALID_PROMOTION_DISCOUNT_VALUE("Discount value is invalid for the selected discount type", HttpStatus.BAD_REQUEST),
+    PROMOTION_INVALID_DISCOUNT_VALUE("Promotion discount value is invalid", HttpStatus.BAD_REQUEST),
+    PROMOTION_DISCOUNT_EXCEEDS_ORDER_TOTAL("Promotion discount exceeds total order amount", HttpStatus.BAD_REQUEST),
+    PROMOTION_ALREADY_USED_BY_USER("Promotion has already been used by this user", HttpStatus.BAD_REQUEST);
 
     String message;
     HttpStatus httpStatus;

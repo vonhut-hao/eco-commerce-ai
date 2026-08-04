@@ -18,6 +18,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.net.URI;
 import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,6 +58,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DateTimeException.class)
     public ProblemDetail handleDateTimeException(DateTimeException exception) {
         log.warn("Date/Time exception: {}", exception.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Invalid date/time parameter: " + exception.getMessage()
+        );
+        problemDetail.setTitle("Invalid Date/Time");
+        problemDetail.setProperty(TIME_STAMP, Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(DateTimeParseException.class)
+    public ProblemDetail DateTimeParseException(DateTimeParseException exception) {
+        log.warn("Date/Time parse exception: {}", exception.getMessage());
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 "Invalid date/time parameter: " + exception.getMessage()

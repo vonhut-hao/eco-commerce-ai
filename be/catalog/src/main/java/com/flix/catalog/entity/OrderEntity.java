@@ -1,5 +1,6 @@
 package com.flix.catalog.entity;
 
+import com.flix.catalog.enums.PaymentStatus;
 import com.flix.identity.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -36,6 +37,14 @@ public class OrderEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_method_id", nullable = false)
     private PaymentMethodEntity paymentMethodEntity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id")
+    private PromotionEntity promotion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
 
     @OneToMany(mappedBy = "orderEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItemEntity> orderItems = new ArrayList<>();
