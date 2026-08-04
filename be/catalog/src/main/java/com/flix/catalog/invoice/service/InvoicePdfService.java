@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -17,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 public class InvoicePdfService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String CURRENCY_UNIT = "VND";
 
     public byte[] generatePdf(InvoiceDataDto data) {
         log.info("Rendering PDF for order ID: {}", data.orderId());
@@ -29,7 +32,6 @@ public class InvoicePdfService {
 
             // Colors
             Color primaryColor = new Color(34, 139, 34); // Forest Green
-            Color headerBg = new Color(240, 248, 240);
             Color darkGray = new Color(60, 60, 60);
 
             // Title Header
@@ -59,13 +61,13 @@ public class InvoicePdfService {
             // Items Table
             PdfPTable table = new PdfPTable(5);
             table.setWidthPercentage(100);
-            table.setWidths(new float[]{40, 15, 15, 15, 15});
+            table.setWidths(new float[]{40, 15, 22, 23, 20});
             table.setSpacingAfter(15);
 
             // Table Header
             Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.WHITE);
             addCellHeader(table, "Product", headerFont, primaryColor);
-            addCellHeader(table, "Qty", headerFont, primaryColor);
+            addCellHeader(table, "Quantity", headerFont, primaryColor);
             addCellHeader(table, "Unit Price", headerFont, primaryColor);
             addCellHeader(table, "Total Price", headerFont, primaryColor);
             addCellHeader(table, "Carbon Footprint", headerFont, primaryColor);
@@ -74,8 +76,8 @@ public class InvoicePdfService {
             for (InvoiceDataDto.InvoiceItemDto item : data.items()) {
                 table.addCell(createCell(item.productName(), fontNormal, Element.ALIGN_LEFT));
                 table.addCell(createCell(String.valueOf(item.quantity()), fontNormal, Element.ALIGN_CENTER));
-                table.addCell(createCell("$" + item.unitPrice(), fontNormal, Element.ALIGN_RIGHT));
-                table.addCell(createCell("$" + item.totalPrice(), fontNormal, Element.ALIGN_RIGHT));
+                table.addCell(createCell(formatCurrency(item.unitPrice()), fontNormal, Element.ALIGN_RIGHT));
+                table.addCell(createCell(formatCurrency(item.totalAmount()), fontNormal, Element.ALIGN_RIGHT));
                 table.addCell(createCell(String.format("%.2f kg", item.lineCarbonFootprint()), fontNormal, Element.ALIGN_RIGHT));
             }
 
@@ -89,7 +91,7 @@ public class InvoicePdfService {
             Font summaryBold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
             Font summaryPrimary = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, primaryColor);
 
-            addSummaryRow(summaryTable, "Total Amount:", "$" + data.totalAmount(), summaryPrimary);
+            addSummaryRow(summaryTable, "Total Amount:", formatCurrency(data.totalAmount()), summaryPrimary);
             addSummaryRow(summaryTable, "Total Carbon Footprint:", String.format("%.2f kg CO2", data.totalCarbonFootprint()), summaryBold);
 
             document.add(summaryTable);
@@ -107,6 +109,16 @@ public class InvoicePdfService {
         }
 
         return out.toByteArray();
+    }
+
+    private String formatCurrency(Long amount) {
+        if (amount == null) {
+            return "0 " + CURRENCY_UNIT;
+        }
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+        return formatter.format(amount) + " " + CURRENCY_UNIT;
     }
 
     private void addMetaRow(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {

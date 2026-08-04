@@ -22,21 +22,21 @@ public record InvoiceDataDto(
             String productName,
             int quantity,
             Long unitPrice,
-            Long totalPrice,
+            Long totalAmount,
             Double lineCarbonFootprint
     ) {
         public static InvoiceItemDto from(OrderItemEntity item) {
             String name = item.getProductEntity() != null ? item.getProductEntity().getName() : "Product #" + item.getId();
-            Long uPrice = item.getPrice() != null ? item.getPrice() : 0L;
-            Long tPrice = uPrice * item.getQuantity();
+            Long unitPriceItem = item.getProductEntity() != null ? item.getProductEntity().getPrice() : 0L;
+            Long totalAmountItem = item.getPrice() != null ? item.getPrice() : 0L;
             Double carbon = item.getLineCarbonFootprint() != null ? item.getLineCarbonFootprint() : 0.0;
 
             return new InvoiceItemDto(
                     item.getProductEntity() != null ? item.getProductEntity().getId() : null,
                     name,
                     item.getQuantity(),
-                    uPrice,
-                    tPrice,
+                    unitPriceItem,
+                    totalAmountItem,
                     carbon
             );
         }
