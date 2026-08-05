@@ -90,4 +90,63 @@ class OrderIT extends BaseITSpec {
         response.status == HttpStatus.BAD_REQUEST
         response.responseBody.detail == "Insufficient stock"
     }
+
+    def "should place order successfully with valid promotion applied"() {
+        given:
+        createAdminUser()
+        createNormalUser()
+        def adminToken = getAdminToken()
+        def userToken = getNormalUserToken()
+        def user = userRepository.findByEmail("testNormalUser@gmail.com").get()
+
+        def productResponse = postRequest("/catalog/products", [
+                name: "Balo Vải Hemp Sinh Thái",
+                price: 250000L,
+                stock: 10,
+                greenPoints: 20,
+                ecoFriendliness: "high",
+                carbonIndex: 1.5,
+                mainImage: null,
+                subImages: [],
+                categoryIds: [],
+                materialIds: []
+        ], adminToken).returnResult(ApiResponse)
+        def productId = (productResponse.responseBody.data as Map).id as Long
+
+        postRequest("/catalog/cart", [
+                productId: productId,
+                quantity: 1,
+                userId: user.id
+        ], userToken).returnResult(ApiResponse)
+
+        jdbc.execute("""
+        INSERT INTO promotions (id, code, name, discount_type, discount_value, max_discount_amount, min_order_value, usage_limit, used_count, start_date, end_date, is_active) 
+        VALUES (99, 'TESTPROMO15', 'Test Giảm 15%', 'PERCENTAGE', 15.00, 50000.00, 200000.00, 100, 0, NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH), 1)
+    """)
+
+        def paymentMethods = jdbc.queryForList("SELECT id FROM payment_methods LIMIT 1")
+        def paymentMethodId = paymentMethods.isEmpty() ? null : (paymentMethods.first().id as Long)
+
+        when:
+        def orderResponse = postRequest("/catalog/orders", [
+                paymentMethodId: paymentMethodId,
+                promotionId: 99L
+        ], userToken).returnResult(ApiResponse)
+
+        then:
+        orderResponse.status == HttpStatus.OK
+
+        def order = orderResponse.responseBody.data as Map
+        order.status == "PENDING"
+        order.paymentStatus == "UNPAID"
+        order.totalAmount == 212500L
+        (order.orderItems as List).size() == 1
+        (order.orderItems[0] as Map).quantity == 1
+
+        and:
+        jdbc.queryForObject("SELECT stock FROM products WHERE id = ?", Integer, productId) == 9
+        jdbc.queryForObject("SELECT used_count FROM promotions WHERE id = 99", Integer) == 1
+        jdbc.queryForObject("SELECT payment_status FROM orders WHERE id = ?", String, order.id as Long) == "UNPAID"
+        getApiResponse("/catalog/cart", userToken).returnResult(ApiResponse).responseBody.data.isEmpty()
+    }
 }

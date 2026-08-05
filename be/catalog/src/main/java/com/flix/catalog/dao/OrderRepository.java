@@ -20,6 +20,8 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
 
     List<OrderEntity> findAllByOrderByIdDesc();
 
+    boolean existsByUserIdAndPromotionIdAndStatusNot(Long userId, Long promotionId, OrderStatus status);
+
     @Query("""
             SELECT COALESCE(SUM(o.totalAmount), 0)
             FROM OrderEntity o
