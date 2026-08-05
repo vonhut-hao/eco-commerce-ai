@@ -3,7 +3,7 @@ import { X, RefreshCw, Send, Leaf, Minus, Headphones } from "lucide-react";
 import svgPaths from "../../imports/ProductDetail2/svg-oqupvr7hg1";
 import { chatWithAi, createOrGetConversation, getMessagesByConversation, sendMessage as sendLiveMessage, ChatMessage as ApiChatMessage } from "../../api/chat";
 import { Client } from "@stomp/stompjs";
-import useAuthStore from "../../store/authStore";
+import { useAuthStore } from "../../store/authStore";
 
 interface Message {
   id: string;
