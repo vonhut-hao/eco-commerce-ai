@@ -40,6 +40,7 @@ import { ImpactPage } from "./components/ImpactPage";
 import { useAuthStore } from "../store/authStore";
 import { useCartStore } from "../store/cartStore";
 import { profileApi } from "../api/profile";
+import { favoritesApi } from "../api/favorites";
 
 export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact";
 
@@ -298,9 +299,13 @@ function DesktopHeader({
                 activePage === "profile" ? "text-[#25521f]" : "text-[#42493e] hover:text-[#25521f]"
               }`}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d={svgPaths.p33ced450} fill={activePage === "profile" ? "#25521f" : "#42493E"} />
-              </svg>
+              {isAuthenticated && user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-[#c2c9bb]" />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d={svgPaths.p33ced450} fill={activePage === "profile" ? "#25521f" : "#42493E"} />
+                </svg>
+              )}
               {activePage === "profile" && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#25521f]" />
               )}
@@ -806,6 +811,7 @@ function BottomNav({
   onOpenChatbot: () => void;
 }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const user = useAuthStore(s => s.user);
   const items = [
     { key: "home",    label: "Home",     icon: Home,        action: () => onNavigate("home") },
     { key: "shop",    label: "Shop",     icon: ShoppingBag, action: () => onNavigate("shop") },
@@ -834,7 +840,11 @@ function BottomNav({
                 isActive ? "text-[#25521f]" : "text-[#6b7280]"
               }`}
             >
-              <Icon size={21} strokeWidth={isActive ? 2.2 : 1.6} />
+              {item.key === "me" && isAuthenticated && user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
+              ) : (
+                <Icon size={21} strokeWidth={isActive ? 2.2 : 1.6} />
+              )}
               <span className="text-[10px] leading-tight">{item.label}</span>
             </button>
           );
@@ -874,7 +884,9 @@ export default function App() {
   const [selectedThumb, setSelectedThumb] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<Tab>("description");
-  const [activePage, setActivePage] = useState<Page>("home");
+  const [activePage, setActivePage] = useState<Page>(() => {
+    return (sessionStorage.getItem("activePage") as Page) || "home";
+  });
   const [activeProductId, setActiveProductId] = useState<number | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeShopCategory, setActiveShopCategory] = useState("All");
@@ -884,17 +896,19 @@ export default function App() {
   const [loadingProducts, setLoadingProducts] = useState(true);
 
   useEffect(() => {
-    productsApi.getProducts(0, 100).then(res => {
-      const fetched = res.content.map(mapProductBeToFe);
-      if (fetched.length > 0) {
-        setProducts(fetched);
-      }
-    }).catch(err => {
-      console.error("Failed to fetch products", err);
-    }).finally(() => {
-      setLoadingProducts(false);
-    });
-  }, []);
+    if (activePage === "home" || activePage === "shop" || activePage === "product") {
+      productsApi.getProducts(0, 100).then(res => {
+        const fetched = res.content.map(mapProductBeToFe);
+        if (fetched.length > 0) {
+          setProducts(fetched);
+        }
+      }).catch(err => {
+        console.error("Failed to fetch products", err);
+      }).finally(() => {
+        setLoadingProducts(false);
+      });
+    }
+  }, [activePage]);
 
   // Cart & wishlist state
   const { items: cartItems, fetchCart, addToCart, removeFromCart, updateQuantity: updateQty } = useCartStore();
@@ -902,6 +916,15 @@ export default function App() {
     const saved = localStorage.getItem("wishlist");
     return saved ? JSON.parse(saved) : [];
   });
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      favoritesApi.getUserFavorites().then(products => {
+        setWishlistIds(products.map((p: any) => p.id));
+      }).catch(console.error);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     localStorage.setItem("wishlist", JSON.stringify(wishlistIds));
@@ -933,6 +956,7 @@ export default function App() {
   }, [setToken]);
 
   const navigate = (page: Page, productId?: number, category?: string, searchTerm?: string, extraFilters?: { carbon?: string, certs?: string[] }) => {
+    sessionStorage.setItem("activePage", page);
     setActivePage(page);
     if (productId !== undefined) setActiveProductId(productId);
     
@@ -983,10 +1007,21 @@ export default function App() {
     }
   };
 
-  const toggleWishlist = (product: Product) => {
-    setWishlistIds((prev) =>
-      prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id]
-    );
+  const toggleWishlist = async (product: Product) => {
+    if (isAuthenticated) {
+      try {
+        const res = await favoritesApi.toggleFavorite(product.id);
+        setWishlistIds(prev => 
+          res.isFavorite ? [...prev, product.id] : prev.filter(id => id !== product.id)
+        );
+      } catch (err) {
+        toast.error("Lỗi", "Không thể cập nhật danh sách yêu thích");
+      }
+    } else {
+      setWishlistIds((prev) =>
+        prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id]
+      );
+    }
   };
 
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);

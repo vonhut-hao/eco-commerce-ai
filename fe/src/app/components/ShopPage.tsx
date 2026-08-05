@@ -481,6 +481,7 @@ export function ShopPage({
       case "price_desc":  return [...list].sort((a, b) => b.price - a.price);
       case "carbon_asc":  return [...list].sort((a, b) => a.carbonIndex - b.carbonIndex);
       case "rating_desc": return [...list].sort((a, b) => b.rating - a.rating);
+      case "newest":      return [...list].sort((a, b) => b.id - a.id);
       default: return list;
     }
   }, [search, selectedCats, priceRange, carbonFilter, selectedCerts, sortBy, products]);

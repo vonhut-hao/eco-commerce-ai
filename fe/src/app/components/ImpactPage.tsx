@@ -22,23 +22,7 @@ export function getTier(pts: number) {
 }
 
 // ─── Chart / breakdown data (mock, would come from API) ──────────────────────
-const MONTHLY_DATA = [
-  { month: "T2", co2: 0.8, pts: 80 },
-  { month: "T3", co2: 1.2, pts: 120 },
-  { month: "T4", co2: 0.6, pts: 60 },
-  { month: "T5", co2: 1.8, pts: 180 },
-  { month: "T6", co2: 2.4, pts: 240 },
-  { month: "T7", co2: 1.5, pts: 150 },
-  { month: "T8", co2: 2.1, pts: 210 },
-];
-
-const CATEGORY_IMPACT = [
-  { name: "Personal Care",   co2: 0.85, pct: 26, color: "#3d6b35" },
-  { name: "Home & Kitchen",  co2: 0.72, pct: 22, color: "#5a8a51" },
-  { name: "Fashion",         co2: 0.60, pct: 18, color: "#78a86e" },
-  { name: "Food & Beverage", co2: 0.58, pct: 18, color: "#96c690" },
-  { name: "Other",           co2: 0.52, pct: 16, color: "#b5e0b0" },
-];
+// Removed CategoryBreakdown mock data
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon: Icon, label, value, sub, color = "#25521f" }: {
@@ -66,8 +50,36 @@ function StatCard({ icon: Icon, label, value, sub, color = "#25521f" }: {
 
 // ─── Monthly Chart ────────────────────────────────────────────────────────────
 function MonthlyCarbonChart() {
-  // Mock data for the chart. In a real app, this would be `savedCO2` per month.
-  const max = Math.max(...MONTHLY_DATA.map((d) => d.co2));
+  const [data, setData] = useState<{ month: string; co2: number }[]>([]);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      import("../../api/statistics").then(({ statisticsApi }) => {
+        const promises = [];
+        const now = new Date();
+        // Fetch last 7 months including current
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthStr = `T${d.getMonth() + 1}`;
+          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+          promises.push(
+            statisticsApi.getMonthlyCarbonIndex(dateStr).then(val => ({
+              month: monthStr,
+              co2: Number(val.toFixed(1))
+            }))
+          );
+        }
+        Promise.all(promises).then(res => setData(res)).catch(console.error);
+      });
+    } else {
+      setData([]);
+    }
+  }, [isAuthenticated]);
+
+  const max = Math.max(...data.map((d) => d.co2), 0.1); // prevent division by zero
+  const total = data.reduce((s, d) => s + d.co2, 0).toFixed(1);
+
   return (
     <div className="bg-white border border-[#e2e3de] rounded-xl p-5 flex flex-col gap-4">
       <div>
@@ -77,8 +89,8 @@ function MonthlyCarbonChart() {
         <p className="text-[#6b7280] text-[12px]">kg CO₂e / tháng</p>
       </div>
       <div className="flex items-end gap-2 h-[120px]">
-        {MONTHLY_DATA.map((d) => (
-          <div key={d.month} className="flex-1 flex flex-col items-center gap-1.5">
+        {data.map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
             <span className="text-[10px] text-[#42493e]">{d.co2}</span>
             <div
               className="w-full rounded-t-sm bg-gradient-to-t from-[#3d6b35] to-[#6db85f] min-h-[4px]"
@@ -91,42 +103,13 @@ function MonthlyCarbonChart() {
       <div className="border-t border-[#e2e3de] pt-3 flex items-center justify-between">
         <span className="text-[#6b7280] text-[12px]">Tổng 7 tháng:</span>
         <span className="text-[#25521f] text-[14px]" style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700 }}>
-          {MONTHLY_DATA.reduce((s, d) => s + d.co2, 0).toFixed(1)} kg CO₂e
+          {total} kg CO₂e
         </span>
       </div>
     </div>
   );
 }
 
-// ─── Category Breakdown ───────────────────────────────────────────────────────
-function CategoryBreakdown() {
-  return (
-    <div className="bg-white border border-[#e2e3de] rounded-xl p-5 flex flex-col gap-4">
-      <h3 className="text-[#1a1c19] text-[16px]" style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}>
-        Tác động theo danh mục
-      </h3>
-      <div className="flex flex-col gap-3">
-        {CATEGORY_IMPACT.map((cat) => (
-          <div key={cat.name} className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[#42493e] text-[13px]">{cat.name}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[#6b7280] text-[11px]">{cat.co2} kg CO₂</span>
-                <span className="text-[#1a1c19] text-[11px] font-medium">{cat.pct}%</span>
-              </div>
-            </div>
-            <div className="h-2 bg-[#f0f0eb] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${cat.pct}%`, background: cat.color }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ─── Milestone Tracker ────────────────────────────────────────────────────────
 function MilestoneTracker({ currentPts }: { currentPts: number }) {
@@ -359,9 +342,8 @@ export function ImpactPage({ onNavigate }: { onNavigate: (p: string, id?: number
         </div>
 
         {/* Charts row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-5">
           <MonthlyCarbonChart />
-          <CategoryBreakdown />
         </div>
 
         {/* Milestone tracker */}
