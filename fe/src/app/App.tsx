@@ -917,6 +917,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const user = useAuthStore(state => state.user);
 
   const avatarUrl = useAuthStore(state => state.avatarUrl);
   const setAvatarUrl = useAuthStore(state => state.setAvatarUrl);
