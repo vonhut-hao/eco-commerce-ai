@@ -786,7 +786,7 @@ const ORDER_STATUS_TABS = [
   { key: "CANCELLED", label: "Đã hủy" },
 ];
 
-function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOpenChatbot?: () => void }) {
+function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOpenChatbot?: (opts?: any) => void }) {
   const [reviewTarget, setReviewTarget] = useState<{ orderId: number; productName: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
 
@@ -997,13 +997,16 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                     </button>
                   )}
                   <button
-                    onClick={() => { if (onOpenChatbot) onOpenChatbot(); }}
+                    onClick={() => {
+                      const itemList = order.orderItems?.map(i => `${i.quantity || 1}x ${i.productName}`).join(", ") || "không có sản phẩm";
+                      if (onOpenChatbot) onOpenChatbot({ mode: "ai", autoSendPrompt: `Phân tích chi tiết lượng phát thải CO2 của đơn hàng #${order.id} (gồm: ${itemList}) giúp tôi.` });
+                    }}
                     className="w-full md:w-auto text-[#25521f] text-[13px] tracking-widest uppercase border border-[#25521f] px-6 py-2.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
                   >
                     Hỏi AI về phát thải đơn hàng
                   </button>
                   <button
-                    onClick={() => { toast.info("Đang phát triển", `Mở chat admin cho đơn ${order.id}`); }}
+                    onClick={() => { if (onOpenChatbot) onOpenChatbot({ mode: "admin", prefillMessage: `Tôi cần hỗ trợ về đơn hàng #${order.id}` }); }}
                     className="w-full md:w-auto text-[#42493e] text-[13px] tracking-widest uppercase border border-[#c2c9bb] px-6 py-2.5 rounded-full bg-white hover:bg-[#fafaf5] transition-colors"
                   >
                     Liên hệ Admin
@@ -1147,7 +1150,7 @@ export function ProfilePage({
   wishlistIds?: number[];
   onWishlist?: (p: Product) => void;
   onAddToCart?: (p: Product) => void;
-  onOpenChatbot?: () => void;
+  onOpenChatbot?: (opts?: any) => void;
 }) {
   const user = useAuthStore(s => s.user);
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);

@@ -39,35 +39,49 @@ public class AiChatService {
         }
 
         String prompt = buildPrompt(request);
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiApiKey;
+        String url = "https://generativelanguage.googleapis.com/v1beta/interactions";
 
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, Object> textPart = new HashMap<>();
-            textPart.put("text", prompt);
-
-            Map<String, Object> partMap = new HashMap<>();
-            partMap.put("parts", List.of(textPart));
+            headers.set("x-goog-api-key", geminiApiKey);
 
             Map<String, Object> body = new HashMap<>();
-            body.put("contents", List.of(partMap));
+            body.put("model", "gemini-3.6-flash");
+            body.put("input", prompt);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
             ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
 
             JsonNode root = objectMapper.readTree(response.getBody());
-            String replyText = root.path("candidates").get(0)
-                                   .path("content")
-                                   .path("parts").get(0)
-                                   .path("text").asText();
-
-            return new AiChatResponse(replyText);
+            String replyText = "";
+            try {
+                for (JsonNode step : root.path("steps")) {
+                    if ("model_output".equals(step.path("type").asText())) {
+                        for (JsonNode content : step.path("content")) {
+                            if ("text".equals(content.path("type").asText())) {
+                                replyText = content.path("text").asText();
+                                break;
+                            }
+                        }
+                    }
+                    if (!replyText.isEmpty()) break;
+                }
+                if (replyText.isEmpty()) {
+                    return new AiChatResponse("Parse error (no text found). Raw JSON: " + response.getBody());
+                }
+                return new AiChatResponse(replyText);
+            } catch (Exception e) {
+                return new AiChatResponse("Parse error. Raw JSON: " + response.getBody());
+            }
 
         } catch (Exception e) {
             log.error("Failed to call Gemini API", e);
-            return new AiChatResponse("Xin lỗi, hệ thống AI đang quá tải hoặc gặp sự cố. Vui lòng thử lại sau.");
+            String errorMsg = e.getMessage();
+            if (e instanceof org.springframework.web.client.HttpStatusCodeException httpEx) {
+                errorMsg = httpEx.getResponseBodyAsString();
+            }
+            return new AiChatResponse("Lỗi API Gemini: " + errorMsg);
         }
     }
 
@@ -76,11 +90,22 @@ public class AiChatService {
         prompt.append("Bạn là chuyên gia tư vấn môi trường (Carbon Advisor) của hệ thống thương mại điện tử GreenLife Eco-Commerce. ");
         prompt.append("Nhiệm vụ của bạn là giải đáp ngắn gọn, dễ hiểu và thân thiện về các chỉ số tác động môi trường của sản phẩm cho khách hàng.\n\n");
 
+        prompt.append("Dưới đây là Danh mục tham khảo nhanh các sản phẩm trong hệ thống GreenLife (Dùng để trả lời nếu khách hàng so sánh hoặc hỏi về sản phẩm khác):\n");
+        try {
+            var products = productService.listProducts(org.springframework.data.domain.PageRequest.of(0, 50)).getContent();
+            for (var p : products) {
+                prompt.append(String.format("- %s: %s kg CO2, %s điểm xanh, Rank: %s\n", p.name(), p.carbonIndex(), p.greenPoints(), p.ecoFriendliness()));
+            }
+            prompt.append("\n");
+        } catch (Exception e) {
+            log.warn("Could not fetch product list for AI prompt", e);
+        }
+
         if (request.getProductId() != null) {
             try {
                 var productResponse = productService.getProductDetail(request.getProductId());
-                prompt.append("Khách hàng đang hỏi về sản phẩm: '").append(productResponse.name()).append("'.\n");
-                prompt.append("Thông tin môi trường của sản phẩm này:\n");
+                prompt.append("Khách hàng đang xem chi tiết sản phẩm: '").append(productResponse.name()).append("'.\n");
+                prompt.append("Thông tin môi trường đầy đủ của sản phẩm này:\n");
                 prompt.append("- Chỉ số Carbon (Lượng CO2 phát thải): ").append(productResponse.carbonIndex()).append(" kg CO2/đơn vị.\n");
                 prompt.append("- Xếp hạng thân thiện (Eco-friendliness): ").append(productResponse.ecoFriendliness()).append(".\n");
                 prompt.append("- Điểm xanh tích luỹ khi mua (Green points): ").append(productResponse.greenPoints()).append(" điểm.\n");
@@ -103,6 +128,7 @@ public class AiChatService {
         prompt.append("Yêu cầu trả lời:\n");
         prompt.append("- Trả lời trực tiếp vào câu hỏi.\n");
         prompt.append("- Tư vấn rõ ý nghĩa của con số CO2 (cao hay thấp, tác động thế nào).\n");
+        prompt.append("- Dựa vào danh mục hệ thống để so sánh nếu cần thiết.\n");
         prompt.append("- Không dùng định dạng quá phức tạp, giữ tông giọng thân thiện, tự nhiên.");
 
         return prompt.toString();
