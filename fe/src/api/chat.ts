@@ -40,3 +40,13 @@ export const getMessagesByConversation = async (conversationId: number): Promise
   const response = await client.get(`/v1/message/conversation/${conversationId}`);
   return response.data.data;
 };
+
+export interface SendMessageRequest {
+  conversationId: number;
+  content: string;
+}
+
+export const sendMessage = async (data: SendMessageRequest): Promise<ChatMessage> => {
+  const response = await client.post('/v1/message', data);
+  return response.data.data;
+};

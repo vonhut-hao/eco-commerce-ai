@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { X, RefreshCw, Send, Leaf, Minus, Headphones } from "lucide-react";
 import svgPaths from "../../imports/ProductDetail2/svg-oqupvr7hg1";
-import { chatWithAi, createOrGetConversation, getMessagesByConversation, ChatMessage as ApiChatMessage } from "../../api/chat";
+import { chatWithAi, createOrGetConversation, getMessagesByConversation, sendMessage as sendLiveMessage, ChatMessage as ApiChatMessage } from "../../api/chat";
+import { Client } from "@stomp/stompjs";
+import useAuthStore from "../../store/authStore";
 
 interface Message {
   id: string;
@@ -43,9 +45,63 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
   const [activeTab, setActiveTab] = useState<"ai" | "admin">("ai");
 
   const [aiMessages, setAiMessages] = useState<Message[]>(INITIAL_AI);
-  const [adminMessages, setAdminMessages] = useState<Message[]>(INITIAL_ADMIN);
+  const [adminMessages, setAdminMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
+  const { user } = useAuthStore();
+  const [conversationId, setConversationId] = useState<number | null>(null);
+  const stompClientRef = useRef<Client | null>(null);
+
+  // Initialize and connect WS when switching to Admin Tab
+  useEffect(() => {
+    if (activeTab === "admin" && user) {
+      let active = true;
+      createOrGetConversation().then(conv => {
+        if (!active) return;
+        setConversationId(conv.id);
+        getMessagesByConversation(conv.id).then(msgs => {
+          if (!active) return;
+          const mapped: Message[] = msgs.map(m => ({
+            id: m.id.toString(),
+            role: m.senderId === user.id ? "user" : "admin",
+            content: m.content,
+            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+          }));
+          setAdminMessages(mapped);
+        });
+
+        const client = new Client({
+          brokerURL: 'ws://localhost:8080/ws',
+          onConnect: () => {
+            client.subscribe(`/topic/conversation/${conv.id}`, (msg) => {
+              const newMsg: ApiChatMessage = JSON.parse(msg.body);
+              setAdminMessages(prev => {
+                if (prev.find(m => m.id === newMsg.id.toString())) return prev;
+                return [...prev, {
+                  id: newMsg.id.toString(),
+                  role: newMsg.senderId === user.id ? "user" : "admin",
+                  content: newMsg.content,
+                  time: new Date(newMsg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                }];
+              });
+            });
+          },
+        });
+        client.activate();
+        stompClientRef.current = client;
+      }).catch(() => {
+        if (active) {
+          setAdminMessages([{ id: "err", role: "admin", content: "Lỗi kết nối hoặc bạn chưa đăng nhập.", time: now() }]);
+        }
+      });
+
+      return () => {
+        active = false;
+        stompClientRef.current?.deactivate();
+      };
+    }
+  }, [activeTab, user]);
 
   const [scrolled, setScrolled] = useState(false);
   const [hoveringBtn, setHoveringBtn] = useState(false);
@@ -106,20 +162,44 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
         setIsTyping(false);
       }
     } else {
-      setAdminMessages((prev) => [...prev, { id: msgId, role: "user", content: text, time: now() }]);
+      if (!conversationId) {
+        setAdminMessages(prev => [...prev, { id: msgId, role: "admin", content: "Vui lòng đăng nhập để chat trực tiếp.", time: now() }]);
+        return;
+      }
+      
+      const tmpId = Date.now().toString();
+      setAdminMessages((prev) => [...prev, { id: tmpId, role: "user", content: text, time: now() }]);
       setInput("");
-      setIsTyping(true);
-      // Wait for WS implementation in the future or implement basic WS here
-      setTimeout(() => {
-        setIsTyping(false);
-        setAdminMessages((prev) => [...prev, { id: msgId + "r", role: "admin", content: "Live Chat đang được kết nối...", time: now() }]);
-      }, 1000);
+      setIsTyping(false); // real-time so no fake typing wait
+
+      sendLiveMessage({ conversationId, content: text }).then((res) => {
+        setAdminMessages(prev => prev.map(m => m.id === tmpId ? {
+          id: res.id.toString(),
+          role: "user",
+          content: res.content,
+          time: new Date(res.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+        } : m));
+      }).catch(() => {
+        setAdminMessages(prev => [...prev, { id: tmpId + "err", role: "admin", content: "Gửi lỗi.", time: now() }]);
+      });
     }
   };
 
   const handleReset = () => {
     if (activeTab === "ai") { setAiMessages(INITIAL_AI); }
-    else { setAdminMessages(INITIAL_ADMIN); }
+    else { 
+      if (conversationId && user) {
+        getMessagesByConversation(conversationId).then(msgs => {
+          const mapped: Message[] = msgs.map(m => ({
+            id: m.id.toString(),
+            role: m.senderId === user.id ? "user" : "admin",
+            content: m.content,
+            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+          }));
+          setAdminMessages(mapped);
+        });
+      }
+    }
     setIsTyping(false);
   };
 
