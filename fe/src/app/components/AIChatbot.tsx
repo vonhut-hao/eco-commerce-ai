@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { X, RefreshCw, Send, Leaf, Minus, Headphones } from "lucide-react";
 import svgPaths from "../../imports/ProductDetail2/svg-oqupvr7hg1";
+import { chatWithAi, createOrGetConversation, getMessagesByConversation, ChatMessage as ApiChatMessage } from "../../api/chat";
 
 interface Message {
   id: string;
@@ -21,43 +22,7 @@ Tay cầm tre thu hoạch bền vững từ rừng Moso, lông bàn chải BPA-f
 
 Bạn có muốn tính toán carbon footprint cá nhân không? 🌿`;
 
-const BOT_RESPONSES: Record<string, string> = {
-  default: "Cảm ơn câu hỏi của Anh/Chị! Tôi có thể giúp bạn tìm hiểu thêm về sản phẩm hoặc tác động môi trường. Bạn có câu hỏi gì khác không? 🌿",
-  price: "Bamboo Toothbrush Set (Pack of 4) hiện có giá 149.000 VND. Đây là mức giá rất hợp lý so với giá trị môi trường mà sản phẩm mang lại! 💚",
-  carbon: "Bamboo Toothbrush chỉ thải ra 0.3kg CO2/sản phẩm, trong khi bàn chải nhựa thông thường thải ra đến 1.8kg CO2. Đó là mức giảm 83% lượng khí thải! 🌍",
-  bamboo: "Tre là vật liệu tuyệt vời: kháng khuẩn tự nhiên, phân hủy sinh học 100%, phát triển nhanh không cần thuốc trừ sâu. 🎋",
-  shipping: "Chúng tôi giao hàng toàn quốc trong 2–5 ngày làm việc. Đơn hàng trên 200.000 VND được miễn phí vận chuyển! 🚚",
-  review: "Sản phẩm được đánh giá 4.8/5 từ 127 khách hàng. Hầu hết đều khen ngợi độ bền, thiết kế và tác động tích cực đến môi trường. ⭐",
-  carbon_calc: "Nếu bạn dùng 1 bàn chải/quý = 4 bàn chải/năm.\nVới nhựa: 4 × 1.8kg = 7.2kg CO2/năm\nVới tre: 4 × 0.3kg = 1.2kg CO2/năm\n→ Bạn tiết kiệm 6kg CO2 mỗi năm! 🌱",
-};
-
-function getAIResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (lower.includes("giá") || lower.includes("bao nhiêu")) return BOT_RESPONSES.price;
-  if (lower.includes("carbon") || lower.includes("co2") || lower.includes("khí thải")) return BOT_RESPONSES.carbon;
-  if (lower.includes("bamboo") || lower.includes("tre")) return BOT_RESPONSES.bamboo;
-  if (lower.includes("giao hàng") || lower.includes("ship")) return BOT_RESPONSES.shipping;
-  if (lower.includes("đánh giá") || lower.includes("review") || lower.includes("sao")) return BOT_RESPONSES.review;
-  if (lower.includes("tính") || lower.includes("footprint") || lower.includes("calc")) return BOT_RESPONSES.carbon_calc;
-  return BOT_RESPONSES.default;
-}
-
-// ─── Admin tab data ───────────────────────────────────────────────────────────
-const ADMIN_RESPONSES: [RegExp, string][] = [
-  [/đơn hàng|order/i, "Anh/Chị cho em mã đơn hàng (ví dụ #GL-9402) để em kiểm tra trạng thái nhanh nhất ạ!"],
-  [/hoàn tiền|refund|đổi trả/i, "Em hiểu ạ! Chính sách đổi trả của GreenLife là 30 ngày kể từ ngày nhận hàng. Anh/Chị có thể cho em biết lý do đổi/trả để em hỗ trợ cụ thể hơn không ạ?"],
-  [/giao hàng|ship|vận chuyển/i, "Thời gian giao hàng tiêu chuẩn là 2–5 ngày làm việc. Đơn hàng trên 200.000 VND miễn phí vận chuyển. Anh/Chị cần kiểm tra đơn hàng cụ thể nào không ạ?"],
-  [/mã giảm giá|voucher|coupon|discount/i, "Hiện tại GreenLife đang có chương trình GREENWEEK giảm 15% cho đơn từ 500.000 VND. Anh/Chị muốn em gửi thêm thông tin về các ưu đãi không ạ?"],
-  [/sản phẩm|hàng|stock|còn/i, "Em sẽ kiểm tra tình trạng kho cho Anh/Chị ngay ạ! Anh/Chị đang quan tâm đến sản phẩm nào ạ?"],
-  [/cảm ơn|thank/i, "Cảm ơn Anh/Chị đã tin tưởng GreenLife! Chúc Anh/Chị một ngày xanh và ý nghĩa 🌿"],
-];
-
-function getAdminResponse(input: string): string {
-  for (const [pattern, reply] of ADMIN_RESPONSES) {
-    if (pattern.test(input)) return reply;
-  }
-  return "Em đã ghi nhận câu hỏi của Anh/Chị. Đội hỗ trợ sẽ phản hồi trong vòng 5–10 phút trong giờ làm việc (8:00–22:00). Anh/Chị có cần hỗ trợ thêm gì không ạ? 😊";
-}
+// Removed mock getAIResponse and getAdminResponse
 
 const now = () => new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
@@ -82,19 +47,15 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const [idle, setIdle] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [hoveringBtn, setHoveringBtn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handleActivity = () => setIdle(true);
-    window.addEventListener("scroll", handleActivity, { passive: true });
-    window.addEventListener("mousedown", handleActivity);
-    return () => {
-      window.removeEventListener("scroll", handleActivity);
-      window.removeEventListener("mousedown", handleActivity);
-    };
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -123,7 +84,7 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
     }, 1200);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() || isTyping) return;
     const text = input.trim();
     const msgId = Date.now().toString();
@@ -132,18 +93,27 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
       setAiMessages((prev) => [...prev, { id: msgId, role: "user", content: text }]);
       setInput("");
       setIsTyping(true);
-      setTimeout(() => {
+
+      const productIdStr = window.location.pathname.match(/\/product\/(\d+)/)?.[1];
+      const productId = productIdStr ? parseInt(productIdStr) : undefined;
+
+      try {
+        const res = await chatWithAi({ message: text, productId });
+        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: res.reply }]);
+      } catch (error) {
+        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: "Xin lỗi, AI đang bận. Vui lòng thử lại sau." }]);
+      } finally {
         setIsTyping(false);
-        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: getAIResponse(text) }]);
-      }, 800 + Math.random() * 600);
+      }
     } else {
       setAdminMessages((prev) => [...prev, { id: msgId, role: "user", content: text, time: now() }]);
       setInput("");
       setIsTyping(true);
+      // Wait for WS implementation in the future or implement basic WS here
       setTimeout(() => {
         setIsTyping(false);
-        setAdminMessages((prev) => [...prev, { id: msgId + "r", role: "admin", content: getAdminResponse(text), time: now() }]);
-      }, 1200 + Math.random() * 800);
+        setAdminMessages((prev) => [...prev, { id: msgId + "r", role: "admin", content: "Live Chat đang được kết nối...", time: now() }]);
+      }, 1000);
     }
   };
 
@@ -339,9 +309,9 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
         </div>
       )}
 
-      {/* Floating button — shrinks when idle, expands on hover or when chat is open */}
+      {/* Floating button — shrinks when scrolled, expands on hover or when chat is open */}
       {(() => {
-        const shrink = idle && !chatOpen && !widgetVisible && !hoveringBtn;
+        const shrink = scrolled && !chatOpen && !widgetVisible && !hoveringBtn;
         return (
           <button
             onClick={() => {
