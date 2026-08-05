@@ -31,6 +31,7 @@ export const useAuthStore = create<AuthState>()(
           const decoded: any = jwtDecode(token);
           set({
             token,
+            avatarUrl: null,
             user: {
               id: decoded.userId || decoded.sub, // adjust based on your JWT payload
               email: decoded.email || decoded.sub,

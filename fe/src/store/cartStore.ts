@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { cartApi, CartItemResponse } from '../api/cart';
 import { productsApi } from '../api/products';
 import { useAuthStore } from './authStore';
+import { toast } from '../app/components/Toast';
 
 export interface CartItem {
   cartItemId?: number; // Needed for backend delete/update
@@ -43,19 +44,19 @@ export const useCartStore = create<CartState>()(
           if (guestItems.length === 0) return;
           
           set({ loading: true });
-          try {
-            for (const item of guestItems) {
+          for (const item of guestItems) {
+            try {
               await cartApi.createOrUpdateCartItem({
                 productId: item.productId,
                 quantity: item.quantity,
                 userId: user.id
               });
+            } catch (e: any) {
+              console.error(`Failed to sync item ${item.productId} in guest cart`, e);
+              toast.error("Lỗi đồng bộ giỏ hàng", `Sản phẩm "${item.productName}" không thể đồng bộ (có thể do vượt quá số lượng trong kho).`);
             }
-          } catch (e) {
-            console.error('Failed to sync guest cart', e);
-          } finally {
-            set({ loading: false });
           }
+          set({ loading: false });
         }
       },
 

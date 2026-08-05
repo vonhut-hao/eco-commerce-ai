@@ -16,7 +16,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItemEntity, Long
             SELECT COALESCE(SUM(oi.lineCarbonFootprint), 0.0)
             FROM OrderItemEntity oi
             WHERE oi.orderEntity.user.id = :userId
-              AND oi.orderEntity.status = :status
+              AND oi.orderEntity.status != :excludedStatus
               AND oi.orderEntity.createdAt >= :fromDate
               AND oi.orderEntity.createdAt <= :toDate
             """)
@@ -24,7 +24,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItemEntity, Long
             @Param("userId") Long userId,
             @Param("fromDate") LocalDateTime fromDate,
             @Param("toDate") LocalDateTime toDate,
-            @Param("status") OrderStatus status
+            @Param("excludedStatus") OrderStatus excludedStatus
     );
 }
 

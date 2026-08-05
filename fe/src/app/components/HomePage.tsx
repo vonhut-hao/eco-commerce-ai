@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, TreePine } from "lucide-react";
 import { ProductCard } from "./ProductCard";
 import { ALL_PRODUCTS } from "./ShopPage";
 import type { Product } from "./ShopPage";
+import { useAuthStore } from "../../store/authStore";
+import { statisticsApi } from "../../api/statistics";
 
 import imgHero1 from "../../imports/Homepage/ad594a362ca9f01e32ef654ed2558bf212d42c6b.png";
 import imgHero2 from "../../imports/Homepage/f6aed8954f7b8995c083ee7f5fa9a423fd3feff0.png";
@@ -205,9 +207,25 @@ function TrendingSection({
 
 // ─── Impact Banner ─────────────────────────────────────────────────────────
 function ImpactBanner({ onNavigate }: { onNavigate: (p: string) => void }) {
-  const current = 2.1;
+  const [current, setCurrent] = useState(0);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      const d = new Date();
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+      statisticsApi.getMonthlyCarbonIndex(dateStr).then(val => {
+        // Match exact rounding sequence from ImpactPage
+        const totalCO2 = Number(val.toFixed(1));
+        const standardCO2 = Number((totalCO2 * 2.5).toFixed(1));
+        const savedCO2 = Number((standardCO2 - totalCO2).toFixed(1));
+        setCurrent(savedCO2);
+      }).catch(console.error);
+    }
+  }, [isAuthenticated]);
+
   const target = 5;
-  const pct = Math.round((current / target) * 100);
+  const pct = Math.min(100, Math.round((current / target) * 100));
   return (
     <section className="bg-gradient-to-r from-[#e7f2e1] via-[#eef6e9] to-[#d7edcd] border-t border-b border-[#cfe0c4]">
       <div className="max-w-[720px] mx-auto px-4 md:px-16 py-10 flex flex-col items-center gap-4 text-center">
@@ -224,7 +242,7 @@ function ImpactBanner({ onNavigate }: { onNavigate: (p: string) => void }) {
         </div>
 
         <p className="text-[#25521f] text-[13px] italic -mt-1 flex items-center justify-center gap-1">
-          Equivalent to planting 1 tree <TreePine size={14} strokeWidth={2} />
+          Equivalent to planting {Math.ceil(current / 5)} tree{Math.ceil(current / 5) === 1 ? '' : 's'} <TreePine size={14} strokeWidth={2} />
         </p>
 
         <div className="w-full flex flex-col gap-2 mt-1">

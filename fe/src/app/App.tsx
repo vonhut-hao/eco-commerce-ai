@@ -960,6 +960,9 @@ export default function App() {
       const token = params.get("token");
       if (token) {
         setToken(token);
+        useCartStore.getState().syncGuestCart().finally(() => {
+          fetchCart();
+        });
         toast.success("Welcome back!", "Signed in with Google successfully");
       }
       window.history.replaceState({}, document.title, "/");

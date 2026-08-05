@@ -5,6 +5,7 @@ import { ProductCard } from "./ProductCard";
 import { ALL_PRODUCTS } from "./ShopPage";
 import type { Product } from "./ShopPage";
 import { useAuthStore } from "../../store/authStore";
+import { useCartStore } from "../../store/cartStore";
 import { profileApi, UserProfileResponse } from "../../api/profile";
 import { ordersApi, OrderResponse } from "../../api/orders";
 import imageCompression from 'browser-image-compression';
@@ -644,7 +645,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
 // ─── Status badge helper ────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    DELIVERED:  { label: "Đã giao",      cls: "bg-[#d4eddb] text-[#1e5e2e]" },
+    COMPLETED:  { label: "Đã giao",      cls: "bg-[#d4eddb] text-[#1e5e2e]" },
     SHIPPING:   { label: "Đang giao",    cls: "bg-[#ddeeff] text-[#1a4f8a]" },
     PROCESSING: { label: "Đang xử lý",  cls: "bg-[#fff3cd] text-[#856404]" },
     CANCELLED:  { label: "Đã hủy",      cls: "bg-[#fde8e8] text-[#ba1a1a]" },
@@ -780,7 +781,7 @@ const ORDER_STATUS_TABS = [
   { key: "ALL",       label: "Tất cả" },
   { key: "PENDING",   label: "Chờ xác nhận" },
   { key: "SHIPPING",  label: "Đang giao" },
-  { key: "DELIVERED", label: "Hoàn thành" },
+  { key: "COMPLETED", label: "Hoàn thành" },
   { key: "REVIEW",    label: "Chờ đánh giá" },
   { key: "CANCELLED", label: "Đã hủy" },
 ];
@@ -798,7 +799,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
 
   // Filter logic
   const isAwaitingReview = (order: OrderResponse) =>
-    order.status === 'DELIVERED' && order.id === 9991; // id 9991 is within review window
+    order.status === 'COMPLETED' && order.id === 9991; // id 9991 is within review window
 
   const filteredOrders = orders.filter(order => {
     if (statusFilter === "ALL") return true;
@@ -885,7 +886,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                     order.status === 'SHIPPING' ? 'text-[#0284c7]' :
                     'text-[#25521f]'
                   } text-[12px] uppercase tracking-wide font-medium`}>
-                    {order.status === 'DELIVERED' ? 'Hoàn Thành' :
+                    {order.status === 'COMPLETED' ? 'Hoàn Thành' :
                      order.status === 'PENDING' ? 'Chờ Xác Nhận' :
                      order.status === 'CANCELLED' ? 'Đã Hủy' :
                      order.status === 'SHIPPING' ? 'Đang Giao' :
@@ -911,15 +912,20 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                               CO₂ {((p.lineCarbonFootprint || 0) / (p.quantity || 1)).toFixed(1)}kg{p.quantity > 1 ? "/sp" : ""}
                             </span>
                           </div>
-                          <div className="flex flex-col items-end shrink-0">
+                          <div className="flex flex-col items-end justify-center shrink-0">
+                            {(p.quantity || 1) > 1 && (
+                              <span className="text-[#6b7280] text-[11px] mt-1">
+                                {((p.price || 0) / (p.quantity || 1)).toLocaleString()}đ/sp
+                              </span>
+                            )}
                             <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px]">
-                              {((p.price || 0) / (p.quantity || 1)).toLocaleString()}đ
+                              {(p.price || 0).toLocaleString()}đ
                             </span>
                           </div>
                         </div>
 
                         {/* Review logic */}
-                        {order.status === 'DELIVERED' && (
+                        {order.status === 'COMPLETED' && (
                           <div className="flex justify-end items-center mt-1">
                             {order.id === 9992 ? (
                               <span className="text-[#9ca3af] text-[11px]">Hết hạn đánh giá</span>
@@ -1055,7 +1061,13 @@ function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void })
           return (
             <button
               key={row.label}
-              onClick={() => { if (row.danger) onNavigate("signin"); }}
+              onClick={() => { 
+                if (row.danger) {
+                  useAuthStore.getState().logout();
+                  useCartStore.getState().clearCart();
+                  onNavigate("home");
+                } 
+              }}
               className={`w-full flex items-center gap-4 px-5 py-4 hover:bg-[#f5f9f3] active:bg-[#eef6eb] transition-colors text-left ${
                 i < rows.length - 1 ? "border-b border-[#e8f0e4]" : ""
               }`}
