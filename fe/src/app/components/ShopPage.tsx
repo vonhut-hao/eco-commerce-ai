@@ -218,7 +218,7 @@ function CompareBar({
 }
 
 // ─── Compare Modal ─────────────────────────────────────────────────────────────
-function CompareModal({ items, onClose }: { items: Product[]; onClose: () => void }) {
+function CompareModal({ items, onClose, onAddToCart }: { items: Product[]; onClose: () => void; onAddToCart: (p: Product) => void }) {
   const fields: { label: string; key: keyof Product }[] = [
     { label: "Giá", key: "priceLabel" },
     { label: "Carbon Index", key: "carbonLabel" },
@@ -273,7 +273,10 @@ function CompareModal({ items, onClose }: { items: Product[]; onClose: () => voi
                 <td className="px-6 py-3" />
                 {items.map((p) => (
                   <td key={p.id} className="px-4 py-3 text-center">
-                    <button className="bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[11px] tracking-widest uppercase px-4 py-2 rounded-full hover:shadow-md transition-all">
+                    <button 
+                      onClick={() => onAddToCart(p)}
+                      className="bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[11px] tracking-widest uppercase px-4 py-2 rounded-full hover:shadow-md transition-all"
+                    >
                       Thêm vào giỏ
                     </button>
                   </td>
@@ -416,6 +419,8 @@ export function ShopPage({
   products = ALL_PRODUCTS,
   initialCategory = "All",
   initialSearch = "",
+  initialCarbonFilter,
+  initialCerts,
 }: {
   onNavigate: (page: string, id?: number) => void;
   onAddToCart: (p: Product) => void;
@@ -424,20 +429,33 @@ export function ShopPage({
   products?: Product[];
   initialCategory?: string;
   initialSearch?: string;
+  initialCarbonFilter?: string;
+  initialCerts?: string[];
 }) {
-  const [search, setSearch] = useState(initialSearch);
-  const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory === "All" ? [] : [initialCategory]);
+  const [search, setSearch] = useState(initialSearch || "");
+  const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory && initialCategory !== "All" ? [initialCategory] : []);
 
   useEffect(() => {
-    setSearch(initialSearch);
+    if (initialSearch !== undefined) setSearch(initialSearch);
   }, [initialSearch]);
+  
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [carbonFilter, setCarbonFilter] = useState("all");
-  const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
+  const [carbonFilter, setCarbonFilter] = useState(initialCarbonFilter || "all");
+  const [selectedCerts, setSelectedCerts] = useState<string[]>(initialCerts || []);
 
   useEffect(() => {
-    setSelectedCats(initialCategory === "All" ? [] : [initialCategory]);
+    if (initialCategory) {
+      setSelectedCats(initialCategory === "All" ? [] : [initialCategory]);
+    }
   }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialCarbonFilter !== undefined) setCarbonFilter(initialCarbonFilter);
+  }, [initialCarbonFilter]);
+
+  useEffect(() => {
+    if (initialCerts !== undefined) setSelectedCerts(initialCerts);
+  }, [initialCerts]);
   const [sortBy, setSortBy] = useState("default");
   const [showFilter, setShowFilter] = useState(false);
   const [compareItems, setCompareItems] = useState<Product[]>([]);
@@ -466,6 +484,7 @@ export function ShopPage({
       case "price_desc":  return [...list].sort((a, b) => b.price - a.price);
       case "carbon_asc":  return [...list].sort((a, b) => a.carbonIndex - b.carbonIndex);
       case "rating_desc": return [...list].sort((a, b) => b.rating - a.rating);
+      case "newest":      return [...list].sort((a, b) => b.id - a.id);
       default: return list;
     }
   }, [search, selectedCats, priceRange, carbonFilter, selectedCerts, sortBy, products]);
@@ -483,7 +502,7 @@ export function ShopPage({
   return (
     <main className="flex-1 pb-[120px] md:pb-20">
       {/* Top bar */}
-      <div className="border-b border-[#dbe3d3] bg-white/60 backdrop-blur-sm sticky top-[56px] md:top-[80px] z-20">
+      <div className="border-b border-[#dbe3d3] bg-white/60 backdrop-blur-sm sticky top-[56px] md:top-[80px] z-30">
         <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-3 flex items-center gap-3">
           {/* Search */}
           <div className="flex-1 flex items-center bg-white border border-[#c2c9bb] rounded-md px-3 gap-2 h-9">
@@ -623,7 +642,7 @@ export function ShopPage({
       />
 
       {/* Compare modal */}
-      {showCompare && <CompareModal items={compareItems} onClose={() => setShowCompare(false)} />}
+      {showCompare && <CompareModal items={compareItems} onClose={() => setShowCompare(false)} onAddToCart={onAddToCart} />}
     </main>
   );
 }

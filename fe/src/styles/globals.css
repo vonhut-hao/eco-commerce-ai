@@ -19,3 +19,7 @@
   scrollbar-width: thin;
   scrollbar-color: #c2c9bb transparent;
 }
+
+button, a, [role="button"] {
+  cursor: pointer;
+}

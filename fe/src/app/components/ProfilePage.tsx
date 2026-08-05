@@ -1,9 +1,15 @@
-import { useState, useRef } from "react";
-import { MapPin, CreditCard, Bell, LogOut, Leaf, X, Camera, Eye, EyeOff, Star, MessageSquarePlus, ChevronRight } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { MapPin, CreditCard, Bell, LogOut, Leaf, X, Camera, Eye, EyeOff, Star, MessageSquarePlus, ChevronRight, Sprout, TrendingDown, Award, Trophy } from "lucide-react";
 import { toast } from "./Toast";
 import { ProductCard } from "./ProductCard";
 import { ALL_PRODUCTS } from "./ShopPage";
 import type { Product } from "./ShopPage";
+import { useAuthStore } from "../../store/authStore";
+import { useCartStore } from "../../store/cartStore";
+import { profileApi, UserProfileResponse } from "../../api/profile";
+import { ordersApi, OrderResponse } from "../../api/orders";
+import imageCompression from 'browser-image-compression';
+import { getTier, ECO_TIERS } from "./ImpactPage";
 
 type OrderProduct = { name: string; reviewed: boolean };
 type Order = {
@@ -13,7 +19,7 @@ type Order = {
   price: string;
   pts: string;
   co2e: string;
-  status: "DELIVERED" | "SHIPPING" | "PROCESSING" | "CANCELLED";
+  status: "DELIVERED" | "DELIVERY" | "PROCESSING" | "CANCELLED";
   products: OrderProduct[];
   reviewDeadlineDays: number | null; // null = expired
 };
@@ -39,7 +45,7 @@ const orders: Order[] = [
   {
     id: "#GL-9288", date: "Jul 28, 2026", deliveredDate: null,
     price: "3,744,000 VND", pts: "+210 pts", co2e: "CO2e 2.1kg",
-    status: "SHIPPING", reviewDeadlineDays: null,
+    status: "DELIVERY", reviewDeadlineDays: null,
     products: [
       { name: "Natural Coconut Bowl Set", reviewed: false },
       { name: "Hemp Canvas Backpack", reviewed: false },
@@ -70,31 +76,71 @@ type ProfileData = {
   phoneNumber: string;
   avatarIndex: number;
   avatarInitial: string;
+  avatarUrl: string;
 };
 
 // ─── Edit Profile Modal/Panel ──────────────────────────────────────────────
 function EditProfilePanel({
   data,
+  isLocalProvider,
   onSave,
   onCancel,
 }: {
   data: ProfileData;
-  onSave: (updated: ProfileData) => void;
+  isLocalProvider: boolean;
+  onSave: (updated: ProfileData, pw?: { old: string, new: string }) => void;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({ ...data });
+  const [oldPassword, setOldPassword]         = useState("");
   const [newPassword, setNewPassword]         = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOld, setShowOld]                 = useState(false);
   const [showNew, setShowNew]                 = useState(false);
   const [showConfirm, setShowConfirm]         = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const passwordMismatch = !!confirmPassword && confirmPassword !== newPassword;
-  const canSave = !!form.fullName && !passwordMismatch;
+  const canSave = !!form.fullName && !passwordMismatch && !uploadingAvatar;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Lỗi", "Kích thước ảnh không được vượt quá 5MB.");
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 500,
+        useWebWorker: true,
+        fileType: 'image/webp',
+        initialQuality: 0.8
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      const url = await profileApi.uploadFile(compressedFile);
+      setForm((f) => ({ ...f, avatarUrl: url, avatarInitial: "" }));
+    } catch (err: any) {
+      toast.error("Lỗi", err.response?.data?.message || "Không thể upload ảnh, vui lòng thử lại sau.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSave = () => {
     if (!canSave) return;
-    onSave(form);
+    if (oldPassword && newPassword && !passwordMismatch) {
+       onSave(form, { old: oldPassword, new: newPassword });
+    } else {
+       onSave(form);
+    }
   };
 
   const grad = AVATAR_GRADIENTS[form.avatarIndex];
@@ -129,18 +175,29 @@ function EditProfilePanel({
             <div className="flex items-center gap-4">
               {/* Current avatar preview */}
               <div className="w-16 h-16 rounded-xl shrink-0 relative overflow-hidden">
-                <div
-                  className="absolute inset-0"
-                  style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}
-                />
-                <span className="absolute inset-0 flex items-center justify-center text-white font-['Nimbus_Sans:Bold',sans-serif] text-2xl select-none">
-                  {form.avatarInitial || form.username?.[0]?.toUpperCase() || "U"}
-                </span>
+                {form.avatarUrl?.startsWith("http") && !form.avatarInitial ? (
+                  <img src={form.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center text-white font-['Nimbus_Sans:Bold',sans-serif] text-2xl select-none">
+                      {form.avatarInitial || form.fullName?.[0]?.toUpperCase() || form.username?.[0]?.toUpperCase() || "U"}
+                    </span>
+                  </>
+                )}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                  disabled={uploadingAvatar}
+                  className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity disabled:opacity-100 disabled:bg-black/50"
                 >
-                  <Camera size={16} className="text-white" />
+                  {uploadingAvatar ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Camera size={16} className="text-white" />
+                  )}
                 </button>
               </div>
               {/* Color swatches */}
@@ -156,7 +213,13 @@ function EditProfilePanel({
               </div>
             </div>
             {/* Hidden file input */}
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" />
+            <input 
+              ref={fileInputRef} 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleFileChange}
+            />
             {/* Initial letter input */}
             <div className="flex items-center gap-3">
               <span className="text-[#6b7280] text-[13px] shrink-0">Display initial:</span>
@@ -198,13 +261,34 @@ function EditProfilePanel({
           </div>
 
           {/* Divider */}
-          <div className="border-t border-[#e2e3de]" />
+          {isLocalProvider && <div className="border-t border-[#e2e3de]" />}
 
           {/* Change Password */}
+          {isLocalProvider && (
           <div className="flex flex-col gap-4">
             <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[13px] tracking-[1.2px] uppercase">
               Change Password <span className="text-[#6b7280] normal-case tracking-normal font-normal">(optional)</span>
             </span>
+            {/* Old password */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[#42493e] text-[13px]">Old Password</label>
+              <div className="relative">
+                <input
+                  type={showOld ? "text" : "password"}
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full border border-[#c2c9bb] pl-4 pr-10 py-3 text-[15px] text-[#1a1c19] placeholder-[#6b7280] outline-none focus:border-[#25521f] transition-colors bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOld((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#42493e] hover:text-[#25521f] transition-colors"
+                >
+                  {showOld ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
             {/* New password */}
             <div className="flex flex-col gap-2">
               <label className="text-[#42493e] text-[13px]">New Password</label>
@@ -251,6 +335,7 @@ function EditProfilePanel({
               )}
             </div>
           </div>
+          )}
 
           {/* Actions */}
           <div className="flex flex-col gap-3 pb-2">
@@ -276,23 +361,54 @@ function EditProfilePanel({
 }
 
 // ─── User Info Card ────────────────────────────────────────────────────────
-function UserInfoCard() {
-  const [profile, setProfile] = useState<ProfileData>({
-    username: "shame",
-    email: "shame@example.com",
-    fullName: "",
-    phoneNumber: "",
-    avatarIndex: 0,
-    avatarInitial: "S",
-  });
+function UserInfoCard({ profile, ordersCount, onUpdateProfile }: { profile: UserProfileResponse | null, ordersCount: number, onUpdateProfile: (p: UserProfileResponse) => void }) {
   const [editing, setEditing] = useState(false);
+  const [isLocalProvider, setIsLocalProvider] = useState(false);
 
-  const grad = AVATAR_GRADIENTS[profile.avatarIndex];
-  const initial = profile.avatarInitial || profile.username?.[0]?.toUpperCase() || "U";
+  useEffect(() => {
+    if (profile?.email) {
+      import('../../api/auth').then(({ authApi }) => {
+        authApi.checkProvider(profile.email).then((res) => {
+          setIsLocalProvider(res.data);
+        }).catch(() => setIsLocalProvider(false));
+      });
+    }
+  }, [profile?.email]);
 
-  const handleSave = (updated: ProfileData) => {
-    setProfile(updated);
-    setEditing(false);
+  if (!profile) return <div className="h-40 animate-pulse bg-gray-100 rounded-2xl" />;
+
+  const grad = AVATAR_GRADIENTS[Math.abs(profile.userId) % AVATAR_GRADIENTS.length];
+  const isImageAvatar = profile.avatarUrl?.startsWith("http");
+  const initial = isImageAvatar ? (profile.fullName?.[0] || profile.userName?.[0] || "U").toUpperCase() : (profile.avatarUrl || profile.fullName?.[0] || profile.userName?.[0] || "U").toUpperCase();
+
+  const handleSave = async (updated: ProfileData, pw?: { old: string, new: string }) => {
+    try {
+      if (pw) {
+        const { authApi } = await import('../../api/auth');
+        await authApi.changePassword({ oldPassword: pw.old, newPassword: pw.new });
+      }
+
+      const res = await profileApi.updateProfile({
+        fullName: updated.fullName,
+        phoneNumber: updated.phoneNumber,
+        avatarUrl: updated.avatarInitial || updated.avatarUrl,
+      });
+      onUpdateProfile(res);
+      setEditing(false);
+      toast.success("Thành công", pw ? "Cập nhật hồ sơ và mật khẩu thành công" : "Cập nhật hồ sơ thành công");
+    } catch (err) {
+      toast.error("Lỗi", "Không thể cập nhật hồ sơ. Vui lòng kiểm tra lại mật khẩu cũ.");
+    }
+  };
+
+  const profileData: ProfileData = {
+    username: profile.userName,
+    email: profile.email,
+    fullName: profile.fullName || "",
+    phoneNumber: profile.phoneNumber || "",
+    avatarIndex: Math.abs(profile.userId) % AVATAR_GRADIENTS.length,
+    avatarInitial: isImageAvatar ? "" : initial,
+    avatarUrl: profile.avatarUrl || "",
   };
 
   return (
@@ -301,12 +417,18 @@ function UserInfoCard() {
       <div className="flex flex-col gap-5 md:hidden">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 relative shadow-md">
-            <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }} />
-            <span className="absolute inset-0 flex items-center justify-center text-white font-['Nimbus_Sans:Bold',sans-serif] text-3xl select-none">{initial}</span>
+            {isImageAvatar ? (
+              <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <>
+                <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }} />
+                <span className="absolute inset-0 flex items-center justify-center text-white font-['Nimbus_Sans:Bold',sans-serif] text-3xl select-none">{initial}</span>
+              </>
+            )}
           </div>
           <div className="flex flex-col items-center gap-1">
-            <h2 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">{profile.fullName || profile.username}</h2>
-            {profile.fullName && <p className="text-[#6b7280] text-[13px]">@{profile.username}</p>}
+            <h2 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">{profile.fullName || profile.userName}</h2>
+            {profile.fullName && <p className="text-[#6b7280] text-[13px]">@{profile.userName}</p>}
             <span className="inline-flex items-center gap-1 bg-[#f1deb8] text-[#6f6143] text-[11px] px-2.5 py-0.5 rounded-full w-fit tracking-wide mt-0.5">
               <Leaf size={10} /> GREEN CHAMPION
             </span>
@@ -333,8 +455,14 @@ function UserInfoCard() {
       <div className="hidden md:flex items-center gap-6">
         {/* Avatar — circle */}
         <div className="w-[170px] h-[170px] rounded-full overflow-hidden shrink-0 relative shadow-lg">
-          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }} />
-          <span className="absolute inset-0 flex items-center justify-center text-white font-['Nimbus_Sans:Bold',sans-serif] text-[80px] select-none">{initial}</span>
+          {isImageAvatar ? (
+            <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <>
+              <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }} />
+              <span className="absolute inset-0 flex items-center justify-center text-white font-['Nimbus_Sans:Bold',sans-serif] text-[80px] select-none">{initial}</span>
+            </>
+          )}
         </div>
 
         {/* Info block */}
@@ -343,27 +471,37 @@ function UserInfoCard() {
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[26px] leading-tight">
-                {profile.fullName || profile.username}
+                {profile.fullName || profile.userName}
               </h2>
-              <span className="inline-flex items-center gap-1 bg-[#f1deb8] text-[#6f6143] text-[11px] px-2.5 py-0.5 rounded-full tracking-[0.275px]">
-                <Leaf size={10} /> GREEN CHAMPION
-              </span>
+              {(() => {
+                const tier = getTier(profile.greenPoints || 0);
+                const TierIcon = tier.Icon;
+                return (
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full tracking-[0.275px] font-medium"
+                    style={{ background: tier.bg, color: tier.color }}
+                  >
+                    <TierIcon size={10} strokeWidth={2} />
+                    {tier.label.toUpperCase()}
+                  </span>
+                );
+              })()}
             </div>
-            <p className="text-[#6b7280] text-[14px]">@{profile.username}</p>
+            <p className="text-[#6b7280] text-[14px]">@{profile.userName}</p>
           </div>
 
           {/* Stats row */}
           <div className="flex items-start">
             <div className="flex flex-col gap-0.5 pr-6 border-r border-[#e2e3de]">
-              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">1,250</span>
+              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">{profile.greenPoints || 0}</span>
               <span className="text-[#6b7280] text-[12px]">Green Points</span>
             </div>
             <div className="flex flex-col gap-0.5 px-6 border-r border-[#e2e3de]">
-              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">32.4kg</span>
+              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">{profile.totalCarbonIndex ? profile.totalCarbonIndex.toFixed(1) : "0"}kg</span>
               <span className="text-[#6b7280] text-[12px]">CO2e Saved</span>
             </div>
             <div className="flex flex-col gap-0.5 pl-6">
-              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">3</span>
+              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">{ordersCount}</span>
               <span className="text-[#6b7280] text-[12px]">Orders</span>
             </div>
           </div>
@@ -391,7 +529,8 @@ function UserInfoCard() {
 
       {editing && (
         <EditProfilePanel
-          data={profile}
+          data={profileData}
+          isLocalProvider={isLocalProvider}
           onSave={handleSave}
           onCancel={() => setEditing(false)}
         />
@@ -401,87 +540,120 @@ function UserInfoCard() {
 }
 
 // ─── Green Impact Metrics ──────────────────────────────────────────────────
-function GreenImpactMetrics() {
-  const current = 1250;
-  const target = 3000;
-  const progress = Math.round((current / target) * 100);
-
-  const stats = [
-    { label: "Green Points",    value: "1,250",    unit: "pts",      color: "#25521f" },
-    { label: "CO₂ tiết kiệm",  value: "32.4",     unit: "kg CO₂e",  color: "#3d6b35" },
-    { label: "Đơn hàng xanh",  value: "3",        unit: "đơn",      color: "#6b5d3f" },
-  ];
+function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResponse | null, ordersCount: number }) {
+  const pts = profile?.greenPoints || 0;
+  const tier = getTier(pts);
+  const TierIcon = tier.Icon;
+  const currentIdx = ECO_TIERS.findIndex((t) => t.label === tier.label);
+  const next = ECO_TIERS[currentIdx + 1];
+  const pct = next
+    ? Math.round(((pts - ECO_TIERS[currentIdx].req) / (next.req - ECO_TIERS[currentIdx].req)) * 100)
+    : 100;
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, #e8f5e4 0%, #f0f9ec 50%, #e3f0df 100%)",
-        border: "1px solid #cce0c6",
-      }}
-    >
-      <div className="p-5 md:p-6 flex flex-col gap-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[#42493e] text-[11px] tracking-[1.4px] uppercase mb-1">Hành trình Eco của bạn</p>
-            <h3
-              className="text-[#1a1c19] text-[18px]"
-              style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}
-            >
-              Green Impact Metrics
-            </h3>
+    <div className="bg-white/70 border border-[#e2e3de] rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-3 flex items-center justify-between border-b border-[#e2e3de]">
+        <div className="flex items-center gap-2">
+          <Sprout size={14} className="text-[#25521f]" />
+          <span className="text-[#42493e] text-[11px] tracking-[1.4px] uppercase">Hành trình Eco của bạn</span>
+        </div>
+        {/* Dynamic tier badge */}
+        <span
+          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-medium"
+          style={{ background: tier.bg, color: tier.color }}
+        >
+          <TierIcon size={11} strokeWidth={2} />
+          {tier.label}
+        </span>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 divide-x divide-[#e2e3de]">
+        {/* Green Points */}
+        <div className="px-5 py-4 flex flex-col gap-1">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Award size={12} className="text-[#25521f]" />
+            <span className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">Green Points</span>
           </div>
-          <span className="text-2xl select-none">🌱</span>
+          <span
+            className="text-[#25521f] leading-tight"
+            style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700, fontSize: "22px" }}
+          >
+            {(profile?.greenPoints || 0).toLocaleString()}
+          </span>
+          <span className="text-[#6b7280] text-[11px]">pts</span>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              className="bg-white/70 backdrop-blur-sm rounded-xl p-3 md:p-4 flex flex-col gap-1"
-              style={{ border: "1px solid rgba(255,255,255,0.8)" }}
-            >
-              <p className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">{s.label}</p>
-              <p
-                className="leading-tight"
-                style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700, fontSize: "20px", color: s.color }}
-              >
-                {s.value}
-              </p>
-              <p className="text-[#6b7280] text-[11px]">{s.unit}</p>
+        {/* CO2e */}
+        <div className="px-5 py-4 flex flex-col gap-1">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingDown size={12} className="text-[#3d6b35]" />
+            <span className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">CO₂ tiết kiệm</span>
+          </div>
+          <span
+            className="text-[#3d6b35] leading-tight"
+            style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700, fontSize: "22px" }}
+          >
+            {profile?.totalCarbonIndex ? profile.totalCarbonIndex.toFixed(1) : "0"}
+          </span>
+          <span className="text-[#6b7280] text-[11px]">kg CO₂e</span>
+        </div>
+
+        {/* Orders */}
+        <div className="px-5 py-4 flex flex-col gap-1">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Leaf size={12} className="text-[#6b5d3f]" />
+            <span className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">Đơn hàng xanh</span>
+          </div>
+          <span
+            className="text-[#6b5d3f] leading-tight"
+            style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700, fontSize: "22px" }}
+          >
+            {ordersCount}
+          </span>
+          <span className="text-[#6b7280] text-[11px]">đơn</span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="px-5 py-4 border-t border-[#e2e3de] flex flex-col gap-2">
+        {next ? (
+          <>
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="text-[#42493e]">
+                Tiến độ đến{" "}
+                <span style={{ color: next.color, fontWeight: 600 }}>{next.label}</span>
+              </span>
+              <span className="text-[#6b7280]">{pct}% — còn {(next.req - pts).toLocaleString()} pts</span>
             </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-[12px]">
-            <span className="text-[#42493e]">Tiến độ đến <span className="text-[#25521f] font-medium">Eco Guard</span></span>
-            <span className="text-[#6b7280]">{progress}% — còn {(target - current).toLocaleString()} pts</span>
-          </div>
-          <div className="h-2.5 bg-[#c8dfc4]/60 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#3d6b35] to-[#6db85f] rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+            <div className="h-2 bg-[#e2e3de] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#3d6b35] to-[#6db85f] rounded-full transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </>
+        ) : (
+          <p className="text-[12px] text-[#7c3aed] font-medium text-center">Bạn đã đạt cấp bậc cao nhất!</p>
+        )}
       </div>
     </div>
   );
 }
 
 // ─── Status badge helper ────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: Order["status"] }) {
-  const map: Record<Order["status"], { label: string; cls: string }> = {
-    DELIVERED:  { label: "Đã giao",      cls: "bg-[#d4eddb] text-[#1e5e2e]" },
-    SHIPPING:   { label: "Đang giao",    cls: "bg-[#ddeeff] text-[#1a4f8a]" },
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    COMPLETED:  { label: "Đã giao",      cls: "bg-[#d4eddb] text-[#1e5e2e]" },
+    DELIVERY:   { label: "Đang giao",    cls: "bg-[#ddeeff] text-[#1a4f8a]" },
     PROCESSING: { label: "Đang xử lý",  cls: "bg-[#fff3cd] text-[#856404]" },
     CANCELLED:  { label: "Đã hủy",      cls: "bg-[#fde8e8] text-[#ba1a1a]" },
   };
-  const { label, cls } = map[status];
+  const badge = map[status] || { label: status, cls: "bg-gray-100 text-gray-800" };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full tracking-wide uppercase font-medium ${cls}`}>
-      {label}
+    <span className={`text-[10px] px-2 py-0.5 rounded-full tracking-wide uppercase font-medium ${badge.cls}`}>
+      {badge.label}
     </span>
   );
 }
@@ -604,102 +776,257 @@ function ReviewModal({
   );
 }
 
-// ─── Order History ─────────────────────────────────────────────────────────
-function OrderHistory() {
-  const [orderData, setOrderData] = useState(orders);
-  const [reviewTarget, setReviewTarget] = useState<{ orderId: string; productName: string } | null>(null);
+// ─── Order History ─────────────────────────────────────────────────────
+const ORDER_STATUS_TABS = [
+  { key: "ALL",       label: "Tất cả" },
+  { key: "PENDING",   label: "Chờ xác nhận" },
+  { key: "DELIVERY",  label: "Đang giao" },
+  { key: "COMPLETED", label: "Hoàn thành" },
+  { key: "REVIEW",    label: "Chờ đánh giá" },
+  { key: "CANCELLED", label: "Đã hủy" },
+];
 
-  const handleReviewClose = (submitted: boolean, orderId: string, productName: string) => {
+function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOpenChatbot?: () => void }) {
+  const [reviewTarget, setReviewTarget] = useState<{ orderId: number; productName: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const handleReviewClose = (submitted: boolean, orderId: number, productName: string) => {
     if (submitted) {
-      setOrderData((prev) =>
-        prev.map((o) =>
-          o.id === orderId
-            ? { ...o, products: o.products.map((p) => p.name === productName ? { ...p, reviewed: true } : p) }
-            : o
-        )
-      );
+      // In a real app we would call a review API here and update the order state
     }
     setReviewTarget(null);
   };
 
+  // Filter logic
+  const isAwaitingReview = (order: OrderResponse) => {
+    if (order.status !== 'COMPLETED' || !order.createdAt) return false;
+    const created = new Date(order.createdAt);
+    const days = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+    return days <= 14;
+  };
+
+  const filteredOrders = orders.filter(order => {
+    if (statusFilter === "ALL") return true;
+    if (statusFilter === "REVIEW") return isAwaitingReview(order);
+    return order.status === statusFilter;
+  });
+
+  // Count per tab
+  const countFor = (key: string) => {
+    if (key === "ALL") return orders.length;
+    if (key === "REVIEW") return orders.filter(isAwaitingReview).length;
+    return orders.filter(o => o.status === key).length;
+  };
+
   return (
-    <section className="flex flex-col gap-5">
-      <h2 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[22px] md:text-[28px]">
-        Lịch sử mua hàng
-      </h2>
-
-      <div className="flex flex-col gap-4">
-        {orderData.map((order) => (
-          <div key={order.id} className="border border-[#e2e3de] rounded-xl overflow-hidden">
-            {/* Order header */}
-            <div className="bg-[#fafaf5] px-4 py-3 flex items-center justify-between gap-3 flex-wrap border-b border-[#e2e3de]">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[#1a1c19] text-[14px] font-['Nimbus_Sans:Bold',sans-serif]">{order.id}</span>
-                <StatusBadge status={order.status} />
-                <span className="bg-[#f0f0eb] text-[#6b7280] text-[11px] px-2 py-0.5 rounded-full">{order.co2e}</span>
-              </div>
-              <div className="flex flex-col items-end gap-0">
-                <span className="text-[#1a1c19] text-[14px] font-['Nimbus_Sans:Bold',sans-serif]">{order.price}</span>
-                <span className="text-[#25521f] text-[11px]">{order.pts}</span>
-              </div>
-            </div>
-
-            {/* Order body: products + review buttons */}
-            <div className="px-4 py-3 flex flex-col gap-2">
-              <p className="text-[#6b7280] text-[11px]">
-                Đặt ngày {order.date}
-                {order.deliveredDate && ` · Nhận hàng ${order.deliveredDate}`}
-              </p>
-              {order.products.map((p) => {
-                const canReview = order.status === "DELIVERED" && !p.reviewed && order.reviewDeadlineDays !== null;
-                const expired = order.status === "DELIVERED" && !p.reviewed && order.reviewDeadlineDays === null;
-                return (
-                  <div key={p.name} className="flex items-center justify-between gap-3 py-2 border-t border-[#f0f0eb] first:border-t-0">
-                    <p className="text-[#42493e] text-[13px] flex-1">{p.name}</p>
-                    {p.reviewed && (
-                      <span className="flex items-center gap-1 text-[#25521f] text-[11px] shrink-0">
-                        <Star size={11} fill="#25521f" className="text-[#25521f]" /> Đã đánh giá
-                      </span>
-                    )}
-                    {canReview && (
-                      <button
-                        onClick={() => setReviewTarget({ orderId: order.id, productName: p.name })}
-                        className="flex items-center gap-1.5 text-[#25521f] text-[12px] border border-[#25521f] px-3 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors shrink-0"
-                      >
-                        <Star size={12} strokeWidth={1.8} /> Đánh giá
-                        {order.reviewDeadlineDays && (
-                          <span className="text-[10px] text-[#6b7280]">· còn {order.reviewDeadlineDays} ngày</span>
-                        )}
-                      </button>
-                    )}
-                    {expired && (
-                      <span className="text-[#9ca3af] text-[11px] shrink-0">Hết hạn đánh giá</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+    <div className="flex flex-col gap-0">
+      {/* Sub-tab bar */}
+      <div className="-mx-4 md:mx-0 px-4 md:px-0 border-b border-[#e2e3de] mb-5">
+        <div className="flex gap-0 overflow-x-auto scrollbar-none">
+          {ORDER_STATUS_TABS.map((tab) => {
+            const cnt = countFor(tab.key);
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-[12px] tracking-wide border-b-2 transition-all whitespace-nowrap ${
+                  statusFilter === tab.key
+                    ? "border-[#25521f] text-[#25521f] font-medium"
+                    : "border-transparent text-[#6b7280] hover:text-[#42493e]"
+                }`}
+              >
+                {tab.label}
+                {cnt > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      statusFilter === tab.key
+                        ? "bg-[#25521f] text-white"
+                        : "bg-[#f0f0eb] text-[#6b7280]"
+                    }`}
+                  >
+                    {cnt}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <button className="flex items-center justify-center gap-1 text-[#25521f] text-[13px] tracking-widest uppercase self-center hover:underline transition-all py-2">
-        XEM TẤT CẢ ĐƠN HÀNG
-        <span className="text-base leading-none">→</span>
-      </button>
+      {/* Order list */}
+      <div className="flex flex-col gap-4">
+        {filteredOrders.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="w-12 h-12 rounded-full bg-[#f0f0eb] flex items-center justify-center">
+              <Leaf size={20} className="text-[#9ca3af]" />
+            </div>
+            <p className="text-[#6b7280] text-[14px]">Không có đơn hàng nào trong mục này.</p>
+          </div>
+        ) : filteredOrders.map((order) => {
+          const totalCO2 = order.orderItems?.reduce((sum, i) => sum + (i.lineCarbonFootprint || 0), 0) || 0;
+          const estPts = Math.floor((order.totalAmount || 0) / 10000);
+
+          return (
+            <div key={order.id} className="bg-white/70 border border-[#e2e3de] rounded-xl overflow-hidden p-0">
+              {/* Order header */}
+              <div className="bg-transparent px-5 py-3 flex items-center justify-between flex-wrap gap-3 border-b border-[#e2e3de]">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-['Nimbus_Sans:Bold',sans-serif] font-bold text-[15px] text-[#1a1c19]">#GL-{order.id}</span>
+                  {totalCO2 > 0 && (
+                    <span className="bg-[#f0f0eb] text-[#6b7280] text-[11px] px-2.5 py-0.5 rounded-full">
+                      CO2e {totalCO2.toFixed(1)}kg
+                    </span>
+                  )}
+                  {estPts > 0 && (
+                    <span className="bg-[#d4edd9] text-[#25521f] text-[11px] px-2.5 py-0.5 rounded-full font-medium">
+                      +{estPts} pts
+                    </span>
+                  )}
+                  {order.paymentMethodName && (
+                    <span className="bg-[#eef2ff] text-[#4338ca] text-[11px] px-2.5 py-0.5 rounded-full border border-[#c7d2fe]">
+                      Thanh toán: {order.paymentMethodName}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`${
+                    order.status === 'PENDING' ? 'text-[#ea580c]' :
+                    order.status === 'CANCELLED' ? 'text-[#dc2626]' :
+                    order.status === 'DELIVERY' ? 'text-[#0284c7]' :
+                    'text-[#25521f]'
+                  } text-[12px] uppercase tracking-wide font-medium`}>
+                    {order.status === 'COMPLETED' ? 'Hoàn Thành' :
+                     order.status === 'PENDING' ? 'Chờ Xác Nhận' :
+                     order.status === 'CANCELLED' ? 'Đã Hủy' :
+                     order.status === 'DELIVERY' ? 'Đang Giao' :
+                     order.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Order body: products */}
+              <div className="px-5 py-4 flex flex-col gap-4">
+                {order.orderItems?.map((p) => {
+                  return (
+                    <div key={p.id} className="flex gap-4">
+                      <div className="w-[80px] h-[80px] md:w-[90px] md:h-[90px] shrink-0 bg-[#eeeee9] rounded-lg overflow-hidden">
+                        <img src={p.mainImage} alt={p.productName} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 flex flex-col justify-between gap-2 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex flex-col gap-1">
+                            <p className="text-[#1a1c19] text-[14px] md:text-[15px] line-clamp-2 leading-tight">{p.productName}</p>
+                            <p className="text-[#6b7280] text-[12px]">x{p.quantity}</p>
+                            <span className="bg-[#3d6b35] text-[#b5eaa6] text-[10px] px-1.5 py-0.5 rounded-sm self-start mt-1">
+                              CO₂ {((p.lineCarbonFootprint || 0) / (p.quantity || 1)).toFixed(1)}kg{p.quantity > 1 ? "/sp" : ""}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end justify-center shrink-0">
+                            {(p.quantity || 1) > 1 && (
+                              <span className="text-[#6b7280] text-[11px] mt-1">
+                                {((p.price || 0) / (p.quantity || 1)).toLocaleString()}đ/sp
+                              </span>
+                            )}
+                            <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px]">
+                              {(p.price || 0).toLocaleString()}đ
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Review logic */}
+                        {order.status === 'COMPLETED' && (
+                          <div className="flex justify-end items-center mt-1">
+                            {isAwaitingReview(order) ? (
+                              <button
+                                onClick={() => setReviewTarget({ orderId: order.id, productName: p.productName })}
+                                className="flex items-center gap-1.5 text-[#25521f] text-[12px] border border-[#25521f] px-4 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
+                              >
+                                Đánh giá
+                              </button>
+                            ) : (
+                              <span className="text-[#9ca3af] text-[11px]">Hết hạn đánh giá</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {order.status === 'PENDING' && order.paymentMethodName === 'BANK_TRANSFER' && (
+                <div className="mx-5 mb-4 bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#42493e]">
+                  <p className="font-medium text-[#1a1c19]">Thông tin chuyển khoản Ngân hàng:</p>
+                  <p>Ngân hàng: <span className="font-medium">Vietcombank</span></p>
+                  <p>Số TK: <span className="font-medium">1234567890</span></p>
+                  <p>Tên TK: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                </div>
+              )}
+              {order.status === 'PENDING' && order.paymentMethodName === 'MOMO' && (
+                <div className="mx-5 mb-4 bg-[#fdf4ff] border border-[#f5d0fe] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#701a75]">
+                  <p className="font-medium text-[#4a044e]">Thông tin thanh toán MoMo:</p>
+                  <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
+                  <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                </div>
+              )}
+              {order.status === 'PENDING' && order.paymentMethodName === 'ZALOPAY' && (
+                <div className="mx-5 mb-4 bg-[#f0f9ff] border border-[#bae6fd] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#0369a1]">
+                  <p className="font-medium text-[#0c4a6e]">Thông tin thanh toán ZaloPay:</p>
+                  <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
+                  <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                </div>
+              )}
+
+              {/* Order footer: Total + Buttons */}
+              <div className="bg-transparent px-5 py-4 flex flex-col gap-4 border-t border-[#e2e3de]">
+                <div className="flex justify-end items-center gap-2">
+                  <span className="text-[#1a1c19] text-[14px]">Thành tiền:</span>
+                  <span className="text-[#25521f] text-[20px] font-['Nimbus_Sans:Bold',sans-serif]">{(order.totalAmount || 0).toLocaleString()}đ</span>
+                </div>
+
+                <div className="flex flex-col md:flex-row justify-end items-center gap-3 border-t border-[#e2e3de] pt-4 mt-2">
+                  {order.status !== 'CANCELLED' && order.status !== 'PENDING' && (
+                    <button
+                      onClick={() => ordersApi.viewInvoice(order.id).catch(console.error)}
+                      className="w-full md:w-auto text-[#42493e] text-[13px] tracking-widest uppercase border border-[#c2c9bb] px-6 py-2.5 rounded-full bg-white hover:bg-[#fafaf5] transition-colors"
+                    >
+                      Xem hóa đơn PDF
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { if (onOpenChatbot) onOpenChatbot(); }}
+                    className="w-full md:w-auto text-[#25521f] text-[13px] tracking-widest uppercase border border-[#25521f] px-6 py-2.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
+                  >
+                    Hỏi AI về phát thải đơn hàng
+                  </button>
+                  <button
+                    onClick={() => { toast.info("Đang phát triển", `Mở chat admin cho đơn ${order.id}`); }}
+                    className="w-full md:w-auto text-[#42493e] text-[13px] tracking-widest uppercase border border-[#c2c9bb] px-6 py-2.5 rounded-full bg-white hover:bg-[#fafaf5] transition-colors"
+                  >
+                    Liên hệ Admin
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {reviewTarget && (
         <ReviewModal
           productName={reviewTarget.productName}
-          orderId={reviewTarget.orderId}
+          orderId={String(reviewTarget.orderId)}
           onClose={(submitted) => handleReviewClose(submitted, reviewTarget.orderId, reviewTarget.productName)}
         />
       )}
-    </section>
+    </div>
   );
 }
 
-// ─── Wishlist Section ──────────────────────────────────────────────────────
+// ─── Wishlist Section ─────────────────────────────────────────────────────
 function WishlistSection({
   wishlistIds,
   onWishlist,
@@ -714,28 +1041,15 @@ function WishlistSection({
   const items = ALL_PRODUCTS.filter((p) => wishlistIds.includes(p.id));
 
   return (
-    <section className="flex flex-col gap-5">
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-[#6b7280] text-[11px] tracking-[1.4px] uppercase mb-1">Đã lưu</p>
-          <h2
-            className="text-[#1a1c19] text-[22px] md:text-[28px]"
-            style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}
-          >
-            Danh sách yêu thích
-          </h2>
-        </div>
-        {items.length > 0 && (
-          <span className="text-[#6b7280] text-[13px]">{items.length} sản phẩm</span>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-5">
       {items.length === 0 ? (
         <div
           className="rounded-2xl p-10 flex flex-col items-center gap-4 text-center"
           style={{ background: "rgba(255,255,255,0.75)", border: "1px solid #dde8d8", backdropFilter: "blur(8px)" }}
         >
-          <span className="text-4xl select-none">🌿</span>
+          <div className="w-12 h-12 rounded-full bg-[#f0f7ee] flex items-center justify-center">
+            <Leaf size={20} className="text-[#9ca3af]" />
+          </div>
           <p className="text-[#42493e] text-[15px]">Chưa có sản phẩm nào được lưu</p>
           <button
             onClick={() => onNavigate("shop")}
@@ -745,20 +1059,25 @@ function WishlistSection({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {items.map((p) => (
-            <ProductCard
-              key={p.id}
-              product={p}
-              wishlisted
-              onWishlist={onWishlist}
-              onAddToCart={onAddToCart}
-              onNavigate={() => onNavigate("product")}
-            />
-          ))}
-        </div>
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-[#6b7280] text-[13px]">{items.length} sản phẩm đã lưu</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {items.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                wishlisted
+                onWishlist={onWishlist}
+                onAddToCart={onAddToCart}
+                onNavigate={() => onNavigate("product")}
+              />
+            ))}
+          </div>
+        </>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -772,26 +1091,22 @@ function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void })
   ];
 
   return (
-    <section className="flex flex-col gap-5">
-      <div>
-        <p className="text-[#6b7280] text-[11px] tracking-[1.4px] uppercase mb-1">Tài khoản</p>
-        <h2
-          className="text-[#1a1c19] text-[22px] md:text-[28px]"
-          style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}
-        >
-          Cài đặt
-        </h2>
-      </div>
-      <div
-        className="rounded-2xl overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.75)", border: "1px solid #dde8d8", backdropFilter: "blur(8px)" }}
-      >
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: "rgba(255,255,255,0.75)", border: "1px solid #dde8d8", backdropFilter: "blur(8px)" }}
+    >
         {rows.map((row, i) => {
           const Icon = row.icon;
           return (
             <button
               key={row.label}
-              onClick={() => { if (row.danger) onNavigate("signin"); }}
+              onClick={() => { 
+                if (row.danger) {
+                  useAuthStore.getState().logout();
+                  useCartStore.getState().clearCart();
+                  onNavigate("home");
+                } 
+              }}
               className={`w-full flex items-center gap-4 px-5 py-4 hover:bg-[#f5f9f3] active:bg-[#eef6eb] transition-colors text-left ${
                 i < rows.length - 1 ? "border-b border-[#e8f0e4]" : ""
               }`}
@@ -817,7 +1132,6 @@ function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void })
           );
         })}
       </div>
-    </section>
   );
 }
 
@@ -827,35 +1141,81 @@ export function ProfilePage({
   wishlistIds = [],
   onWishlist,
   onAddToCart,
+  onOpenChatbot,
 }: {
   onNavigate: (p: string) => void;
   wishlistIds?: number[];
   onWishlist?: (p: Product) => void;
   onAddToCart?: (p: Product) => void;
+  onOpenChatbot?: () => void;
 }) {
+  const user = useAuthStore(s => s.user);
+  const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  
+  type ProfileTab = "orders" | "wishlist" | "settings";
+  const [activeTab, setActiveTab] = useState<ProfileTab>("orders");
+
+  useEffect(() => {
+    if (user?.id) {
+      profileApi.getProfile(user.id).then(res => {
+        setProfile(res);
+        useAuthStore.getState().setAvatarUrl(res.avatarUrl || null);
+      }).catch(console.error);
+      ordersApi.getOrders().then(realOrders => {
+        setOrders(realOrders.sort((a, b) => b.id - a.id));
+      }).catch(console.error);
+    }
+  }, [user?.id]);
+
   return (
     <main className="flex-1 pb-20 md:pb-0">
       <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-8 md:py-12 flex flex-col gap-10 md:gap-12">
+        <UserInfoCard profile={profile} ordersCount={orders.length} onUpdateProfile={(p) => {
+          setProfile(p);
+          useAuthStore.getState().setAvatarUrl(p.avatarUrl || null);
+        }} />
+        <GreenImpactMetrics profile={profile} ordersCount={orders.length} />
 
-        <UserInfoCard />
-        <GreenImpactMetrics />
+        <div className="flex items-center gap-6 md:gap-10 border-b border-[#dde8d8] overflow-x-auto no-scrollbar">
+          {(
+            [
+              { key: "orders", label: "Đơn mua" },
+              { key: "wishlist", label: "Sản phẩm yêu thích" },
+              { key: "settings", label: "Cài đặt" }
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`pb-4 text-[14px] md:text-[15px] whitespace-nowrap transition-colors relative ${
+                activeTab === tab.key
+                  ? "text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif]"
+                  : "text-[#6b7280] hover:text-[#42493e]"
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.key && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#25521f] rounded-t-full" />
+              )}
+            </button>
+          ))}
+        </div>
 
-        <div className="border-t border-[#dde8d8]" />
+        <div>
+          {activeTab === "orders" && <OrderHistory orders={orders} onOpenChatbot={onOpenChatbot} />}
+          
+          {activeTab === "wishlist" && (
+            <WishlistSection
+              wishlistIds={wishlistIds}
+              onWishlist={onWishlist ?? (() => {})}
+              onAddToCart={onAddToCart ?? (() => {})}
+              onNavigate={onNavigate}
+            />
+          )}
 
-        <OrderHistory />
-
-        <div className="border-t border-[#dde8d8]" />
-
-        <WishlistSection
-          wishlistIds={wishlistIds}
-          onWishlist={onWishlist ?? (() => {})}
-          onAddToCart={onAddToCart ?? (() => {})}
-          onNavigate={onNavigate}
-        />
-
-        <div className="border-t border-[#dde8d8]" />
-
-        <AccountPreferences onNavigate={onNavigate} />
+          {activeTab === "settings" && <AccountPreferences onNavigate={onNavigate} />}
+        </div>
       </div>
     </main>
   );

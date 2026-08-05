@@ -5,6 +5,7 @@ import com.flix.common.util.SecurityUtils;
 import com.flix.identity.common.dto.AuthResponse;
 import com.flix.identity.common.dto.LoginRequest;
 import com.flix.identity.common.dto.RegisterRequest;
+import com.flix.identity.common.dto.ChangePasswordRequest;
 import com.flix.identity.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -45,4 +46,14 @@ public class AuthController {
        return ApiResponse.success(authService.checkProvider(userId));
     }
 
+    @PutMapping("/change-password")
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<Void> changePassword(
+            @RequestBody @Valid ChangePasswordRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = SecurityUtils.getCurrentUserId(jwt);
+        authService.changePassword(userId, request);
+        return ApiResponse.success(null, HttpStatus.OK, "Password changed successfully");
+    }
 }

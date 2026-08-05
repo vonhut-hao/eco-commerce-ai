@@ -11,6 +11,9 @@ import {
   Minus,
   ChevronRight,
   X,
+  Sprout,
+  TrendingDown,
+  Award,
 } from "lucide-react";
 import svgPaths from "../imports/ProductDetail2/svg-oqupvr7hg1";
 import imgPrimary from "../imports/ProductDetail2/d98ac9c365901557807efc5288e118488e837d30.png";
@@ -36,6 +39,8 @@ import { CheckoutPage } from "./components/CheckoutPage";
 import { ImpactPage } from "./components/ImpactPage";
 import { useAuthStore } from "../store/authStore";
 import { useCartStore } from "../store/cartStore";
+import { profileApi } from "../api/profile";
+import { favoritesApi } from "../api/favorites";
 
 export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact";
 
@@ -69,11 +74,13 @@ function MobileHeader({
   setSearchOpen,
   onNavigate,
   cartCount,
+  activePage,
 }: {
   searchOpen: boolean;
   setSearchOpen: (v: boolean) => void;
   onNavigate: (page: Page, id?: number, cat?: string, search?: string) => void;
   cartCount: number;
+  activePage: Page;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (searchOpen) inputRef.current?.focus(); }, [searchOpen]);
@@ -93,7 +100,17 @@ function MobileHeader({
           <GreenLifeBrand onClick={() => onNavigate("home")} textSize="text-xl" iconSize={20} />
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setSearchOpen(!searchOpen)}
+              onClick={() => {
+                if (activePage === "shop") {
+                  const el = document.getElementById("shop-search-input");
+                  if (el) {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    setTimeout(() => el.focus(), 100);
+                  }
+                } else {
+                  setSearchOpen(!searchOpen);
+                }
+              }}
               className="text-[#42493e]"
               aria-label="Tìm kiếm"
             >
@@ -176,6 +193,17 @@ function DesktopHeader({
   cartCount: number;
   onOpenChatbot: () => void;
 }) {
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const user = useAuthStore(s => s.user);
+  const avatarUrl = useAuthStore(s => s.avatarUrl);
+  const [greenPts, setGreenPts] = useState<number | null>(null);
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      profileApi.getProfile(user.id).then(p => setGreenPts(p.greenPoints)).catch(() => {});
+    } else {
+      setGreenPts(null);
+    }
+  }, [isAuthenticated, user?.id]);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (searchOpen) inputRef.current?.focus(); }, [searchOpen]);
 
@@ -237,13 +265,25 @@ function DesktopHeader({
           </nav>
 
           <div className="flex items-center gap-4 shrink-0">
-            <div className="bg-gradient-to-r from-[#bcf1ad] to-[#8fd97a] text-[#1e4219] text-[14px] px-3 py-1 rounded-full shadow-sm shadow-[#3d6b35]/20 whitespace-nowrap">
-              Green Points: 1,250
-            </div>
+            {isAuthenticated && (
+              <div className="bg-gradient-to-r from-[#bcf1ad] to-[#8fd97a] text-[#1e4219] text-[14px] px-3 py-1 rounded-full shadow-sm shadow-[#3d6b35]/20 whitespace-nowrap">
+                Green Points: {greenPts !== null ? greenPts.toLocaleString() : "..."}
+              </div>
+            )}
 
             {/* Search icon */}
             <button
-              onClick={() => setSearchOpen(!searchOpen)}
+              onClick={() => {
+                if (activePage === "shop") {
+                  const el = document.getElementById("shop-search-input");
+                  if (el) {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    setTimeout(() => el.focus(), 100);
+                  }
+                } else {
+                  setSearchOpen(!searchOpen);
+                }
+              }}
               className={`transition-colors ${searchOpen ? "text-[#25521f]" : "text-[#42493e] hover:text-[#25521f]"}`}
               aria-label="Tìm kiếm"
             >
@@ -255,14 +295,18 @@ function DesktopHeader({
             <CartIcon count={cartCount} onClick={() => onNavigate("cart")} />
 
             <button
-              onClick={() => onNavigate(activePage === "profile" ? "profile" : "signin")}
+              onClick={() => onNavigate(isAuthenticated ? "profile" : "signin")}
               className={`relative transition-colors pb-1 ${
                 activePage === "profile" ? "text-[#25521f]" : "text-[#42493e] hover:text-[#25521f]"
               }`}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d={svgPaths.p33ced450} fill={activePage === "profile" ? "#25521f" : "#42493E"} />
-              </svg>
+              {isAuthenticated && avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-[#c2c9bb]" />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d={svgPaths.p33ced450} fill={activePage === "profile" ? "#25521f" : "#42493E"} />
+                </svg>
+              )}
               {activePage === "profile" && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#25521f]" />
               )}
@@ -767,12 +811,15 @@ function BottomNav({
   onNavigate: (p: Page) => void;
   onOpenChatbot: () => void;
 }) {
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const user = useAuthStore(s => s.user);
+  const avatarUrl = useAuthStore(s => s.avatarUrl);
   const items = [
     { key: "home",    label: "Home",     icon: Home,        action: () => onNavigate("home") },
     { key: "shop",    label: "Shop",     icon: ShoppingBag, action: () => onNavigate("shop") },
     { key: "greenai", label: "Green AI", icon: Leaf,        action: onOpenChatbot },
     { key: "impact",  label: "Impact",   icon: BarChart2,   action: () => onNavigate("impact") },
-    { key: "me",      label: "Tôi",      icon: User,        action: () => onNavigate(activePage === "profile" ? "profile" : "signin") },
+    { key: "me",      label: "Tôi",      icon: User,        action: () => onNavigate(isAuthenticated ? "profile" : "signin") },
   ];
 
   const activeKey = activePage === "profile" ? "me"
@@ -795,7 +842,11 @@ function BottomNav({
                 isActive ? "text-[#25521f]" : "text-[#6b7280]"
               }`}
             >
-              <Icon size={21} strokeWidth={isActive ? 2.2 : 1.6} />
+              {item.key === "me" && isAuthenticated && avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
+              ) : (
+                <Icon size={21} strokeWidth={isActive ? 2.2 : 1.6} />
+              )}
               <span className="text-[10px] leading-tight">{item.label}</span>
             </button>
           );
@@ -835,30 +886,61 @@ export default function App() {
   const [selectedThumb, setSelectedThumb] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<Tab>("description");
+  const [activePage, setActivePage] = useState<Page>(() => {
+    return (sessionStorage.getItem("activePage") as Page) || "home";
+  });
+  const [activeProductId, setActiveProductId] = useState<number | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [activePage, setActivePage] = useState<Page>("home");
+  const [activeShopCategory, setActiveShopCategory] = useState("All");
+  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+  const [activeExtraFilters, setActiveExtraFilters] = useState<{ carbon?: string, certs?: string[] }>({});
   const [products, setProducts] = useState<Product[]>(ALL_PRODUCTS);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [activeProductId, setActiveProductId] = useState<number>(1);
-  const [activeShopCategory, setActiveShopCategory] = useState<string>("All");
-  const [globalSearchTerm, setGlobalSearchTerm] = useState<string>("");
 
   useEffect(() => {
-    productsApi.getProducts(0, 100).then(res => {
-      const fetched = res.content.map(mapProductBeToFe);
-      if (fetched.length > 0) {
-        setProducts(fetched);
-      }
-    }).catch(err => {
-      console.error("Failed to fetch products", err);
-    }).finally(() => {
-      setLoadingProducts(false);
-    });
-  }, []);
+    if (activePage === "home" || activePage === "shop" || activePage === "product") {
+      productsApi.getProducts(0, 100).then(res => {
+        const fetched = res.content.map(mapProductBeToFe);
+        if (fetched.length > 0) {
+          setProducts(fetched);
+        }
+      }).catch(err => {
+        console.error("Failed to fetch products", err);
+      }).finally(() => {
+        setLoadingProducts(false);
+      });
+    }
+  }, [activePage]);
 
   // Cart & wishlist state
   const { items: cartItems, fetchCart, addToCart, removeFromCart, updateQuantity: updateQty } = useCartStore();
-  const [wishlistIds, setWishlistIds] = useState<number[]>([]);
+  const [wishlistIds, setWishlistIds] = useState<number[]>(() => {
+    const saved = localStorage.getItem("wishlist");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const user = useAuthStore(state => state.user);
+
+  const avatarUrl = useAuthStore(state => state.avatarUrl);
+  const setAvatarUrl = useAuthStore(state => state.setAvatarUrl);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      favoritesApi.getUserFavorites().then(products => {
+        setWishlistIds(products.map((p: any) => p.id));
+      }).catch(console.error);
+
+      if (user?.id && !avatarUrl) {
+        profileApi.getProfile(user.id).then(res => {
+          setAvatarUrl(res.avatarUrl || null);
+        }).catch(console.error);
+      }
+    }
+  }, [isAuthenticated, user?.id]);
+
+  useEffect(() => {
+    localStorage.setItem("wishlist", JSON.stringify(wishlistIds));
+  }, [wishlistIds]);
 
   // Fetch cart if authenticated
   useEffect(() => {
@@ -878,6 +960,9 @@ export default function App() {
       const token = params.get("token");
       if (token) {
         setToken(token);
+        useCartStore.getState().syncGuestCart().finally(() => {
+          fetchCart();
+        });
         toast.success("Welcome back!", "Signed in with Google successfully");
       }
       window.history.replaceState({}, document.title, "/");
@@ -885,16 +970,19 @@ export default function App() {
     }
   }, [setToken]);
 
-  const navigate = (page: Page, productId?: number, category?: string, searchTerm?: string) => {
+  const navigate = (page: Page, productId?: number, category?: string, searchTerm?: string, extraFilters?: { carbon?: string, certs?: string[] }) => {
+    sessionStorage.setItem("activePage", page);
     setActivePage(page);
     if (productId !== undefined) setActiveProductId(productId);
     
     if (page === "shop") {
       setActiveShopCategory(category !== undefined ? category : "All");
       setGlobalSearchTerm(searchTerm !== undefined ? searchTerm : "");
+      setActiveExtraFilters(extraFilters || {});
     } else {
       if (category !== undefined) setActiveShopCategory(category);
       if (searchTerm !== undefined) setGlobalSearchTerm(searchTerm);
+      if (extraFilters !== undefined) setActiveExtraFilters(extraFilters);
     }
     
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -934,10 +1022,21 @@ export default function App() {
     }
   };
 
-  const toggleWishlist = (product: Product) => {
-    setWishlistIds((prev) =>
-      prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id]
-    );
+  const toggleWishlist = async (product: Product) => {
+    if (isAuthenticated) {
+      try {
+        const res = await favoritesApi.toggleFavorite(product.id);
+        setWishlistIds(prev => 
+          res.isFavorite ? [...prev, product.id] : prev.filter(id => id !== product.id)
+        );
+      } catch (err) {
+        toast.error("Lỗi", "Không thể cập nhật danh sách yêu thích");
+      }
+    } else {
+      setWishlistIds((prev) =>
+        prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id]
+      );
+    }
   };
 
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
@@ -955,6 +1054,7 @@ export default function App() {
         setSearchOpen={setSearchOpen}
         onNavigate={navigate}
         cartCount={cartCount}
+        activePage={activePage}
       />
       <DesktopHeader
         searchOpen={searchOpen}
@@ -984,6 +1084,8 @@ export default function App() {
           products={products}
           initialCategory={activeShopCategory}
           initialSearch={globalSearchTerm}
+          initialCarbonFilter={activeExtraFilters.carbon}
+          initialCerts={activeExtraFilters.certs}
         />
       )}
 
@@ -1013,6 +1115,7 @@ export default function App() {
           wishlistIds={wishlistIds}
           onWishlist={toggleWishlist}
           onAddToCart={handleAddToCart}
+          onOpenChatbot={openChatbot}
         />
       )}
 

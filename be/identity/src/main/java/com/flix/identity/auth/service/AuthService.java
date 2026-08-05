@@ -9,6 +9,7 @@ import com.flix.identity.common.dto.RegisterRequest;
 import com.flix.identity.common.enums.AuthProvider;
 import com.flix.identity.common.exception.InvalidCredentailsException;
 import com.flix.identity.entity.User;
+import com.flix.identity.common.dto.ChangePasswordRequest;
 import com.flix.identity.dao.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -137,6 +138,22 @@ public class AuthService {
         log.debug("Local provider for user {} is {}", userId, isLocal);
 
         return isLocal;
+    }
+
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentailsException()); // Or a generic not found
+
+        if (!user.getAuthProviders().contains(AuthProvider.LOCAL)) {
+            throw new InvalidCredentailsException(ErrorCode.INVALID_CREDENTIALS); 
+        }
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            throw new InvalidCredentailsException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 
 }

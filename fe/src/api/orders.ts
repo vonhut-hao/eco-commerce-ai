@@ -24,6 +24,7 @@ export interface OrderResponse {
   username: string;
   paymentMethodId: number;
   paymentMethodName: string;
+  createdAt?: string;
   orderItems: OrderItemResponse[];
 }
 
@@ -41,5 +42,14 @@ export const ordersApi = {
   getOrderDetails: async (id: number) => {
     const res = await client.get<ApiResponse<OrderResponse>>(`/v1/catalog/orders/${id}`);
     return res.data.data;
+  },
+  
+  viewInvoice: async (id: number) => {
+    const res = await client.get(`/v1/catalog/orders/${id}/invoice/pdf`, {
+      responseType: 'blob'
+    });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, '_blank');
   }
 };

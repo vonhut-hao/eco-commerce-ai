@@ -35,7 +35,7 @@ public class CarbonStatisticService {
                 userId,
                 fromDate,
                 toDate,
-                OrderStatus.COMPLETED
+                OrderStatus.CANCELLED
         );
 
         log.info("Total carbon index for user {} in period {}: {}", userId, selectedPeriod, totalCarbonIndex);
