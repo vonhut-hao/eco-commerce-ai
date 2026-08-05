@@ -1,12 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { X, RefreshCw, Send, Leaf, Minus, Headphones } from "lucide-react";
+import { X, RefreshCw, Send, Leaf, Minus, Headphones, Image as ImageIcon, Loader2 } from "lucide-react";
 import svgPaths from "../../imports/ProductDetail2/svg-oqupvr7hg1";
+import { chatWithAi, createOrGetConversation, getMessagesByConversation, sendMessage as sendLiveMessage, ChatMessage as ApiChatMessage } from "../../api/chat";
+import { Client } from "@stomp/stompjs";
+import { useAuthStore } from "../../store/authStore";
+import imageCompression from 'browser-image-compression';
+import { profileApi } from "../../api/profile";
 
 interface Message {
   id: string;
   role: "bot" | "user" | "admin";
   content: string;
   time?: string;
+  fileUrl?: string;
 }
 
 // ─── AI tab data ─────────────────────────────────────────────────────────────
@@ -21,43 +27,7 @@ Tay cầm tre thu hoạch bền vững từ rừng Moso, lông bàn chải BPA-f
 
 Bạn có muốn tính toán carbon footprint cá nhân không? 🌿`;
 
-const BOT_RESPONSES: Record<string, string> = {
-  default: "Cảm ơn câu hỏi của Anh/Chị! Tôi có thể giúp bạn tìm hiểu thêm về sản phẩm hoặc tác động môi trường. Bạn có câu hỏi gì khác không? 🌿",
-  price: "Bamboo Toothbrush Set (Pack of 4) hiện có giá 149.000 VND. Đây là mức giá rất hợp lý so với giá trị môi trường mà sản phẩm mang lại! 💚",
-  carbon: "Bamboo Toothbrush chỉ thải ra 0.3kg CO2/sản phẩm, trong khi bàn chải nhựa thông thường thải ra đến 1.8kg CO2. Đó là mức giảm 83% lượng khí thải! 🌍",
-  bamboo: "Tre là vật liệu tuyệt vời: kháng khuẩn tự nhiên, phân hủy sinh học 100%, phát triển nhanh không cần thuốc trừ sâu. 🎋",
-  shipping: "Chúng tôi giao hàng toàn quốc trong 2–5 ngày làm việc. Đơn hàng trên 200.000 VND được miễn phí vận chuyển! 🚚",
-  review: "Sản phẩm được đánh giá 4.8/5 từ 127 khách hàng. Hầu hết đều khen ngợi độ bền, thiết kế và tác động tích cực đến môi trường. ⭐",
-  carbon_calc: "Nếu bạn dùng 1 bàn chải/quý = 4 bàn chải/năm.\nVới nhựa: 4 × 1.8kg = 7.2kg CO2/năm\nVới tre: 4 × 0.3kg = 1.2kg CO2/năm\n→ Bạn tiết kiệm 6kg CO2 mỗi năm! 🌱",
-};
-
-function getAIResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (lower.includes("giá") || lower.includes("bao nhiêu")) return BOT_RESPONSES.price;
-  if (lower.includes("carbon") || lower.includes("co2") || lower.includes("khí thải")) return BOT_RESPONSES.carbon;
-  if (lower.includes("bamboo") || lower.includes("tre")) return BOT_RESPONSES.bamboo;
-  if (lower.includes("giao hàng") || lower.includes("ship")) return BOT_RESPONSES.shipping;
-  if (lower.includes("đánh giá") || lower.includes("review") || lower.includes("sao")) return BOT_RESPONSES.review;
-  if (lower.includes("tính") || lower.includes("footprint") || lower.includes("calc")) return BOT_RESPONSES.carbon_calc;
-  return BOT_RESPONSES.default;
-}
-
-// ─── Admin tab data ───────────────────────────────────────────────────────────
-const ADMIN_RESPONSES: [RegExp, string][] = [
-  [/đơn hàng|order/i, "Anh/Chị cho em mã đơn hàng (ví dụ #GL-9402) để em kiểm tra trạng thái nhanh nhất ạ!"],
-  [/hoàn tiền|refund|đổi trả/i, "Em hiểu ạ! Chính sách đổi trả của GreenLife là 30 ngày kể từ ngày nhận hàng. Anh/Chị có thể cho em biết lý do đổi/trả để em hỗ trợ cụ thể hơn không ạ?"],
-  [/giao hàng|ship|vận chuyển/i, "Thời gian giao hàng tiêu chuẩn là 2–5 ngày làm việc. Đơn hàng trên 200.000 VND miễn phí vận chuyển. Anh/Chị cần kiểm tra đơn hàng cụ thể nào không ạ?"],
-  [/mã giảm giá|voucher|coupon|discount/i, "Hiện tại GreenLife đang có chương trình GREENWEEK giảm 15% cho đơn từ 500.000 VND. Anh/Chị muốn em gửi thêm thông tin về các ưu đãi không ạ?"],
-  [/sản phẩm|hàng|stock|còn/i, "Em sẽ kiểm tra tình trạng kho cho Anh/Chị ngay ạ! Anh/Chị đang quan tâm đến sản phẩm nào ạ?"],
-  [/cảm ơn|thank/i, "Cảm ơn Anh/Chị đã tin tưởng GreenLife! Chúc Anh/Chị một ngày xanh và ý nghĩa 🌿"],
-];
-
-function getAdminResponse(input: string): string {
-  for (const [pattern, reply] of ADMIN_RESPONSES) {
-    if (pattern.test(input)) return reply;
-  }
-  return "Em đã ghi nhận câu hỏi của Anh/Chị. Đội hỗ trợ sẽ phản hồi trong vòng 5–10 phút trong giờ làm việc (8:00–22:00). Anh/Chị có cần hỗ trợ thêm gì không ạ? 😊";
-}
+// Removed mock getAIResponse and getAdminResponse
 
 const now = () => new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
@@ -71,85 +41,298 @@ const INITIAL_ADMIN: Message[] = [
   { id: "adm-2", role: "admin", content: "Em có thể hỗ trợ Anh/Chị về đơn hàng, đổi trả, hoặc bất kỳ thắc mắc nào khác. Anh/Chị cần giúp gì ạ?", time: now() },
 ];
 
+const renderMarkdown = (text: string) => {
+  return text.split('\n').map((line, i) => {
+    const trimmed = line.trim();
+    if (trimmed === '---') {
+      return <hr key={i} className="my-3 border-t border-[#e2e3de]" />;
+    }
+
+    let isHeading = false;
+    let isBullet = false;
+    let lineContent = line;
+
+    if (trimmed.startsWith('### ')) {
+      isHeading = true;
+      lineContent = trimmed.substring(4);
+    } else if (trimmed.startsWith('## ')) {
+      isHeading = true;
+      lineContent = trimmed.substring(3);
+    } else if (trimmed.startsWith('# ')) {
+      isHeading = true;
+      lineContent = trimmed.substring(2);
+    } else if (trimmed.match(/^(\d+\.|-|\*)\s/)) {
+      isBullet = true;
+      lineContent = trimmed.replace(/^(\d+\.|-|\*)\s/, '');
+    }
+    
+    const parsedLine = lineContent.split(/(\*\*.*?\*\*|\*.*?\*)/g).map((part, j) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={j} className="font-bold">{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <em key={j} className="italic">{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+
+    if (isHeading) {
+      return (
+        <div key={i} className="font-bold text-[14px] mt-2 mb-1 text-[#1a1c19]">
+          {parsedLine}
+        </div>
+      );
+    }
+
+    if (isBullet) {
+      return (
+        <li key={i} className="ml-4 list-disc marker:text-[#274f4f] mt-1">
+          {parsedLine}
+        </li>
+      );
+    }
+
+    return (
+      <span key={i}>
+        {parsedLine}
+        <br />
+      </span>
+    );
+  });
+};
+
+export type ChatbotIntent = {
+  triggerId: number;
+  mode?: "ai" | "admin";
+  autoSendPrompt?: string;
+  prefillMessage?: string;
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
-export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
+export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: ChatbotIntent; activeProductId?: number | null }) {
   const [chatOpen, setChatOpen] = useState(false);
-  const [widgetVisible, setWidgetVisible] = useState(true);
   const [activeTab, setActiveTab] = useState<"ai" | "admin">("ai");
 
   const [aiMessages, setAiMessages] = useState<Message[]>(INITIAL_AI);
-  const [adminMessages, setAdminMessages] = useState<Message[]>(INITIAL_ADMIN);
+  const [adminMessages, setAdminMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const [idle, setIdle] = useState(false);
+  const { user } = useAuthStore();
+  const [conversationId, setConversationId] = useState<number | null>(null);
+  const stompClientRef = useRef<Client | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (activeTab === "admin" && user) {
+      if (user.roles?.includes("ADMIN") || user.roles?.includes("ROLE_ADMIN")) {
+        setAdminMessages([{ id: "admin-sys", role: "admin", content: "Bạn đang đăng nhập bằng tài khoản Admin. Khung chat này dành cho khách hàng. Vui lòng đăng nhập tài khoản User để test hoặc vào Admin Dashboard.", time: now() }]);
+        return;
+      }
+
+      let active = true;
+      createOrGetConversation(user.id).then(conv => {
+        if (!active) return;
+        setConversationId(conv.id);
+        getMessagesByConversation(conv.id, user.id).then(msgs => {
+          if (!active) return;
+          const mapped: Message[] = msgs.map(m => ({
+            id: m.id.toString(),
+            role: m.senderId === user.id ? "user" : "admin",
+            content: m.content,
+            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+            fileUrl: m.fileUrl
+          }));
+          setAdminMessages(mapped);
+        });
+
+        const client = new Client({
+          brokerURL: 'ws://localhost:8080/ws',
+          onConnect: () => {
+            client.subscribe(`/topic/conversation/${conv.id}`, (msg) => {
+              const newMsg: ApiChatMessage = JSON.parse(msg.body);
+              setAdminMessages(prev => {
+                if (prev.find(m => m.id === newMsg.id.toString())) return prev;
+                
+                // If the message is from us, try to replace the optimistic tmp message
+                if (newMsg.senderId === user.id) {
+                  const tmpIndex = prev.findIndex(m => m.role === "user" && m.id.length > 10 && m.content === newMsg.content);
+                  if (tmpIndex !== -1) {
+                    const copy = [...prev];
+                    copy[tmpIndex] = {
+                      id: newMsg.id.toString(),
+                      role: "user",
+                      content: newMsg.content,
+                      time: new Date(newMsg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                      fileUrl: newMsg.fileUrl
+                    };
+                    return copy;
+                  }
+                }
+
+                return [...prev, {
+                  id: newMsg.id.toString(),
+                  role: newMsg.senderId === user.id ? "user" : "admin",
+                  content: newMsg.content,
+                  time: new Date(newMsg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                  fileUrl: newMsg.fileUrl
+                }];
+              });
+            });
+          },
+        });
+        client.activate();
+        stompClientRef.current = client;
+      }).catch(() => {
+        if (active) {
+          setAdminMessages([{ id: "err", role: "admin", content: "Lỗi kết nối hoặc bạn chưa đăng nhập.", time: now() }]);
+        }
+      });
+
+      return () => {
+        active = false;
+        stompClientRef.current?.deactivate();
+      };
+    }
+  }, [activeTab, user]);
+
+  const [scrolled, setScrolled] = useState(false);
   const [hoveringBtn, setHoveringBtn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handleActivity = () => setIdle(true);
-    window.addEventListener("scroll", handleActivity, { passive: true });
-    window.addEventListener("mousedown", handleActivity);
-    return () => {
-      window.removeEventListener("scroll", handleActivity);
-      window.removeEventListener("mousedown", handleActivity);
-    };
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiMessages, adminMessages, isTyping]);
 
-  useEffect(() => {
-    if (openTrigger > 0) {
-      setChatOpen(true);
-      setWidgetVisible(false);
-    }
-  }, [openTrigger]);
+
 
   useEffect(() => {
     if (chatOpen) setTimeout(() => inputRef.current?.focus(), 100);
   }, [chatOpen, activeTab]);
 
-  const handleLearnMore = () => {
-    setWidgetVisible(false);
-    setChatOpen(true);
-    setActiveTab("ai");
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      setAiMessages((prev) => [...prev, { id: Date.now().toString(), role: "bot", content: LEARN_MORE_RESPONSE }]);
-    }, 1200);
-  };
 
-  const handleSend = () => {
-    if (!input.trim() || isTyping) return;
-    const text = input.trim();
+
+  const handleSend = async (customText?: string, imageUrl?: string, overrideTab?: "ai" | "admin") => {
+    const text = customText !== undefined ? customText : input.trim();
+    if ((!text && !imageUrl) || isTyping) return;
+    
     const msgId = Date.now().toString();
+    const currentTab = overrideTab || activeTab;
 
-    if (activeTab === "ai") {
+    if (currentTab === "ai") {
       setAiMessages((prev) => [...prev, { id: msgId, role: "user", content: text }]);
       setInput("");
       setIsTyping(true);
-      setTimeout(() => {
+
+      const productId = activeProductId || undefined;
+
+      try {
+        const res = await chatWithAi({ message: text, productId });
+        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: res.reply }]);
+      } catch (error) {
+        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: "Xin lỗi, AI đang bận. Vui lòng thử lại sau." }]);
+      } finally {
         setIsTyping(false);
-        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: getAIResponse(text) }]);
-      }, 800 + Math.random() * 600);
+      }
     } else {
-      setAdminMessages((prev) => [...prev, { id: msgId, role: "user", content: text, time: now() }]);
+      if (!conversationId) {
+        setAdminMessages(prev => [...prev, { id: msgId, role: "admin", content: "Vui lòng đăng nhập để chat trực tiếp.", time: now() }]);
+        return;
+      }
+      
+      const tmpId = Date.now().toString();
+      setAdminMessages((prev) => [...prev, { id: tmpId, role: "user", content: text, time: now(), fileUrl: imageUrl }]);
+      if (customText === undefined) setInput("");
+      setIsTyping(false);
+
+      const sendContent = text || "[Hình ảnh]";
+
+      sendLiveMessage({ conversationId, content: sendContent, senderId: user!.id, fileUrl: imageUrl }).then((res) => {
+        setAdminMessages(prev => {
+          if (prev.find(m => m.id === res.id.toString())) {
+            return prev.filter(m => m.id !== tmpId);
+          }
+          return prev.map(m => m.id === tmpId ? {
+            id: res.id.toString(),
+            role: "user",
+            content: res.content,
+            time: new Date(res.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+            fileUrl: res.fileUrl
+          } : m);
+        });
+      }).catch(() => {
+        setAdminMessages(prev => [...prev, { id: tmpId + "err", role: "admin", content: "Gửi lỗi.", time: now() }]);
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (chatIntent && chatIntent.triggerId > 0) {
+      const isPlainToggle = !chatIntent.mode && !chatIntent.autoSendPrompt && !chatIntent.prefillMessage;
+      if (isPlainToggle) {
+        setChatOpen(prev => !prev);
+      } else {
+        setChatOpen(true);
+      }
+      
+      if (chatIntent.mode) setActiveTab(chatIntent.mode);
+      if (chatIntent.prefillMessage) setInput(chatIntent.prefillMessage);
+      
+      if (chatIntent.autoSendPrompt) {
+        setTimeout(() => {
+          handleSend(chatIntent.autoSendPrompt, undefined, chatIntent.mode || "ai");
+        }, 100);
+      }
+    }
+  }, [chatIntent]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    
+    setIsUploadingImage(true);
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        fileType: 'image/webp'
+      };
+      const compressedFile = await imageCompression(file, options);
+      const url = await profileApi.uploadFile(compressedFile);
+      handleSend(input.trim(), url);
       setInput("");
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        setAdminMessages((prev) => [...prev, { id: msgId + "r", role: "admin", content: getAdminResponse(text), time: now() }]);
-      }, 1200 + Math.random() * 800);
+    } catch (err) {
+      setAdminMessages(prev => [...prev, { id: Date.now().toString(), role: "admin", content: "Lỗi tải ảnh lên, vui lòng thử lại.", time: now() }]);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleReset = () => {
     if (activeTab === "ai") { setAiMessages(INITIAL_AI); }
-    else { setAdminMessages(INITIAL_ADMIN); }
+    else { 
+      if (conversationId && user) {
+        getMessagesByConversation(conversationId, user.id).then(msgs => {
+          const mapped: Message[] = msgs.map(m => ({
+            id: m.id.toString(),
+            role: m.senderId === user.id ? "user" : "admin",
+            content: m.content,
+            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+          }));
+          setAdminMessages(mapped);
+        });
+      }
+    }
     setIsTyping(false);
   };
 
@@ -158,46 +341,7 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
   return (
     <div className="fixed bottom-[76px] md:bottom-6 right-4 z-50 flex flex-col items-end gap-3">
 
-      {/* Pre-chat widget */}
-      {widgetVisible && !chatOpen && (
-        <div className="relative bg-[#406767] rounded-2xl p-6 w-[300px] shadow-2xl flex flex-col gap-4">
-          <button
-            onClick={() => setWidgetVisible(false)}
-            className="absolute top-3 right-3 text-[#bae4e3]/70 hover:text-white transition-colors"
-          >
-            <X size={15} />
-          </button>
-          <div className="flex gap-3 items-start">
-            <div className="shrink-0 mt-0.5 text-[#a5cece]">
-              <svg width="17" height="17" viewBox="0 0 16.9955 16.9923" fill="none">
-                <path d={svgPaths.p12cee600} fill="#A5CECE" />
-              </svg>
-            </div>
-            <p className="text-[#bae4e3] text-[14px] leading-[22px]">
-              Bạn có biết chuyển sang bàn chải tre giúp tiết kiệm{" "}
-              <span className="font-bold underline">1.5kg nhựa</span> mỗi năm không?
-            </p>
-          </div>
-          <div className="bg-[#274f4f] rounded-lg p-4 flex flex-col gap-2">
-            <div className="flex justify-between text-[#bae4e3]/80 text-[11px] uppercase tracking-wider">
-              <span>Tác động CO2</span>
-              <span>Tiết kiệm</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[#bae4e3] text-[14px] font-bold">Bamboo vs Nhựa</span>
-              <span className="text-[#c1eaea] text-[14px] font-bold">-83%</span>
-            </div>
-          </div>
-          <button
-            onClick={handleLearnMore}
-            className="bg-[#c1eaea] text-[#002020] py-2 rounded-sm text-center text-[13px] tracking-[0.1em] uppercase font-medium hover:bg-[#a8dada] transition-colors"
-          >
-            LEARN MORE
-          </button>
-        </div>
-      )}
 
-      {/* Full chat panel */}
       {chatOpen && (
         <div
           className="bg-white rounded-2xl shadow-2xl w-[320px] md:w-[380px] flex flex-col overflow-hidden"
@@ -279,7 +423,12 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
                         border: isUser ? "none" : "1px solid #eef2eb",
                       }}
                     >
-                      {msg.content}
+                      {msg.fileUrl && (
+                        <div className="mb-2">
+                          <img src={msg.fileUrl} alt="attachment" className="max-w-full rounded-lg" style={{ maxHeight: "150px", objectFit: "contain" }} />
+                        </div>
+                      )}
+                      {msg.content !== "[Hình ảnh]" ? (activeTab === "ai" ? renderMarkdown(msg.content) : msg.content) : ""}
                     </div>
                     {msg.time && !isUser && (
                       <span className="text-[10px] text-[#9ca3af] px-1">{msg.time}</span>
@@ -313,18 +462,38 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
           {/* Input */}
           <div className="border-t border-[#eef2eb] bg-white px-4 py-3 shrink-0">
             <div className="flex gap-2 items-center">
+              {activeTab === "admin" && (
+                <>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage || !conversationId}
+                    className="text-gray-400 hover:text-[#274f4f] transition-colors disabled:opacity-30 p-1"
+                    title="Gửi hình ảnh"
+                  >
+                    {isUploadingImage ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />}
+                  </button>
+                </>
+              )}
               <input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onKeyDown={(e) => e.key === "Enter" && !isUploadingImage && handleSend()}
                 placeholder={activeTab === "ai" ? "Hỏi về carbon, sản phẩm..." : "Nhập tin nhắn hỗ trợ..."}
-                className="flex-1 text-[13px] text-gray-700 outline-none placeholder-gray-400 bg-transparent"
+                className="flex-1 text-[13px] text-gray-700 outline-none placeholder-gray-400 bg-transparent min-w-0"
+                disabled={isUploadingImage}
               />
               <button
-                onClick={handleSend}
-                disabled={!input.trim() || isTyping}
-                className="text-gray-300 hover:text-[#274f4f] transition-colors disabled:opacity-30"
+                onClick={() => handleSend()}
+                disabled={(!input.trim() && !isUploadingImage) || isTyping || isUploadingImage}
+                className={`transition-colors disabled:opacity-30 p-1 ${input.trim() ? "text-[#274f4f]" : "text-gray-300 hover:text-[#274f4f]"}`}
               >
                 <Send size={17} />
               </button>
@@ -339,15 +508,12 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
         </div>
       )}
 
-      {/* Floating button — shrinks when idle, expands on hover or when chat is open */}
+      {/* Floating button — shrinks when scrolled, expands on hover or when chat is open */}
       {(() => {
-        const shrink = idle && !chatOpen && !widgetVisible && !hoveringBtn;
+        const shrink = scrolled && !chatOpen && !hoveringBtn;
         return (
           <button
-            onClick={() => {
-              if (chatOpen) { setChatOpen(false); }
-              else { setWidgetVisible((v) => !v); }
-            }}
+            onClick={() => setChatOpen(!chatOpen)}
             onMouseEnter={() => setHoveringBtn(true)}
             onMouseLeave={() => setHoveringBtn(false)}
             aria-label="Chat GreenLife"
@@ -378,7 +544,7 @@ export function AIChatbot({ openTrigger = 0 }: { openTrigger?: number }) {
                 justifyContent: "center",
               }}
             >
-              {chatOpen || widgetVisible ? (
+              {chatOpen ? (
                 <svg width="18.667" height="18.667" viewBox="0 0 18.6667 18.6667" fill="none">
                   <path d={svgPaths.p2e1eae40} fill="white" />
                 </svg>

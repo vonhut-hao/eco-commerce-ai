@@ -21,7 +21,7 @@ import imgThumb1 from "../imports/ProductDetail2/216f26d6776c3bc25b08f4a2fc1a937
 import imgThumb2 from "../imports/ProductDetail2/500cb84cb3311510ee21f4b4f07293aa58527802.png";
 import imgThumb3 from "../imports/ProductDetail2/d676d1e4513ae183577337dd633cacf4df304944.png";
 import imgThumb4 from "../imports/ProductDetail2/45e21f35a448272b3d6c4d80ab24fd03cfec6002.png";
-import { AIChatbot } from "./components/AIChatbot";
+import { AIChatbot, ChatbotIntent } from "./components/AIChatbot";
 import { ProfilePage } from "./components/ProfilePage";
 import { SignUpPage } from "./components/SignUpPage";
 import { SignInPage } from "./components/SignInPage";
@@ -889,7 +889,10 @@ export default function App() {
   const [activePage, setActivePage] = useState<Page>(() => {
     return (sessionStorage.getItem("activePage") as Page) || "home";
   });
-  const [activeProductId, setActiveProductId] = useState<number | null>(null);
+  const [activeProductId, setActiveProductId] = useState<number | null>(() => {
+    const saved = sessionStorage.getItem("activeProductId");
+    return saved ? parseInt(saved) : null;
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeShopCategory, setActiveShopCategory] = useState("All");
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
@@ -948,7 +951,10 @@ export default function App() {
   }, [fetchCart]);
 
   // Chatbot control — increment a counter so useEffect in AIChatbot fires each time
-  const [chatbotTrigger, setChatbotTrigger] = useState(0);
+  const [chatIntent, setChatIntent] = useState<ChatbotIntent>({ triggerId: 0 });
+  const openChatbot = (options?: Omit<ChatbotIntent, "triggerId">) => {
+    setChatIntent(prev => ({ triggerId: prev.triggerId + 1, ...options }));
+  };
 
   const setToken = useAuthStore(state => state.setToken);
 
@@ -973,7 +979,10 @@ export default function App() {
   const navigate = (page: Page, productId?: number, category?: string, searchTerm?: string, extraFilters?: { carbon?: string, certs?: string[] }) => {
     sessionStorage.setItem("activePage", page);
     setActivePage(page);
-    if (productId !== undefined) setActiveProductId(productId);
+    if (productId !== undefined) {
+      setActiveProductId(productId);
+      sessionStorage.setItem("activeProductId", productId.toString());
+    }
     
     if (page === "shop") {
       setActiveShopCategory(category !== undefined ? category : "All");
@@ -988,9 +997,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const openChatbot = () => {
-    setChatbotTrigger((n) => n + 1);
-  };
+
 
   // Cart helpers
   const handleAddToCart = async (product: Product, quantity = 1) => {
@@ -1142,7 +1149,7 @@ export default function App() {
 
       <Footer />
       <BottomNav activePage={activePage} onNavigate={navigate} onOpenChatbot={openChatbot} />
-      <AIChatbot openTrigger={chatbotTrigger} />
+      <AIChatbot chatIntent={chatIntent} activeProductId={activeProductId} />
     </div>
   );
 }

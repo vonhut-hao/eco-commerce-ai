@@ -42,3 +42,7 @@ management:
   endpoint:
     env:
       show-values: never
+
+# API key for chatbot
+gemini:
+  api-key: ${GEMINI_API_KEY}
