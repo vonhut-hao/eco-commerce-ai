@@ -45,4 +45,4 @@ management:
 
 # API key for chatbot
 gemini:
-  api-key: "AIzaSyD73BMaxrO1OkdbaAQVY8m22CeEEoFs37g"
+  api-key: ${GEMINI_API_KEY}
