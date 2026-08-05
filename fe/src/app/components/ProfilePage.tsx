@@ -7,6 +7,7 @@ import type { Product } from "./ShopPage";
 import { useAuthStore } from "../../store/authStore";
 import { profileApi, UserProfileResponse } from "../../api/profile";
 import { ordersApi, OrderResponse } from "../../api/orders";
+import imageCompression from 'browser-image-compression';
 import { getTier, ECO_TIERS } from "./ImpactPage";
 
 type OrderProduct = { name: string; reviewed: boolean };
@@ -113,7 +114,17 @@ function EditProfilePanel({
 
     try {
       setUploadingAvatar(true);
-      const url = await profileApi.uploadFile(file);
+      
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 500,
+        useWebWorker: true,
+        fileType: 'image/webp',
+        initialQuality: 0.8
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      const url = await profileApi.uploadFile(compressedFile);
       setForm((f) => ({ ...f, avatarUrl: url, avatarInitial: "" }));
     } catch (err: any) {
       toast.error("Lỗi", err.response?.data?.message || "Không thể upload ảnh, vui lòng thử lại sau.");
