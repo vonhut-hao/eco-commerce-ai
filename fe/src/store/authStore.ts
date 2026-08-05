@@ -11,7 +11,9 @@ interface User {
 interface AuthState {
   token: string | null;
   user: User | null;
+  avatarUrl: string | null;
   setToken: (token: string) => void;
+  setAvatarUrl: (url: string | null) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -21,7 +23,9 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       token: null,
       user: null,
+      avatarUrl: null,
       isAuthenticated: false,
+      setAvatarUrl: (url: string | null) => set({ avatarUrl: url }),
       setToken: (token: string) => {
         try {
           const decoded: any = jwtDecode(token);
@@ -40,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       logout: () => {
-        set({ token: null, user: null, isAuthenticated: false });
+        set({ token: null, user: null, avatarUrl: null, isAuthenticated: false });
         localStorage.removeItem('access_token');
       },
     }),

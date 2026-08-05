@@ -299,8 +299,8 @@ function DesktopHeader({
                 activePage === "profile" ? "text-[#25521f]" : "text-[#42493e] hover:text-[#25521f]"
               }`}
             >
-              {isAuthenticated && user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-[#c2c9bb]" />
+              {isAuthenticated && avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-[#c2c9bb]" />
               ) : (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d={svgPaths.p33ced450} fill={activePage === "profile" ? "#25521f" : "#42493E"} />
@@ -840,8 +840,8 @@ function BottomNav({
                 isActive ? "text-[#25521f]" : "text-[#6b7280]"
               }`}
             >
-              {item.key === "me" && isAuthenticated && user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
+              {item.key === "me" && isAuthenticated && avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
               ) : (
                 <Icon size={21} strokeWidth={isActive ? 2.2 : 1.6} />
               )}
@@ -918,13 +918,22 @@ export default function App() {
   });
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
+  const avatarUrl = useAuthStore(state => state.avatarUrl);
+  const setAvatarUrl = useAuthStore(state => state.setAvatarUrl);
+
   useEffect(() => {
     if (isAuthenticated) {
       favoritesApi.getUserFavorites().then(products => {
         setWishlistIds(products.map((p: any) => p.id));
       }).catch(console.error);
+
+      if (user?.id && !avatarUrl) {
+        profileApi.getProfile(user.id).then(res => {
+          setAvatarUrl(res.avatarUrl || null);
+        }).catch(console.error);
+      }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
     localStorage.setItem("wishlist", JSON.stringify(wishlistIds));

@@ -1096,7 +1096,10 @@ export function ProfilePage({
 
   useEffect(() => {
     if (user?.id) {
-      profileApi.getProfile(user.id).then(setProfile).catch(console.error);
+      profileApi.getProfile(user.id).then(res => {
+        setProfile(res);
+        useAuthStore.getState().setAvatarUrl(res.avatarUrl || null);
+      }).catch(console.error);
       ordersApi.getOrders().then(realOrders => {
         setOrders(realOrders.sort((a, b) => b.id - a.id));
       }).catch(console.error);
@@ -1106,8 +1109,10 @@ export function ProfilePage({
   return (
     <main className="flex-1 pb-20 md:pb-0">
       <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-8 md:py-12 flex flex-col gap-10 md:gap-12">
-
-        <UserInfoCard profile={profile} ordersCount={orders.length} onUpdateProfile={setProfile} />
+        <UserInfoCard profile={profile} ordersCount={orders.length} onUpdateProfile={(p) => {
+          setProfile(p);
+          useAuthStore.getState().setAvatarUrl(p.avatarUrl || null);
+        }} />
         <GreenImpactMetrics profile={profile} ordersCount={orders.length} />
 
         <div className="flex items-center gap-6 md:gap-10 border-b border-[#dde8d8] overflow-x-auto no-scrollbar">
