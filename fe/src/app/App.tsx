@@ -195,6 +195,7 @@ function DesktopHeader({
 }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const user = useAuthStore(s => s.user);
+  const avatarUrl = useAuthStore(s => s.avatarUrl);
   const [greenPts, setGreenPts] = useState<number | null>(null);
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -812,6 +813,7 @@ function BottomNav({
 }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const user = useAuthStore(s => s.user);
+  const avatarUrl = useAuthStore(s => s.avatarUrl);
   const items = [
     { key: "home",    label: "Home",     icon: Home,        action: () => onNavigate("home") },
     { key: "shop",    label: "Shop",     icon: ShoppingBag, action: () => onNavigate("shop") },
