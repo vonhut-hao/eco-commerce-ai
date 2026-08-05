@@ -218,7 +218,7 @@ function CompareBar({
 }
 
 // ─── Compare Modal ─────────────────────────────────────────────────────────────
-function CompareModal({ items, onClose }: { items: Product[]; onClose: () => void }) {
+function CompareModal({ items, onClose, onAddToCart }: { items: Product[]; onClose: () => void; onAddToCart: (p: Product) => void }) {
   const fields: { label: string; key: keyof Product }[] = [
     { label: "Giá", key: "priceLabel" },
     { label: "Carbon Index", key: "carbonLabel" },
@@ -273,7 +273,10 @@ function CompareModal({ items, onClose }: { items: Product[]; onClose: () => voi
                 <td className="px-6 py-3" />
                 {items.map((p) => (
                   <td key={p.id} className="px-4 py-3 text-center">
-                    <button className="bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[11px] tracking-widest uppercase px-4 py-2 rounded-full hover:shadow-md transition-all">
+                    <button 
+                      onClick={() => onAddToCart(p)}
+                      className="bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[11px] tracking-widest uppercase px-4 py-2 rounded-full hover:shadow-md transition-all"
+                    >
                       Thêm vào giỏ
                     </button>
                   </td>
@@ -639,7 +642,7 @@ export function ShopPage({
       />
 
       {/* Compare modal */}
-      {showCompare && <CompareModal items={compareItems} onClose={() => setShowCompare(false)} />}
+      {showCompare && <CompareModal items={compareItems} onClose={() => setShowCompare(false)} onAddToCart={onAddToCart} />}
     </main>
   );
 }

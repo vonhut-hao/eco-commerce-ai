@@ -19,7 +19,7 @@ type Order = {
   price: string;
   pts: string;
   co2e: string;
-  status: "DELIVERED" | "SHIPPING" | "PROCESSING" | "CANCELLED";
+  status: "DELIVERED" | "DELIVERY" | "PROCESSING" | "CANCELLED";
   products: OrderProduct[];
   reviewDeadlineDays: number | null; // null = expired
 };
@@ -45,7 +45,7 @@ const orders: Order[] = [
   {
     id: "#GL-9288", date: "Jul 28, 2026", deliveredDate: null,
     price: "3,744,000 VND", pts: "+210 pts", co2e: "CO2e 2.1kg",
-    status: "SHIPPING", reviewDeadlineDays: null,
+    status: "DELIVERY", reviewDeadlineDays: null,
     products: [
       { name: "Natural Coconut Bowl Set", reviewed: false },
       { name: "Hemp Canvas Backpack", reviewed: false },
@@ -646,7 +646,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     COMPLETED:  { label: "Đã giao",      cls: "bg-[#d4eddb] text-[#1e5e2e]" },
-    SHIPPING:   { label: "Đang giao",    cls: "bg-[#ddeeff] text-[#1a4f8a]" },
+    DELIVERY:   { label: "Đang giao",    cls: "bg-[#ddeeff] text-[#1a4f8a]" },
     PROCESSING: { label: "Đang xử lý",  cls: "bg-[#fff3cd] text-[#856404]" },
     CANCELLED:  { label: "Đã hủy",      cls: "bg-[#fde8e8] text-[#ba1a1a]" },
   };
@@ -780,7 +780,7 @@ function ReviewModal({
 const ORDER_STATUS_TABS = [
   { key: "ALL",       label: "Tất cả" },
   { key: "PENDING",   label: "Chờ xác nhận" },
-  { key: "SHIPPING",  label: "Đang giao" },
+  { key: "DELIVERY",  label: "Đang giao" },
   { key: "COMPLETED", label: "Hoàn thành" },
   { key: "REVIEW",    label: "Chờ đánh giá" },
   { key: "CANCELLED", label: "Đã hủy" },
@@ -798,8 +798,12 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
   };
 
   // Filter logic
-  const isAwaitingReview = (order: OrderResponse) =>
-    order.status === 'COMPLETED' && order.id === 9991; // id 9991 is within review window
+  const isAwaitingReview = (order: OrderResponse) => {
+    if (order.status !== 'COMPLETED' || !order.createdAt) return false;
+    const created = new Date(order.createdAt);
+    const days = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+    return days <= 14;
+  };
 
   const filteredOrders = orders.filter(order => {
     if (statusFilter === "ALL") return true;
@@ -878,18 +882,23 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                       +{estPts} pts
                     </span>
                   )}
+                  {order.paymentMethodName && (
+                    <span className="bg-[#eef2ff] text-[#4338ca] text-[11px] px-2.5 py-0.5 rounded-full border border-[#c7d2fe]">
+                      Thanh toán: {order.paymentMethodName}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`${
                     order.status === 'PENDING' ? 'text-[#ea580c]' :
                     order.status === 'CANCELLED' ? 'text-[#dc2626]' :
-                    order.status === 'SHIPPING' ? 'text-[#0284c7]' :
+                    order.status === 'DELIVERY' ? 'text-[#0284c7]' :
                     'text-[#25521f]'
                   } text-[12px] uppercase tracking-wide font-medium`}>
                     {order.status === 'COMPLETED' ? 'Hoàn Thành' :
                      order.status === 'PENDING' ? 'Chờ Xác Nhận' :
                      order.status === 'CANCELLED' ? 'Đã Hủy' :
-                     order.status === 'SHIPPING' ? 'Đang Giao' :
+                     order.status === 'DELIVERY' ? 'Đang Giao' :
                      order.status}
                   </span>
                 </div>
@@ -927,19 +936,15 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                         {/* Review logic */}
                         {order.status === 'COMPLETED' && (
                           <div className="flex justify-end items-center mt-1">
-                            {order.id === 9992 ? (
-                              <span className="text-[#9ca3af] text-[11px]">Hết hạn đánh giá</span>
-                            ) : order.id === 9994 ? (
-                              <span className="flex items-center gap-1 text-[#25521f] text-[11px] shrink-0">
-                                <Star size={11} fill="#25521f" className="text-[#25521f]" /> Đã đánh giá
-                              </span>
-                            ) : (
+                            {isAwaitingReview(order) ? (
                               <button
                                 onClick={() => setReviewTarget({ orderId: order.id, productName: p.productName })}
                                 className="flex items-center gap-1.5 text-[#25521f] text-[12px] border border-[#25521f] px-4 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
                               >
                                 Đánh giá
                               </button>
+                            ) : (
+                              <span className="text-[#9ca3af] text-[11px]">Hết hạn đánh giá</span>
                             )}
                           </div>
                         )}
@@ -949,6 +954,32 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                 })}
               </div>
 
+              {order.status === 'PENDING' && order.paymentMethodName === 'BANK_TRANSFER' && (
+                <div className="mx-5 mb-4 bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#42493e]">
+                  <p className="font-medium text-[#1a1c19]">Thông tin chuyển khoản Ngân hàng:</p>
+                  <p>Ngân hàng: <span className="font-medium">Vietcombank</span></p>
+                  <p>Số TK: <span className="font-medium">1234567890</span></p>
+                  <p>Tên TK: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                </div>
+              )}
+              {order.status === 'PENDING' && order.paymentMethodName === 'MOMO' && (
+                <div className="mx-5 mb-4 bg-[#fdf4ff] border border-[#f5d0fe] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#701a75]">
+                  <p className="font-medium text-[#4a044e]">Thông tin thanh toán MoMo:</p>
+                  <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
+                  <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                </div>
+              )}
+              {order.status === 'PENDING' && order.paymentMethodName === 'ZALOPAY' && (
+                <div className="mx-5 mb-4 bg-[#f0f9ff] border border-[#bae6fd] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#0369a1]">
+                  <p className="font-medium text-[#0c4a6e]">Thông tin thanh toán ZaloPay:</p>
+                  <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
+                  <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                </div>
+              )}
+
               {/* Order footer: Total + Buttons */}
               <div className="bg-transparent px-5 py-4 flex flex-col gap-4 border-t border-[#e2e3de]">
                 <div className="flex justify-end items-center gap-2">
@@ -957,6 +988,14 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                 </div>
 
                 <div className="flex flex-col md:flex-row justify-end items-center gap-3 border-t border-[#e2e3de] pt-4 mt-2">
+                  {order.status !== 'CANCELLED' && order.status !== 'PENDING' && (
+                    <button
+                      onClick={() => ordersApi.viewInvoice(order.id).catch(console.error)}
+                      className="w-full md:w-auto text-[#42493e] text-[13px] tracking-widest uppercase border border-[#c2c9bb] px-6 py-2.5 rounded-full bg-white hover:bg-[#fafaf5] transition-colors"
+                    >
+                      Xem hóa đơn PDF
+                    </button>
+                  )}
                   <button
                     onClick={() => { if (onOpenChatbot) onOpenChatbot(); }}
                     className="w-full md:w-auto text-[#25521f] text-[13px] tracking-widest uppercase border border-[#25521f] px-6 py-2.5 rounded-full hover:bg-[#f0f7ee] transition-colors"

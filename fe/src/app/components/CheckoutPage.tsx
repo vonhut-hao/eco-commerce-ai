@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, MapPin, CreditCard, Banknote, Smartphone, ArrowRight, Package, Leaf } from "lucide-react";
 import { CartItem, useCartStore } from "../../store/cartStore";
 import { ordersApi } from "../../api/orders";
+import { paymentApi, PaymentMethodResponse } from "../../api/payment";
 import { useAuthStore } from "../../store/authStore";
 import { toast } from "./Toast";
 type Step = "address" | "payment" | "confirm";
@@ -130,18 +131,17 @@ function AddressStep({
 }
 
 // ─── Payment Step ──────────────────────────────────────────────────────────────
-type PaymentMethod = "cod" | "bank" | "momo" | "zalopay";
 type AddressForm = { name: string; phone: string; province: string; address: string; note: string };
 
-const PAYMENT_OPTS: { key: PaymentMethod; label: string; desc: string; Icon: React.ElementType; color: string }[] = [
-  { key: "cod", label: "Thanh toán khi nhận hàng", desc: "Trả tiền mặt khi shipper giao tới", Icon: Banknote, color: "#42493e" },
-  { key: "bank", label: "Chuyển khoản ngân hàng", desc: "Chuyển khoản qua QR / số tài khoản", Icon: CreditCard, color: "#1d4ed8" },
-  { key: "momo", label: "Ví MoMo", desc: "Quét mã QR MoMo để thanh toán", Icon: Smartphone, color: "#a21caf" },
-  { key: "zalopay", label: "ZaloPay", desc: "Thanh toán qua ứng dụng ZaloPay", Icon: Smartphone, color: "#0284c7" },
-];
+const PAYMENT_META: Record<string, { label: string; desc: string; Icon: React.ElementType; color: string }> = {
+  COD: { label: "Thanh toán khi nhận hàng", desc: "Trả tiền mặt khi shipper giao tới", Icon: Banknote, color: "#42493e" },
+  BANK_TRANSFER: { label: "Chuyển khoản ngân hàng", desc: "Chuyển khoản qua QR / số tài khoản", Icon: CreditCard, color: "#1d4ed8" },
+  MOMO: { label: "Ví MoMo", desc: "Quét mã QR MoMo để thanh toán", Icon: Smartphone, color: "#a21caf" },
+  ZALOPAY: { label: "ZaloPay", desc: "Thanh toán qua ứng dụng ZaloPay", Icon: Smartphone, color: "#0284c7" },
+};
 
-function PaymentStep({ onNext, onBack, total }: { onNext: (method: PaymentMethod) => void; onBack: () => void; total: number }) {
-  const [selected, setSelected] = useState<PaymentMethod>("cod");
+function PaymentStep({ onNext, onBack, total, methods }: { onNext: (method: PaymentMethodResponse) => void; onBack: () => void; total: number; methods: PaymentMethodResponse[] }) {
+  const [selectedId, setSelectedId] = useState<number | null>(methods.length > 0 ? methods[0].id : null);
 
   const [loading, setLoading] = useState(false);
   
@@ -153,21 +153,22 @@ function PaymentStep({ onNext, onBack, total }: { onNext: (method: PaymentMethod
       </div>
 
       <div className="flex flex-col gap-3">
-        {PAYMENT_OPTS.map((opt) => {
-          const Icon = opt.Icon;
-          const active = selected === opt.key;
+        {methods.map((method) => {
+          const meta = PAYMENT_META[method.methodName] || { label: method.methodName, desc: "Phương thức thanh toán", Icon: CreditCard, color: "#42493e" };
+          const Icon = meta.Icon;
+          const active = selectedId === method.id;
           return (
             <button
-              key={opt.key}
-              onClick={() => setSelected(opt.key)}
+              key={method.id}
+              onClick={() => setSelectedId(method.id)}
               className={`flex items-center gap-4 border rounded-xl p-4 text-left transition-all ${active ? "border-[#25521f] bg-[#f0f7ee]" : "border-[#c2c9bb] hover:border-[#42493e]"}`}
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${active ? "bg-[#25521f]" : "bg-[#f4f4ef]"}`}>
-                <Icon size={18} color={active ? "white" : opt.color} />
+                <Icon size={18} color={active ? "white" : meta.color} />
               </div>
               <div className="flex-1">
-                <p className={`text-[14px] ${active ? "text-[#25521f] font-medium" : "text-[#1a1c19]"}`}>{opt.label}</p>
-                <p className="text-[#6b7280] text-[12px]">{opt.desc}</p>
+                <p className={`text-[14px] ${active ? "text-[#25521f] font-medium" : "text-[#1a1c19]"}`}>{meta.label}</p>
+                <p className="text-[#6b7280] text-[12px]">{meta.desc}</p>
               </div>
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${active ? "border-[#25521f]" : "border-[#c2c9bb]"}`}>
                 {active && <div className="w-2.5 h-2.5 rounded-full bg-[#25521f]" />}
@@ -177,12 +178,30 @@ function PaymentStep({ onNext, onBack, total }: { onNext: (method: PaymentMethod
         })}
       </div>
 
-      {selected === "bank" && (
+      {methods.find(m => m.id === selectedId)?.methodName === "BANK_TRANSFER" && (
         <div className="bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#42493e]">
-          <p className="font-medium text-[#1a1c19]">Thông tin chuyển khoản:</p>
+          <p className="font-medium text-[#1a1c19]">Thông tin chuyển khoản Ngân hàng:</p>
           <p>Ngân hàng: <span className="font-medium">Vietcombank</span></p>
           <p>Số TK: <span className="font-medium">1234567890</span></p>
           <p>Tên TK: <span className="font-medium">GREENLIFE COMPANY</span></p>
+          <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+        </div>
+      )}
+
+      {methods.find(m => m.id === selectedId)?.methodName === "MOMO" && (
+        <div className="bg-[#fdf4ff] border border-[#f5d0fe] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#701a75]">
+          <p className="font-medium text-[#4a044e]">Thông tin thanh toán MoMo:</p>
+          <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
+          <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
+          <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+        </div>
+      )}
+
+      {methods.find(m => m.id === selectedId)?.methodName === "ZALOPAY" && (
+        <div className="bg-[#f0f9ff] border border-[#bae6fd] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#0369a1]">
+          <p className="font-medium text-[#0c4a6e]">Thông tin thanh toán ZaloPay:</p>
+          <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
+          <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
           <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
         </div>
       )}
@@ -198,11 +217,13 @@ function PaymentStep({ onNext, onBack, total }: { onNext: (method: PaymentMethod
         </button>
         <button
           onClick={async () => {
+            if (!selectedId) return;
             setLoading(true);
-            await onNext(selected);
+            const method = methods.find(m => m.id === selectedId);
+            if (method) await onNext(method);
             setLoading(false);
           }}
-          disabled={loading}
+          disabled={loading || !selectedId}
           className="flex-1 bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3 rounded-full shadow-md hover:shadow-lg transition-all disabled:opacity-50"
         >
           {loading ? "Đang xử lý..." : "Đặt hàng"}
@@ -224,13 +245,13 @@ function ConfirmStep({
 }: {
   orderId: string;
   address: AddressForm;
-  paymentMethod: PaymentMethod;
+  paymentMethod: PaymentMethodResponse | null;
   total: number;
   co2: number;
   greenPts: number;
   onContinue: () => void;
 }) {
-  const payLabel = PAYMENT_OPTS.find((o) => o.key === paymentMethod)?.label ?? "";
+  const payLabel = paymentMethod ? (PAYMENT_META[paymentMethod.methodName]?.label || paymentMethod.methodName) : "";
   return (
     <div className="flex flex-col items-center gap-6 py-4 text-center">
       {/* Success icon */}
@@ -315,10 +336,15 @@ export function CheckoutPage({
 }) {
   const [step, setStep] = useState<Step>("address");
   const [address, setAddress] = useState<AddressForm | null>(null);
-  const [payMethod, setPayMethod] = useState<PaymentMethod>("cod");
+  const [payMethod, setPayMethod] = useState<PaymentMethodResponse | null>(null);
+  const [methods, setMethods] = useState<PaymentMethodResponse[]>([]);
   const [orderId, setOrderId] = useState(() => "#GL-" + Math.floor(9000 + Math.random() * 9000));
   const { isAuthenticated } = useAuthStore();
   const { clearCart } = useCartStore();
+
+  useEffect(() => {
+    paymentApi.getActiveMethods().then(res => setMethods(res)).catch(console.error);
+  }, []);
 
   const currentSubtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const currentTotal = currentSubtotal + (currentSubtotal > 0 && currentSubtotal < 200000 ? 30000 : 0);
@@ -349,12 +375,11 @@ export function CheckoutPage({
     );
   }
 
-  const handlePlaceOrder = async (method: PaymentMethod) => {
+  const handlePlaceOrder = async (method: PaymentMethodResponse) => {
     setPayMethod(method);
     try {
       const res = await ordersApi.createOrder({
-        // Hardcode paymentMethodId to 1 for now if BE uses default
-        paymentMethodId: 1, 
+        paymentMethodId: method.id, 
         status: "PENDING"
       });
       if (res && res.id) {
@@ -385,6 +410,7 @@ export function CheckoutPage({
         {step === "payment" && (
           <PaymentStep
             total={total}
+            methods={methods}
             onBack={() => setStep("address")}
             onNext={handlePlaceOrder}
           />

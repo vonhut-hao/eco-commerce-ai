@@ -14,6 +14,7 @@ public record OrderResponse(
         String username,
         Long paymentMethodId,
         String paymentMethodName,
+        String createdAt,
         List<OrderItemResponse> orderItems
 ) {
     public static OrderResponse from(OrderEntity entity) {
@@ -29,6 +30,7 @@ public record OrderResponse(
                 entity.getUser().getUsername(),
                 entity.getPaymentMethodEntity().getId(),
                 entity.getPaymentMethodEntity().getMethodName(),
+                entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null,
                 entity.getOrderItems().stream()
                         .map(OrderItemResponse::from)
                         .toList()
