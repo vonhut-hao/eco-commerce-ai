@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,5 +46,12 @@ public class CommentController {
     @PreAuthorize("isAuthenticated()")
     public void deleteComment(@PathVariable("id") Long id) {
         commentService.deleteComment(id);
+    }
+
+    @PostMapping("/{id}/status")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("isAuthenticated()") // Or hasRole('ADMIN')
+    public void changeStatus(@PathVariable("id") Long id, @RequestParam("status") String status) {
+        commentService.changeStatus(id, status);
     }
 }

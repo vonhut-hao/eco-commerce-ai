@@ -70,4 +70,15 @@ public class CommentService {
         commentRepository.delete(commentEntity);
         log.info("Deleted comment with ID: {}", commentEntity.getId());
     }
+
+    public void changeStatus(Long id, String status) {
+        if (id == null || status == null) {
+            throw new IllegalArgumentException("Invalid parameter");
+        }
+        var commentEntity = commentRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+        commentEntity.setStatus(status);
+        commentRepository.save(commentEntity);
+        log.info("Updated status for comment ID: {} to {}", id, status);
+    }
 }

@@ -22,7 +22,8 @@ public record ProductEntityResponse(
         List<CategoryEntityResponse> categories,
         List<MaterialEntityResponse> materials,
         List<GreenCertificateEntityResponse> greenCertificates,
-        String description
+        String description,
+        List<CommentEntityResponse> comments
 ) {
     public static ProductEntityResponse from(ProductEntity entity) {
         if (entity == null) {
@@ -51,7 +52,10 @@ public record ProductEntityResponse(
                         .filter(greenCertificateEntity -> greenCertificateEntity.getDeletedAt() == null)
                         .map(GreenCertificateEntityResponse::from)
                         .toList(),
-                entity.getDescription()
+                entity.getDescription(),
+                entity.getComments() != null ? entity.getComments().stream()
+                        .map(CommentEntityResponse::from)
+                        .toList() : List.of()
         );
     }
 }

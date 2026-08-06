@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.flix.catalog.entity.CommentEntity;
 
 import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 import static com.flix.common.util.FileConvert.deserializeFile;
 
@@ -16,7 +17,10 @@ public record CommentEntityResponse(
         Long userId,
         Long productId,
         Long parentId,
-        String userName
+        String userName,
+        String productName,
+        String status,
+        String createdAt
 ) {
     public static CommentEntityResponse from(CommentEntity entity) {
         if (entity == null) {
@@ -31,8 +35,10 @@ public record CommentEntityResponse(
         }
 
         Long productId = null;
+        String productName = null;
         if (entity.getProductEntity() != null) {
             productId = entity.getProductEntity().getId();
+            productName = entity.getProductEntity().getName();
         }
 
         Long parentId = null;
@@ -48,7 +54,10 @@ public record CommentEntityResponse(
                 userId,
                 productId,
                 parentId,
-                userName
+                userName,
+                productName,
+                entity.getStatus(),
+                entity.getCreatedAt() != null ? entity.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null
         );
     }
 }

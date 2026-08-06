@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
 @Setter
@@ -41,4 +43,11 @@ public class CommentEntity {
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<CommentEntity> replies = new ArrayList<>();
+
+    @Column(nullable = false)
+    private String status = "PENDING"; // VISIBLE, HIDDEN, PENDING
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 }

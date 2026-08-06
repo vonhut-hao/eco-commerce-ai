@@ -33,7 +33,9 @@ export function ProductDetailPage({
     setLoading(true);
     productsApi.getProductById(productId)
       .then(res => {
-        setProduct(res);
+        const visibleComments = res.comments?.filter((c: any) => c.status === 'VISIBLE') || [];
+        const productWithFilteredComments = { ...res, comments: visibleComments };
+        setProduct(productWithFilteredComments);
         setQuantity(1);
         setSelectedThumb(0);
       })

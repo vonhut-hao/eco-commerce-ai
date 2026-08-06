@@ -637,12 +637,16 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ─── Review Modal ───────────────────────────────────────────────────────────
+import { reviewsApi } from '../../api/reviews';
+
 function ReviewModal({
   productName,
+  productId,
   orderId,
   onClose,
 }: {
   productName: string;
+  productId: number;
   orderId: string;
   onClose: (submitted: boolean) => void;
 }) {
@@ -653,13 +657,21 @@ function ReviewModal({
 
   const canSubmit = rating > 0 && text.trim().length >= 10;
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
+  const { user } = useAuthStore();
+
+  const handleSubmit = async () => {
+    if (!canSubmit || !user) return;
     setSubmitting(true);
-    setTimeout(() => {
-      toast.success("Cảm ơn bạn!", "Đánh giá đã được ghi nhận và đang chờ duyệt.");
+    try {
+      await reviewsApi.createReview(productId, rating, text, user.id);
+      toast.success("Cảm ơn bạn!", "Đánh giá đã được ghi nhận.");
       onClose(true);
-    }, 800);
+    } catch (e) {
+      console.error(e);
+      toast.error("Lỗi", "Không thể gửi đánh giá lúc này.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const LABELS = ["", "Rất tệ", "Tệ", "Bình thường", "Tốt", "Rất tốt"];
@@ -765,7 +777,7 @@ const ORDER_STATUS_TABS = [
 ];
 
 function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOpenChatbot?: (opts?: any) => void }) {
-  const [reviewTarget, setReviewTarget] = useState<{ orderId: number; productName: string } | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{ orderId: number; productId: number; productName: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [reviewedItems, setReviewedItems] = useState<string[]>(() => {
     try {
@@ -933,7 +945,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                           <div className="flex justify-end items-center mt-1">
                             {checkReviewStatus(order, p.productName) === 'PENDING' && (
                               <button
-                                onClick={() => setReviewTarget({ orderId: order.id, productName: p.productName })}
+                                onClick={() => setReviewTarget({ orderId: order.id, productId: p.productId, productName: p.productName })}
                                 className="flex items-center gap-1.5 text-[#25521f] text-[12px] border border-[#25521f] px-4 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
                               >
                                 Đánh giá
@@ -1044,6 +1056,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
       {reviewTarget && (
         <ReviewModal
           productName={reviewTarget.productName}
+          productId={reviewTarget.productId}
           orderId={String(reviewTarget.orderId)}
           onClose={(submitted) => handleReviewClose(submitted, reviewTarget.orderId, reviewTarget.productName)}
         />
