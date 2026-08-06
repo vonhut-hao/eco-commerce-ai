@@ -91,81 +91,10 @@ export default function Orders() {
   }
 
   function printOrder(o: OrderBE) {
-    const win = window.open('', '_blank');
-    if (!win) {
-      toast.error('Lỗi', 'Trình duyệt của bạn đã chặn cửa sổ bật lên. Vui lòng cho phép mở popup để in hóa đơn.');
-      return;
-    }
-    
-    const totalAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(o.totalAmount);
-    
-    let itemsHtml = (o.orderItems || []).map(i => `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${i.productName}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${i.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">
-          ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(i.price)}
-        </td>
-      </tr>
-    `).join('');
-
-    win.document.write(`
-      <html>
-        <head>
-          <title>Hóa đơn #${o.id}</title>
-          <style>
-            body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; margin: 40px; }
-            h2 { color: #3d6b35; margin-bottom: 5px; }
-            .header { border-bottom: 2px solid #3d6b35; padding-bottom: 20px; margin-bottom: 30px; }
-            .info { margin-bottom: 30px; line-height: 1.6; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th { text-align: left; padding: 10px; background: #f0f7ee; border-bottom: 2px solid #3d6b35; }
-            .total { font-size: 18px; font-weight: bold; text-align: right; padding-top: 15px; border-top: 2px solid #3d6b35; }
-            @media print { body { margin: 0; padding: 20px; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>HÓA ĐƠN MUA HÀNG</h2>
-            <p style="margin: 0; color: #666;">Mã đơn: #${o.id} - Ngày: ${new Date(o.createdAt).toLocaleDateString('vi-VN')}</p>
-          </div>
-          
-          <div class="info">
-            <strong>Khách hàng:</strong> ${o.username}<br>
-            <strong>Trạng thái:</strong> ${o.status}<br>
-            <strong>Phương thức thanh toán:</strong> ${o.paymentMethodName || 'N/A'}<br>
-            <strong>Điểm xanh nhận được:</strong> ${o.totalGreenPoints || 0} điểm
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Sản phẩm</th>
-                <th style="text-align: center;">Số lượng</th>
-                <th style="text-align: right;">Đơn giá</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-
-          <div class="total">
-            Tổng cộng: ${totalAmount}
-          </div>
-          
-          <div style="margin-top: 50px; text-align: center; color: #888; font-size: 13px;">
-            Cảm ơn bạn đã đồng hành cùng chiến dịch tiêu dùng xanh! 🌿
-          </div>
-        </body>
-      </html>
-    `);
-    win.document.close();
-    win.focus();
-    setTimeout(() => {
-      win.print();
-      win.close();
-    }, 500);
+    ordersApi.viewInvoice(o.id).catch((err) => {
+      console.error(err);
+      toast.error('Lỗi', 'Không thể tải hóa đơn. Vui lòng kiểm tra quyền mở popup trên trình duyệt của bạn.');
+    });
   }
 
   function formatCarbon(o: OrderBE) {

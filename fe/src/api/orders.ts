@@ -25,7 +25,35 @@ export interface OrderBE {
   orderItems: OrderItemBE[];
 }
 
+export type OrderResponse = OrderBE;
+export type OrderItemResponse = OrderItemBE;
+
+export interface OrderRequest {
+  paymentMethodId?: number;
+  status?: string;
+}
+
 export const ordersApi = {
+  createOrder: async (request: OrderRequest) => {
+    const res = await client.post<{ data: OrderBE }>('/v1/catalog/orders', request);
+    return res.data.data;
+  },
+  getOrders: async () => {
+    const res = await client.get<{ data: OrderBE[] }>('/v1/catalog/orders');
+    return res.data.data;
+  },
+  getOrderDetails: async (id: number) => {
+    const res = await client.get<{ data: OrderBE }>(`/v1/catalog/orders/${id}`);
+    return res.data.data;
+  },
+  viewInvoice: async (id: number) => {
+    const res = await client.get(`/v1/catalog/orders/${id}/invoice/pdf`, {
+      responseType: 'blob'
+    });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  },
   getOrdersAdmin: async () => {
     const res = await client.get<{ data: OrderBE[] }>('/v1/catalog/orders/admin');
     return res.data.data;
