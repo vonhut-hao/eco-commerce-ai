@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Icon } from './Icon'
 import { GLASS, INPUT, BTN_PRIMARY, BTN_GHOST, SECTION_LABEL, PAGE_TITLE, TH, TD, badge, MONO } from './ui'
 import { productsApi, ProductBE, CategoryBE } from '../../../api/products'
+import { uploadApi } from '../../../api/upload'
 
 interface ProductForm {
   id: number;
@@ -35,6 +36,7 @@ export default function Products() {
   const [isNew, setIsNew] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   
   // Cert Form State
   const [certForm, setCertForm] = useState({ name: '', issuer: '', issueDate: '', imageUrl: '' })
@@ -161,6 +163,40 @@ export default function Products() {
       alert('Có lỗi xảy ra khi xóa chứng chỉ');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleUploadMain(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !modal) return
+    setUploadingImage(true)
+    try {
+      const url = await uploadApi.uploadImage(file)
+      setModal({ ...modal, mainImage: url })
+    } catch (err) {
+      console.error(err)
+      alert('Có lỗi xảy ra khi tải ảnh lên')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  async function handleUploadSub(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files?.length || !modal) return
+    setUploadingImage(true)
+    try {
+      const urls: string[] = []
+      for (let i = 0; i < files.length; i++) {
+        urls.push(await uploadApi.uploadImage(files[i]))
+      }
+      const newRaw = modal.subImagesRaw ? modal.subImagesRaw + '\n' + urls.join('\n') : urls.join('\n')
+      setModal({ ...modal, subImagesRaw: newRaw })
+    } catch (err) {
+      console.error(err)
+      alert('Có lỗi xảy ra khi tải ảnh phụ lên')
+    } finally {
+      setUploadingImage(false)
     }
   }
 
@@ -291,14 +327,26 @@ export default function Products() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link hình ảnh chính</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS }}>Link hình ảnh chính</label>
+                    <label style={{ fontSize: 11, color: '#3d6b35', cursor: 'pointer', fontFamily: NS, fontWeight: 600 }}>
+                      {uploadingImage ? 'Đang tải...' : 'Tải ảnh lên'}
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUploadMain} disabled={uploadingImage} />
+                    </label>
+                  </div>
                   <input value={modal.mainImage} onChange={e => setModal({ ...modal, mainImage: e.target.value })}
                     style={INPUT} placeholder="https://..."
                     onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                     onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link ảnh phụ (mỗi ảnh 1 dòng)</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS }}>Link ảnh phụ (mỗi ảnh 1 dòng)</label>
+                    <label style={{ fontSize: 11, color: '#3d6b35', cursor: 'pointer', fontFamily: NS, fontWeight: 600 }}>
+                      {uploadingImage ? 'Đang tải...' : 'Tải nhiều ảnh'}
+                      <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={handleUploadSub} disabled={uploadingImage} />
+                    </label>
+                  </div>
                   <textarea value={modal.subImagesRaw} onChange={e => setModal({ ...modal, subImagesRaw: e.target.value })} rows={2}
                     style={{ ...INPUT, resize: 'vertical' }} placeholder="https://...&#10;https://..."
                     onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
