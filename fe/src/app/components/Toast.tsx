@@ -21,6 +21,7 @@ export function toast(type: ToastType, title: string, message?: string) {
 toast.success = (title: string, message?: string) => toast("success", title, message);
 toast.error   = (title: string, message?: string) => toast("error",   title, message);
 toast.info    = (title: string, message?: string) => toast("info",    title, message);
+toast.warn    = (title: string, message?: string) => toast("info",    title, message);
 
 // ─── Styles per type ──────────────────────────────────────────────────────
 const STYLES: Record<ToastType, { bg: string; border: string; iconColor: string; Icon: typeof CheckCircle }> = {

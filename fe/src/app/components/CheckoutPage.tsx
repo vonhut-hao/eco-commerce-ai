@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, MapPin, CreditCard, Banknote, Smartphone, ArrowRight, Package, Leaf } from "lucide-react";
 import { CartItem, useCartStore } from "../../store/cartStore";
-import { ordersApi } from "../../api/orders";
+import {OrderBE, ordersApi} from "../../api/orders";
 import { paymentApi, PaymentMethodResponse } from "../../api/payment";
+import { addressesApi, AddressBE } from "../../api/addresses";
+import { AddressModal } from "./AddressModal";
 import { useAuthStore } from "../../store/authStore";
 import { toast } from "./Toast";
 type Step = "address" | "payment" | "confirm";
@@ -60,16 +62,80 @@ function AddressStep({
     savedAddress ?? { name: "", phone: "", province: "", address: "", note: "" }
   );
   const [showProvince, setShowProvince] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<AddressBE[]>([]);
+  const [selectedAddrId, setSelectedAddrId] = useState<number | undefined>();
+
+  useEffect(() => {
+    addressesApi.getUserAddresses().then(list => {
+      setSavedAddresses(list);
+      if (!savedAddress && list.length > 0) {
+        const def = list.find(a => a.isDefault) || list[0];
+        applyAddress(def);
+      }
+    }).catch(console.error);
+  }, []);
+
+  const applyAddress = (addr: AddressBE) => {
+    setSelectedAddrId(addr.id);
+    setForm({
+      name: addr.recipientName,
+      phone: addr.phoneNumber,
+      province: PROVINCES.find(p => addr.fullAddress.includes(p)) || "TP. Hồ Chí Minh",
+      address: addr.fullAddress,
+      note: form.note || ""
+    });
+  };
 
   const set = (key: keyof AddressForm, v: string) => setForm((f) => ({ ...f, [key]: v }));
   const valid = form.name && form.phone && form.province && form.address;
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-2 mb-2">
-        <MapPin size={18} className="text-[#25521f]" />
-        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Địa chỉ giao hàng</h2>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <MapPin size={18} className="text-[#25521f]" />
+          <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Địa chỉ giao hàng</h2>
+        </div>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="text-[#25521f] text-[13px] border border-[#25521f] px-3.5 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
+        >
+          {savedAddresses.length > 0 ? "Sổ địa chỉ" : "+ Thêm địa chỉ mới"}
+        </button>
       </div>
+
+      {savedAddresses.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <label className="text-[12px] text-[#6b7280] tracking-wide">Chọn từ địa chỉ đã lưu:</label>
+          <div className="grid grid-cols-1 gap-2">
+            {savedAddresses.map((addr) => (
+              <button
+                key={addr.id}
+                type="button"
+                onClick={() => applyAddress(addr)}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  selectedAddrId === addr.id ? "border-[#25521f] bg-[#f0f7ee]" : "border-[#c2c9bb] bg-white hover:border-[#6b7280]"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center gap-2 text-[13px] font-medium text-[#1a1c19]">
+                    <span>{addr.recipientName}</span>
+                    <span className="text-[#6b7280]">({addr.phoneNumber})</span>
+                    {addr.isDefault && (
+                      <span className="bg-[#25521f] text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+                        Mặc định
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[12px] text-[#42493e] mt-0.5 line-clamp-1">{addr.fullAddress}</p>
+                </div>
+                {selectedAddrId === addr.id && <Check size={16} className="text-[#25521f] shrink-0 ml-2" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Field label="Họ và tên *">
         <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Nguyễn Văn An" className={inputCls} />
@@ -126,6 +192,19 @@ function AddressStep({
       >
         Tiếp tục <ArrowRight size={14} />
       </button>
+
+      <AddressModal
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          addressesApi.getUserAddresses().then(setSavedAddresses).catch(console.error);
+        }}
+        selectedAddressId={selectedAddrId}
+        onSelectAddress={(addr) => {
+          applyAddress(addr);
+          setModalOpen(false);
+        }}
+      />
     </div>
   );
 }
@@ -340,20 +419,51 @@ export function CheckoutPage({
   const [methods, setMethods] = useState<PaymentMethodResponse[]>([]);
   const [orderId, setOrderId] = useState(() => "#GL-" + Math.floor(9000 + Math.random() * 9000));
   const { isAuthenticated } = useAuthStore();
-  const { clearCart, appliedCoupon } = useCartStore();
+  const { clearCart, appliedCoupon, setAppliedCoupon } = useCartStore();
+
+  const [userOrders, setUserOrders] = useState<OrderBE[]>([]);
 
   useEffect(() => {
     paymentApi.getActiveMethods().then(res => setMethods(res)).catch(console.error);
-  }, []);
+    if (isAuthenticated) {
+      ordersApi.getOrders().then(list => {
+        setUserOrders(list);
+        if (appliedCoupon) {
+          const alreadyUsed = list.some(o => o.promotionId != null && Number(o.promotionId) === Number(appliedCoupon.id) && o.status !== 'CANCELLED');
+          if (alreadyUsed) {
+            toast.info("Thông báo", `Mã giảm giá ${appliedCoupon.code} đã được sử dụng trước đó cho tài khoản của bạn và đã bị gỡ.`);
+            setAppliedCoupon(null);
+          }
+        }
+      }).catch(console.error);
+    }
+  }, [isAuthenticated, appliedCoupon?.id]);
 
   const currentSubtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const discount = appliedCoupon
-    ? appliedCoupon.discountType === "PERCENTAGE"
-      ? Math.min(Math.round(currentSubtotal * appliedCoupon.discountValue / 100), appliedCoupon.maxDiscountAmount || Infinity)
-      : appliedCoupon.discountValue
+
+  const isPromotionValid = (coupon: typeof appliedCoupon, subtotal: number): boolean => {
+    if (!coupon) return false;
+    if (coupon.isActive === false) return false;
+    const now = new Date();
+    if (coupon.startDate && new Date(coupon.startDate) > now) return false;
+    if (coupon.endDate && new Date(coupon.endDate) < now) return false;
+    if (coupon.minOrderValue && subtotal < coupon.minOrderValue) return false;
+    if (coupon.usageLimit != null && coupon.usedCount != null && coupon.usedCount >= coupon.usageLimit) return false;
+    if (!coupon.discountValue || coupon.discountValue <= 0) return false;
+    const alreadyUsed = userOrders.some(o => o.promotionId != null && Number(o.promotionId) === Number(coupon.id) && o.status !== 'CANCELLED');
+    if (alreadyUsed) return false;
+    return true;
+  };
+
+  const validCoupon = isPromotionValid(appliedCoupon, currentSubtotal) ? appliedCoupon : null;
+
+  const discount = validCoupon
+    ? validCoupon.discountType === "PERCENTAGE"
+      ? Math.min(Math.round(currentSubtotal * validCoupon.discountValue / 100), validCoupon.maxDiscountAmount || Infinity)
+      : validCoupon.discountValue
     : 0;
   const shipping = currentSubtotal > 0 && currentSubtotal < 200000 ? 30000 : 0;
-  const currentTotal = currentSubtotal > 0 ? currentSubtotal - discount + shipping : 0;
+  const currentTotal = currentSubtotal > 0 ? Math.max(0, currentSubtotal - discount + shipping) : 0;
   const currentCo2 = items.reduce((s, i) => s + i.carbonIndex * i.quantity, 0);
   const currentGreenPts = items.reduce((s, i) => s + (i.greenPoints || 0) * i.quantity, 0);
 
@@ -383,21 +493,41 @@ export function CheckoutPage({
 
   const handlePlaceOrder = async (method: PaymentMethodResponse) => {
     setPayMethod(method);
+
+    // If a coupon is applied, verify against order history to prevent placing order with used promo
+    if (appliedCoupon) {
+      try {
+        const userOrders = await ordersApi.getOrders();
+        const alreadyUsed = userOrders.some(o => o.promotionId != null && Number(o.promotionId) === Number(appliedCoupon.id) && o.status !== 'CANCELLED');
+        if (alreadyUsed) {
+          setAppliedCoupon(null);
+          toast.error("Không thể đặt hàng", `Mã giảm giá ${appliedCoupon.code} đã được sử dụng cho tài khoản của bạn trước đó.`);
+          return; // Strictly stop checkout!
+        }
+      } catch (err) {
+        console.error("Failed to verify promotion usage", err);
+      }
+    }
+
+    const promoId = validCoupon?.id;
     try {
       const res = await ordersApi.createOrder({
         paymentMethodId: method.id, 
         status: "PENDING",
-        promotionId: appliedCoupon?.id
+        promotionId: promoId
       });
       if (res && res.id) {
         setOrderId("#GL-" + res.id);
       }
       clearCart();
       setStep("confirm");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to place order", e);
-      // BUG FIX: Do NOT proceed to confirm step if placing order fails!
-      toast.error("Thất bại", "Không thể đặt hàng, vui lòng thử lại.");
+      const errDetail = e.response?.data?.detail || e.response?.data?.message || "";
+      if (errDetail.toLowerCase().includes("promotion") || errDetail.toLowerCase().includes("mã giảm giá")) {
+        setAppliedCoupon(null);
+      }
+      toast.error("Đặt hàng thất bại", errDetail || "Không thể đặt hàng, vui lòng thử lại.");
     }
   };
 

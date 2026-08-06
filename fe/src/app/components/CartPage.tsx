@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Minus, Plus, X, Tag, ShoppingBag, ArrowRight, Leaf, Trash2 } from "lucide-react";
 import type { Product } from "./ShopPage";
 
 import { CartItem, useCartStore } from "../../store/cartStore";
 import { promotionsApi, Promotion } from "../../api/promotions";
-
-
+import { ordersApi, OrderBE } from "../../api/orders";
+import { useAuthStore } from "../../store/authStore";
 
 function fmt(n: number) { return n.toLocaleString("vi-VN") + " VND"; }
 
@@ -21,13 +21,50 @@ export function CartPage({
   onNavigate: (page: string) => void;
 }) {
   const { appliedCoupon, setAppliedCoupon } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
   const [couponInput, setCouponInput] = useState(appliedCoupon?.code || "");
   const [couponError, setCouponError] = useState("");
   const [loadingCoupon, setLoadingCoupon] = useState(false);
+  const [userOrders, setUserOrders] = useState<OrderBE[]>([]);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const totalCO2 = items.reduce((sum, i) => sum + i.carbonIndex * i.quantity, 0);
   const totalGreenPts = items.reduce((sum, i) => sum + (i.greenPoints || 0) * i.quantity, 0);
+
+  // Fetch user orders when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      ordersApi.getOrders().then(setUserOrders).catch(console.error);
+    }
+  }, [isAuthenticated]);
+
+  // Validation function
+  const validateCoupon = useCallback((coupon: Promotion | null, currentSubtotal: number, ordersList: OrderBE[]): { valid: boolean; reason?: string } => {
+    if (!coupon) return { valid: false };
+    if (coupon.isActive === false) return { valid: false, reason: "Mã giảm giá đã bị khóa." };
+    
+    const now = new Date();
+    if (coupon.startDate && new Date(coupon.startDate) > now) return { valid: false, reason: "Mã giảm giá chưa đến thời gian sử dụng." };
+    if (coupon.endDate && new Date(coupon.endDate) < now) return { valid: false, reason: "Mã giảm giá đã hết hạn." };
+    if (coupon.usageLimit != null && coupon.usedCount != null && coupon.usedCount >= coupon.usageLimit) return { valid: false, reason: "Mã giảm giá đã hết lượt sử dụng." };
+    if (coupon.minOrderValue && currentSubtotal < coupon.minOrderValue) return { valid: false, reason: `Đơn hàng phải từ ${fmt(coupon.minOrderValue)} để áp dụng.` };
+
+    const alreadyUsed = ordersList.some(o => o.promotionId != null && Number(o.promotionId) === Number(coupon.id) && o.status !== 'CANCELLED');
+    if (alreadyUsed) return { valid: false, reason: "Bạn đã sử dụng mã giảm giá này cho đơn hàng trước đó." };
+
+    return { valid: true };
+  }, []);
+
+  // Reactive validation when appliedCoupon, subtotal, or userOrders changes
+  useEffect(() => {
+    if (appliedCoupon) {
+      const check = validateCoupon(appliedCoupon, subtotal, userOrders);
+      if (!check.valid && check.reason) {
+        setCouponError(check.reason);
+        setAppliedCoupon(null);
+      }
+    }
+  }, [appliedCoupon, subtotal, userOrders, validateCoupon, setAppliedCoupon]);
 
   const discount = appliedCoupon
     ? appliedCoupon.discountType === "PERCENTAGE"
@@ -35,7 +72,7 @@ export function CartPage({
       : appliedCoupon.discountValue
     : 0;
   const shipping = subtotal >= 200000 ? 0 : 30000;
-  const total = subtotal - discount + shipping;
+  const total = Math.max(0, subtotal - discount + shipping);
 
   const handleApplyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
@@ -44,21 +81,21 @@ export function CartPage({
     setCouponError("");
     try {
       const promotion = await promotionsApi.getByCode(code);
-      if (!promotion.isActive) {
-        setCouponError("Mã giảm giá đã bị khóa.");
+      
+      // Fetch latest orders if user is authenticated to get freshest order history
+      let currentOrders = userOrders;
+      if (isAuthenticated) {
+        currentOrders = await ordersApi.getOrders().catch(() => userOrders);
+        setUserOrders(currentOrders);
+      }
+
+      const check = validateCoupon(promotion, subtotal, currentOrders);
+      if (!check.valid) {
+        setCouponError(check.reason || "Mã giảm giá không hợp lệ.");
         setAppliedCoupon(null);
         return;
       }
-      if (new Date(promotion.endDate) < new Date()) {
-        setCouponError("Mã giảm giá đã hết hạn.");
-        setAppliedCoupon(null);
-        return;
-      }
-      if (promotion.minOrderValue && subtotal < promotion.minOrderValue) {
-        setCouponError(`Đơn hàng phải từ ${fmt(promotion.minOrderValue)} để áp dụng.`);
-        setAppliedCoupon(null);
-        return;
-      }
+
       setAppliedCoupon(promotion);
     } catch (e: any) {
       setCouponError("Mã giảm giá không hợp lệ hoặc không tồn tại.");
