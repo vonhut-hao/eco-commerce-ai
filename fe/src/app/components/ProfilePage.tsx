@@ -143,7 +143,7 @@ function EditProfilePanel({
     }
   };
 
-  const grad = AVATAR_GRADIENTS[Math.abs(profile.userId) % AVATAR_GRADIENTS.length];
+  const grad = AVATAR_GRADIENTS[form.avatarIndex];
 
   return (
     <>

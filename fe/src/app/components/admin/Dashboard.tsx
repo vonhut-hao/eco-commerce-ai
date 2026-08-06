@@ -1,21 +1,14 @@
+import { useEffect, useState, useMemo } from 'react'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
 import { Icon } from './Icon'
 import { GLASS, MONO, SECTION_LABEL, PAGE_TITLE } from './ui'
+import { ordersApi, OrderResponse } from '../../../api/orders'
+import { statisticsApi } from '../../../api/statistics'
 
-const revenueData = [
-  { month: 'T1', revenue: 42000000, orders: 124 },
-  { month: 'T2', revenue: 38500000, orders: 108 },
-  { month: 'T3', revenue: 51000000, orders: 147 },
-  { month: 'T4', revenue: 63200000, orders: 181 },
-  { month: 'T5', revenue: 58900000, orders: 169 },
-  { month: 'T6', revenue: 72100000, orders: 210 },
-  { month: 'T7', revenue: 79400000, orders: 234 },
-]
-
-const categoryData = [
+const categoryDataMock = [
   { name: 'Home & Kitchen', value: 32, color: '#3d6b35' },
   { name: 'Personal Care',  value: 27, color: '#5a9448' },
   { name: 'Fashion',        value: 19, color: '#8ab87a' },
@@ -23,41 +16,144 @@ const categoryData = [
   { name: 'Khác',           value:  8, color: '#dde8d8' },
 ]
 
-const topProducts = [
-  { name: 'Bamboo Toothbrush Set (Pack of 4)', sold: 427, carbon: 0.3, revenue: '63.6M' },
-  { name: 'Organic Cotton Tote Bag',           sold: 389, carbon: 0.2, revenue: '70.0M' },
-  { name: 'Reusable Steel Straw Kit',          sold: 312, carbon: 0.1, revenue: '29.6M' },
-  { name: 'Natural Coconut Bowl Set',          sold: 298, carbon: 0.4, revenue: '95.4M' },
-  { name: 'Beeswax Food Wraps (Set of 3)',     sold: 267, carbon: 0.2, revenue: '32.0M' },
-]
-
-const recentOrders = [
-  { id: 'ORD-2847', customer: 'Nguyễn Thị Lan',  total: '718,000',  status: 'Đang giao',      time: '2 giờ trước' },
-  { id: 'ORD-2846', customer: 'Trần Văn Minh',   total: '180,000',  status: 'Chờ xác nhận',   time: '3 giờ trước' },
-  { id: 'ORD-2845', customer: 'Phạm Thu Hà',     total: '645,000',  status: 'Đã giao',         time: '5 giờ trước' },
-  { id: 'ORD-2844', customer: 'Lê Hoàng Nam',    total: '285,000',  status: 'Đã hủy',          time: '6 giờ trước' },
-  { id: 'ORD-2843', customer: 'Võ Thị Bích',     total: '680,000',  status: 'Đang giao',       time: '8 giờ trước' },
-]
-
 const statusStyle: Record<string, React.CSSProperties> = {
-  'Đang giao':    { background: '#e8f0ff', color: '#3b4fd4', border: '1px solid #c5d0f5' },
-  'Chờ xác nhận': { background: '#fdf6ec', color: '#6f6143', border: '1px solid #e8d8ae' },
-  'Đã giao':      { background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba' },
-  'Đã hủy':       { background: '#fff0f0', color: '#ba1a1a', border: '1px solid #f5c2c2' },
+  'PENDING':      { background: '#fdf6ec', color: '#6f6143', border: '1px solid #e8d8ae' },
+  'CONFIRMED':    { background: '#e8f0ff', color: '#3b4fd4', border: '1px solid #c5d0f5' },
+  'SHIPPING':     { background: '#e8f0ff', color: '#3b4fd4', border: '1px solid #c5d0f5' },
+  'COMPLETED':    { background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba' },
+  'CANCELLED':    { background: '#fff0f0', color: '#ba1a1a', border: '1px solid #f5c2c2' },
+}
+
+const statusMap: Record<string, string> = {
+  'PENDING': 'Chờ xác nhận',
+  'CONFIRMED': 'Đã xác nhận',
+  'SHIPPING': 'Đang giao',
+  'COMPLETED': 'Đã giao',
+  'CANCELLED': 'Đã hủy',
 }
 
 type StatIcon = Parameters<typeof Icon>[0]['name']
-const stats: { label: string; value: string; unit: string; trend: string; color: string; icon: StatIcon }[] = [
-  { label: 'Doanh thu tháng 7', value: '79.4M', unit: 'VNĐ',      trend: '+10.2%', color: '#3d6b35', icon: 'TrendingUp'  },
-  { label: 'Đơn hàng tháng 7',  value: '234',   unit: 'đơn hàng', trend: '+11.4%', color: '#5a9448', icon: 'ShoppingBag' },
-  { label: 'Người dùng mới',    value: '1,847', unit: 'tài khoản',trend: '+8.3%',  color: '#6f6143', icon: 'Users'       },
-  { label: 'Carbon tiết kiệm',  value: '4.2',   unit: 'tCO₂ eq.', trend: 'T7/2026',color: '#3b4fd4', icon: 'Leaf'        },
-]
 
 const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
 const LMONO = '"Liberation Mono","Courier New",monospace'
 
+function formatCurrency(amount: number) {
+  if (amount >= 1000000) {
+    return (amount / 1000000).toFixed(1) + 'M';
+  }
+  return amount.toLocaleString() + 'đ';
+}
+
+function timeAgo(dateString?: string) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHrs = Math.floor(diffMs / 3600000);
+  if (diffHrs < 1) return 'Vừa xong';
+  if (diffHrs < 24) return `${diffHrs} giờ trước`;
+  return `${Math.floor(diffHrs / 24)} ngày trước`;
+}
+
 export default function Dashboard() {
+  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [revenueThisMonth, setRevenueThisMonth] = useState(0);
+
+  useEffect(() => {
+    ordersApi.getAllOrdersAdmin().then(setOrders).catch(console.error);
+    const today = new Date().toISOString().split('T')[0];
+    statisticsApi.getRevenue('MONTHLY', today).then(setRevenueThisMonth).catch(console.error);
+  }, []);
+
+  const data = useMemo(() => {
+    // 1. Calculate 7 months chart data
+    const months = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - (6 - i));
+      return {
+        month: `T${d.getMonth() + 1}`,
+        year: d.getFullYear(),
+        monthNum: d.getMonth(),
+        revenue: 0,
+        orders: 0
+      };
+    });
+
+    let totalOrdersThisMonth = 0;
+    let totalCarbonSaved = 0;
+    
+    // Top products calculation
+    const productStats: Record<number, { name: string; sold: number; revenue: number; carbon: number }> = {};
+
+    orders.forEach(o => {
+      const date = o.createdAt ? new Date(o.createdAt) : new Date();
+      const m = date.getMonth();
+      const y = date.getFullYear();
+      
+      const monthData = months.find(md => md.monthNum === m && md.year === y);
+      
+      if (o.status === 'COMPLETED' || o.status === 'SHIPPING' || o.status === 'CONFIRMED' || o.status === 'PENDING') {
+        if (monthData) monthData.orders += 1;
+        
+        const now = new Date();
+        if (m === now.getMonth() && y === now.getFullYear()) {
+          totalOrdersThisMonth += 1;
+        }
+      }
+
+      if (o.status === 'COMPLETED') {
+        if (monthData) monthData.revenue += o.totalAmount;
+        
+        o.orderItems?.forEach(item => {
+          totalCarbonSaved += (item.lineCarbonFootprint || 0);
+          
+          if (!productStats[item.productId]) {
+            productStats[item.productId] = { name: item.productName, sold: 0, revenue: 0, carbon: 0 };
+          }
+          productStats[item.productId].sold += item.quantity;
+          productStats[item.productId].revenue += item.price * item.quantity;
+          productStats[item.productId].carbon += (item.lineCarbonFootprint || 0);
+        });
+      }
+    });
+
+    const topProducts = Object.values(productStats)
+      .sort((a, b) => b.sold - a.sold)
+      .slice(0, 5)
+      .map(p => ({
+        name: p.name,
+        sold: p.sold,
+        carbon: p.carbon.toFixed(1),
+        revenue: formatCurrency(p.revenue)
+      }));
+
+    const recentOrders = [...orders]
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, 5)
+      .map(o => ({
+        id: `ORD-${o.id}`,
+        customer: o.username,
+        total: o.totalAmount.toLocaleString(),
+        status: o.status,
+        statusLabel: statusMap[o.status] || o.status,
+        time: timeAgo(o.createdAt)
+      }));
+
+    const stats: { label: string; value: string; unit: string; trend: string; color: string; icon: StatIcon }[] = [
+      { label: `Doanh thu tháng ${new Date().getMonth() + 1}`, value: formatCurrency(revenueThisMonth), unit: 'VNĐ',      trend: 'Mới nhất', color: '#3d6b35', icon: 'TrendingUp'  },
+      { label: `Đơn hàng tháng ${new Date().getMonth() + 1}`,  value: totalOrdersThisMonth.toString(),   unit: 'đơn hàng', trend: 'Mới nhất', color: '#5a9448', icon: 'ShoppingBag' },
+      { label: 'Người dùng mới',    value: '142', unit: 'tài khoản',trend: '+8.3%',  color: '#6f6143', icon: 'Users'       },
+      { label: 'Carbon tiết kiệm',  value: totalCarbonSaved.toFixed(1),   unit: 'kg CO₂ eq.', trend: 'Tổng',color: '#3b4fd4', icon: 'Leaf'        },
+    ];
+
+    return {
+      revenueData: months,
+      topProducts,
+      recentOrders,
+      stats
+    };
+  }, [orders, revenueThisMonth]);
+
   return (
     <div>
       {/* Page header */}
@@ -68,7 +164,7 @@ export default function Dashboard() {
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 20 }}>
-        {stats.map(({ label, value, unit, trend, color, icon }) => (
+        {data.stats.map(({ label, value, unit, trend, color, icon }) => (
           <div key={label} style={{
             ...GLASS,
             padding: '20px 22px',
@@ -99,7 +195,7 @@ export default function Dashboard() {
             <span style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>VNĐ</span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={revenueData}>
+            <AreaChart data={data.revenueData}>
               <defs>
                 <linearGradient id="rv" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%"   stopColor="#3d6b35" stopOpacity={0.15} />
@@ -123,14 +219,14 @@ export default function Dashboard() {
           <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Danh mục bán chạy</p>
           <ResponsiveContainer width="100%" height={150}>
             <PieChart>
-              <Pie data={categoryData} dataKey="value" cx="50%" cy="50%" outerRadius={62} innerRadius={30}>
-                {categoryData.map((e, i) => <Cell key={i} fill={e.color} />)}
+              <Pie data={categoryDataMock} dataKey="value" cx="50%" cy="50%" outerRadius={62} innerRadius={30}>
+                {categoryDataMock.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #dde8d8', fontSize: 12, fontFamily: NS }} formatter={v => [`${v}%`, '']} />
             </PieChart>
           </ResponsiveContainer>
           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {categoryData.map(c => (
+            {categoryDataMock.map(c => (
               <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 2, background: c.color }} />
@@ -148,7 +244,7 @@ export default function Dashboard() {
         {/* Top products */}
         <div style={{ ...GLASS, padding: '22px 24px' }}>
           <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Sản phẩm bán chạy</p>
-          {topProducts.map((p, i) => (
+          {data.topProducts.map((p, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <div style={{
                 width: 26, height: 26, borderRadius: 8,
@@ -164,25 +260,31 @@ export default function Dashboard() {
               <div style={{ ...MONO, fontSize: 13, fontWeight: 700, color: '#3d6b35', flexShrink: 0 }}>{p.revenue}</div>
             </div>
           ))}
+          {data.topProducts.length === 0 && (
+            <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>Chưa có dữ liệu sản phẩm</div>
+          )}
         </div>
 
         {/* Recent orders */}
         <div style={{ ...GLASS, padding: '22px 24px' }}>
           <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Đơn hàng gần đây</p>
-          {recentOrders.map(o => (
+          {data.recentOrders.map(o => (
             <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                  <span style={{ ...MONO, fontSize: 12, fontWeight: 700, color: '#3d6b35' }}>#{o.id}</span>
+                  <span style={{ ...MONO, fontSize: 12, fontWeight: 700, color: '#3d6b35' }}>{o.id}</span>
                   <span style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>{o.time}</span>
                 </div>
                 <div style={{ fontSize: 13, color: '#42493e', fontFamily: NS }}>{o.customer} · <span style={{ ...MONO }}>{o.total}đ</span></div>
               </div>
-              <span style={{ ...statusStyle[o.status], borderRadius: 999, padding: '2px 9px', fontSize: 11, fontWeight: 600, fontFamily: NS, whiteSpace: 'nowrap' as const }}>
-                {o.status}
+              <span style={{ ...(statusStyle[o.status] || statusStyle['PENDING']), borderRadius: 999, padding: '2px 9px', fontSize: 11, fontWeight: 600, fontFamily: NS, whiteSpace: 'nowrap' as const }}>
+                {o.statusLabel}
               </span>
             </div>
           ))}
+          {data.recentOrders.length === 0 && (
+            <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>Chưa có đơn hàng nào</div>
+          )}
         </div>
       </div>
 
@@ -190,7 +292,7 @@ export default function Dashboard() {
       <div style={{ ...GLASS, padding: '22px 24px' }}>
         <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Số đơn hàng theo tháng</p>
         <ResponsiveContainer width="100%" height={150}>
-          <BarChart data={revenueData} barSize={28}>
+          <BarChart data={data.revenueData} barSize={28}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2eb" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280', fontFamily: NS }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: '#6b7280', fontFamily: LMONO }} axisLine={false} tickLine={false} />

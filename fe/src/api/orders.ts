@@ -39,6 +39,11 @@ export const ordersApi = {
     return res.data.data;
   },
   
+  getAllOrdersAdmin: async () => {
+    const res = await client.get<ApiResponse<OrderResponse[]>>('/v1/catalog/orders/admin');
+    return res.data.data;
+  },
+  
   getOrderDetails: async (id: number) => {
     const res = await client.get<ApiResponse<OrderResponse>>(`/v1/catalog/orders/${id}`);
     return res.data.data;
