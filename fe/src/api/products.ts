@@ -58,7 +58,7 @@ export interface ProductBE {
   carbonIndex: number;
   avgRating: number;
   mainImage: string;
-  subImages: string;
+  subImages: string[];
   description: string;
   categories: CategoryBE[];
   materials: MaterialBE[];

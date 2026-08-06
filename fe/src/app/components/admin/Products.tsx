@@ -14,9 +14,10 @@ interface ProductForm {
   ecoFriendliness: string;
   description: string;
   mainImage: string;
+  subImagesRaw: string;
 }
 
-const EMPTY: ProductForm = { id: 0, name: '', categoryId: null, price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE', description: '', mainImage: '' }
+const EMPTY: ProductForm = { id: 0, name: '', categoryId: null, price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE', description: '', mainImage: '', subImagesRaw: '' }
 const ECO = ['BIODEGRADABLE','100% ORGANIC','ZERO PLASTIC','RECYCLABLE','100% NATURAL','FSC CERTIFIED','BPA FREE','SUSTAINABLE','PLANTABLE','PET SAFE']
 const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
 const LMONO = '"Liberation Mono","Courier New",monospace'
@@ -70,7 +71,8 @@ export default function Products() {
       greenPoints: p.greenPoints || 0,
       ecoFriendliness: p.ecoFriendliness || 'BIODEGRADABLE',
       description: p.description || '',
-      mainImage: p.mainImage || ''
+      mainImage: p.mainImage || '',
+      subImagesRaw: p.subImages?.join('\n') || ''
     }); 
     setIsNew(false) 
   }
@@ -89,6 +91,7 @@ export default function Products() {
         categoryIds: modal.categoryId ? [modal.categoryId] : [],
         description: modal.description,
         mainImage: modal.mainImage,
+        subImages: modal.subImagesRaw.split('\n').map(s => s.trim()).filter(Boolean),
       };
       
       if (isNew) {
@@ -269,6 +272,13 @@ export default function Products() {
                   <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link hình ảnh chính</label>
                   <input value={modal.mainImage} onChange={e => setModal({ ...modal, mainImage: e.target.value })}
                     style={INPUT} placeholder="https://..."
+                    onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                    onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link ảnh phụ (mỗi ảnh 1 dòng)</label>
+                  <textarea value={modal.subImagesRaw} onChange={e => setModal({ ...modal, subImagesRaw: e.target.value })} rows={2}
+                    style={{ ...INPUT, resize: 'vertical' }} placeholder="https://...&#10;https://..."
                     onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                     onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
                 </div>
