@@ -217,9 +217,9 @@ export default function Orders() {
                 </div>
               </div>
               {(() => {
-                const subtotal = detail.orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
-                const shipping = subtotal > 0 && subtotal < 200000 ? 30000 : 0;
-                const discount = Math.max(0, subtotal + shipping - (detail.totalAmount || 0));
+                const discount = detail.discountValue || 0;
+                const rawSubtotal = detail.orderItems?.reduce((sum, item) => sum + (item.price || 0), 0) || ((detail.totalAmount || 0) + discount);
+                const shipping = rawSubtotal > 0 && rawSubtotal < 200000 ? 30000 : 0;
 
                 return (
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid #eef2eb', gap: 16 }}>
@@ -228,16 +228,16 @@ export default function Orders() {
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#3d6b35', fontFamily: NS }}><Icon name="Award" size={14} color="#3d6b35" /> Điểm xanh: <strong>+{detail.totalGreenPoints || 0} pt</strong></span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, minWidth: 260, background: '#f5f9f3', padding: '16px 20px', borderRadius: 12, border: '1px solid #e2e3de' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
+                      <div style={{ display: 'flex', justify: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
                         <span>Tổng tiền hàng:</span>
-                        <span style={{ color: '#1a1c19', fontWeight: 500 }}>{subtotal.toLocaleString('vi-VN')}đ</span>
+                        <span style={{ color: '#1a1c19', fontWeight: 500 }}>{rawSubtotal.toLocaleString('vi-VN')}đ</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
+                      <div style={{ display: 'flex', justify: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
                         <span>Phí vận chuyển:</span>
                         <span style={{ color: '#1a1c19', fontWeight: 500 }}>{shipping === 0 ? 'Miễn phí' : `${shipping.toLocaleString('vi-VN')}đ`}</span>
                       </div>
                       {discount > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
+                        <div style={{ display: 'flex', justify: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="Tag" size={12} color="#6b7280" /> Mã giảm giá:</span>
                           <span style={{ color: '#25521f', fontWeight: 500 }}>- {discount.toLocaleString('vi-VN')}đ</span>
                         </div>

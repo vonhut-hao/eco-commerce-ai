@@ -13,6 +13,7 @@ export interface OrderItemBE {
 export interface OrderBE {
   id: number;
   totalAmount: number;
+  discountValue?: number;
   status: 'PENDING' | 'DELIVERY' | 'COMPLETED' | 'CANCELLED';
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
   userId: number;

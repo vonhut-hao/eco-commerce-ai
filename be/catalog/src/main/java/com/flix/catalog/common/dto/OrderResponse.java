@@ -9,6 +9,7 @@ import java.util.List;
 public record OrderResponse(
         Long id,
         Long totalAmount,
+        Long discountValue,
         String status,
         String paymentStatus,
         Long userId,
@@ -26,17 +27,25 @@ public record OrderResponse(
         }
 
         int totalGreenPoints = 0;
+        long rawTotal = 0L;
         if (entity.getOrderItems() != null) {
             for (var item : entity.getOrderItems()) {
                 if (item.getProductEntity() != null && item.getProductEntity().getGreenPoints() != null) {
                     totalGreenPoints += item.getProductEntity().getGreenPoints() * item.getQuantity();
                 }
+                if (item.getPrice() != null) {
+                    rawTotal += item.getPrice();
+                }
             }
         }
 
+        Long totalAmount = entity.getTotalAmount();
+        Long discountValue = (totalAmount != null && rawTotal > totalAmount) ? (rawTotal - totalAmount) : 0L;
+
         return new OrderResponse(
                 entity.getId(),
-                entity.getTotalAmount(),
+                totalAmount,
+                discountValue,
                 entity.getStatus() != null ? entity.getStatus().name() : null,
                 entity.getPaymentStatus() != null ? entity.getPaymentStatus().name() : null,
                 entity.getUser() != null ? entity.getUser().getId() : null,

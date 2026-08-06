@@ -994,15 +994,15 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
               {/* Order footer: Total + Buttons */}
               <div className="bg-transparent px-5 py-4 flex flex-col gap-4 border-t border-[#e2e3de]">
                 {(() => {
-                  const subtotal = order.orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
-                  const shipping = subtotal > 0 && subtotal < 200000 ? 30000 : 0;
-                  const discount = Math.max(0, subtotal + shipping - (order.totalAmount || 0));
+                  const discount = order.discountValue || 0;
+                  const rawSubtotal = order.orderItems?.reduce((sum, i) => sum + (i.price || 0), 0) || ((order.totalAmount || 0) + discount);
+                  const shipping = rawSubtotal > 0 && rawSubtotal < 200000 ? 30000 : 0;
 
                   return (
                     <div className="flex flex-col gap-1.5 md:w-[320px] ml-auto bg-[#f5f9f3] p-4 rounded-xl border border-[#e2e3de]">
                       <div className="flex justify-between text-[13px] text-[#6b7280]">
                         <span>Tổng tiền hàng:</span>
-                        <span className="text-[#1a1c19] font-medium">{subtotal.toLocaleString()}đ</span>
+                        <span className="text-[#1a1c19] font-medium">{rawSubtotal.toLocaleString()}đ</span>
                       </div>
                       <div className="flex justify-between text-[13px] text-[#6b7280]">
                         <span>Phí vận chuyển:</span>
