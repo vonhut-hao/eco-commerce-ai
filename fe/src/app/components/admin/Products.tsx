@@ -28,6 +28,8 @@ export default function Products() {
   const [products, setProducts] = useState<ProductBE[]>([])
   const [categories, setCategories] = useState<CategoryBE[]>([])
   const [search, setSearch] = useState('')
+  const [filterCategory, setFilterCategory] = useState<number | 'ALL'>('ALL')
+  const [filterStock, setFilterStock] = useState<'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK'>('ALL')
   const [modal, setModal] = useState<ProductForm | null>(null)
   const [certModal, setCertModal] = useState<ProductBE | null>(null)
   const [isNew, setIsNew] = useState(false)
@@ -53,7 +55,12 @@ export default function Products() {
     productsApi.getCategories().then(setCategories).catch(console.error);
   }, []);
 
-  const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+  const filtered = products.filter(p => {
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase())
+    const matchCat = filterCategory === 'ALL' || (p.categories && p.categories[0]?.id === filterCategory)
+    const matchStock = filterStock === 'ALL' || (filterStock === 'IN_STOCK' ? p.stock > 0 : p.stock === 0)
+    return matchSearch && matchCat && matchStock
+  })
 
   function openNew() { 
     setModal({ ...EMPTY, categoryId: categories.length > 0 ? categories[0].id : null }); 
@@ -167,11 +174,26 @@ export default function Products() {
         <button style={BTN_PRIMARY} onClick={openNew}><Icon name="Plus" size={14} color="#fff" /> Thêm sản phẩm</button>
       </div>
 
-      {/* Search bar */}
-      <div style={{ marginBottom: 16, position: 'relative', width: 300 }}>
-        <Icon name="Search" size={14} color="#6b7280" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm sản phẩm..."
-          style={{ ...INPUT, paddingLeft: 40, borderRadius: 999, background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(8px)' }} />
+      {/* Search and Filters */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <div style={{ position: 'relative', width: 260 }}>
+          <Icon name="Search" size={14} color="#6b7280" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm sản phẩm..."
+            style={{ ...INPUT, paddingLeft: 40, borderRadius: 999, background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(8px)' }} />
+        </div>
+        
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+          style={{ ...INPUT, width: 180, borderRadius: 999, background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(8px)', cursor: 'pointer' }}>
+          <option value="ALL">Tất cả danh mục</option>
+          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+
+        <select value={filterStock} onChange={e => setFilterStock(e.target.value as any)}
+          style={{ ...INPUT, width: 140, borderRadius: 999, background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(8px)', cursor: 'pointer' }}>
+          <option value="ALL">Kho hàng</option>
+          <option value="IN_STOCK">Còn hàng</option>
+          <option value="OUT_OF_STOCK">Hết hàng</option>
+        </select>
       </div>
 
       {/* Table */}
