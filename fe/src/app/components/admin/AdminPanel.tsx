@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Icon } from './Icon'
 import { useAuthStore } from '../../../store/authStore'
 import { useCartStore } from '../../../store/cartStore'
@@ -28,7 +28,7 @@ const NAV: { id: Page; label: string; icon: Parameters<typeof Icon>[0]['name'] }
   { id: 'chat',       label: 'Chat',       icon: 'MessageCircle' },
 ]
 
-const CHAT_UNREAD = 3
+const CHAT_UNREAD = 0
 
 const getInitialPage = (): Page => {
   const hash = window.location.hash.replace('#', '') as Page;
@@ -38,13 +38,20 @@ const getInitialPage = (): Page => {
 export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [page, setPage] = useState<Page>(getInitialPage)
   const [collapsed, setCollapsed] = useState(false)
+  const [chatUnread, setChatUnread] = useState(0)
   
   // Sync hash when page changes
-  useState(() => {
+  useEffect(() => {
     const handleHashChange = () => setPage(getInitialPage());
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  });
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: any) => setChatUnread(e.detail)
+    window.addEventListener('CHAT_UNREAD_UPDATE', handler)
+    return () => window.removeEventListener('CHAT_UNREAD_UPDATE', handler)
+  }, [])
   
   const handleSetPage = (newPage: Page) => {
     setPage(newPage);
@@ -119,10 +126,10 @@ export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void
               >
                 <Icon name={icon} size={16} color={active ? '#ffffff' : '#7aab68'} />
                 {!collapsed && <span style={{ flex: 1 }}>{label}</span>}
-                {id === 'chat' && CHAT_UNREAD > 0 && (
+                {id === 'chat' && chatUnread > 0 && (
                   collapsed
                     ? <span style={{ position: 'absolute', top: 5, right: 5, width: 7, height: 7, borderRadius: 999, background: '#e5534b' }} />
-                    : <span style={{ background: '#e5534b', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, padding: '1px 7px' }}>{CHAT_UNREAD}</span>
+                    : <span style={{ background: '#e5534b', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, padding: '1px 7px' }}>{chatUnread}</span>
                 )}
               </button>
             )

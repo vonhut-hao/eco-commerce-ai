@@ -223,6 +223,10 @@ export default function Chat() {
   const totalUnread = convos.reduce((s, c) => s + c.unread, 0)
 
   useEffect(() => {
+    window.dispatchEvent(new CustomEvent('CHAT_UNREAD_UPDATE', { detail: totalUnread }))
+  }, [totalUnread])
+
+  useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeId, active?.messages.length])
 
@@ -505,6 +509,7 @@ export default function Chat() {
                 const isAdmin = msg.from === 'admin'
                 const prevFrom = i > 0 ? active.messages[i - 1].from : null
                 const grouped = prevFrom === msg.from
+                const isLastInGroup = i === active.messages.length - 1 || active.messages[i + 1].from !== msg.from
                 return (
                   <div key={msg.id} style={{
                     display: 'flex',
@@ -543,13 +548,24 @@ export default function Chat() {
                         wordBreak: 'break-word',
                       }}>
                         {msg.fileUrl && (
-                          <div style={{ marginBottom: msg.text ? 8 : 0 }}>
+                          <div style={{ marginBottom: msg.text ? 4 : 0 }}>
                             <img src={msg.fileUrl} alt="attachment" style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200, objectFit: 'contain' }} />
                           </div>
                         )}
-                        {msg.text && <div>{msg.text}</div>}
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                          {msg.text && <div style={{ flex: 1 }}>{msg.text}</div>}
+                          <span style={{
+                            fontSize: 10,
+                            color: isAdmin ? '#8ab87a' : '#9ca3af',
+                            fontFamily: 'Inter, sans-serif',
+                            lineHeight: 1,
+                            marginTop: msg.text ? 4 : 0,
+                            marginLeft: 'auto'
+                          }}>
+                            {msg.time}
+                          </span>
+                        </div>
                       </div>
-                      <span style={{ fontSize: 10, color: '#b0bab0', fontFamily: 'Inter, sans-serif', paddingInline: 2 }}>{msg.time}</span>
                     </div>
                   </div>
                 )

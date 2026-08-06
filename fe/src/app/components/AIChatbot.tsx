@@ -31,6 +31,22 @@ Bạn có muốn tính toán carbon footprint cá nhân không? 🌿`;
 
 const now = () => new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
+function formatTime(val: any) {
+  if (!val) return ''
+  try {
+    let d: Date
+    if (Array.isArray(val)) {
+      d = new Date(val[0], val[1] - 1, val[2], val[3], val[4], val[5] || 0)
+    } else {
+      d = new Date(val)
+    }
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  } catch(e) {
+    return ''
+  }
+}
+
 const INITIAL_AI: Message[] = [
   { id: "ai-1", role: "bot", content: "Xin chào! Em là trợ lý AI của GreenLife 🌿" },
   { id: "ai-2", role: "bot", content: "Em chuyên tư vấn về chỉ số carbon và tác động môi trường của sản phẩm. Anh/Chị cần hỏi gì ạ?" },
@@ -141,7 +157,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
             id: m.id.toString(),
             role: m.senderId === user.id ? "user" : "admin",
             content: m.content,
-            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+            time: formatTime(m.createdAt),
             fileUrl: m.fileUrl
           }));
           setAdminMessages(mapped);
@@ -164,7 +180,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
                       id: newMsg.id.toString(),
                       role: "user",
                       content: newMsg.content,
-                      time: new Date(newMsg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                      time: formatTime(newMsg.createdAt),
                       fileUrl: newMsg.fileUrl
                     };
                     return copy;
@@ -175,7 +191,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
                   id: newMsg.id.toString(),
                   role: newMsg.senderId === user.id ? "user" : "admin",
                   content: newMsg.content,
-                  time: new Date(newMsg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                  time: formatTime(newMsg.createdAt),
                   fileUrl: newMsg.fileUrl
                 }];
               });
@@ -264,7 +280,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
             id: res.id.toString(),
             role: "user",
             content: res.content,
-            time: new Date(res.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+            time: formatTime(res.createdAt),
             fileUrl: res.fileUrl
           } : m);
         });
@@ -327,7 +343,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
             id: m.id.toString(),
             role: m.senderId === user.id ? "user" : "admin",
             content: m.content,
-            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+            time: formatTime(m.createdAt)
           }));
           setAdminMessages(mapped);
         });
