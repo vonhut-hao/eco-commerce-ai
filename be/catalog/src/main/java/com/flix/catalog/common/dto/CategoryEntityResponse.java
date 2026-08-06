@@ -8,7 +8,8 @@ import org.springframework.util.StringUtils;
 public record CategoryEntityResponse(
         Long id,
         String name,
-        String description
+        String description,
+        Long parentId
 ) {
     public static CategoryEntityResponse from(CategoryEntity entity) {
         if (entity == null) {
@@ -18,7 +19,8 @@ public record CategoryEntityResponse(
         return new CategoryEntityResponse(
                 entity.getId(),
                 entity.getName(),
-                StringUtils.hasText(entity.getDescription()) ? entity.getDescription() : null
+                StringUtils.hasText(entity.getDescription()) ? entity.getDescription() : null,
+                entity.getParent() != null ? entity.getParent().getId() : null
         );
     }
 }

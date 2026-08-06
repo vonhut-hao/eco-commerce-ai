@@ -32,6 +32,14 @@ public class CategoryService {
 
         request.toEntity(categoryEntity);
 
+        if (request.parentId() != null) {
+            CategoryEntity parent = categoryRepository.findById(request.parentId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
+            categoryEntity.setParent(parent);
+        } else {
+            categoryEntity.setParent(null);
+        }
+
         CategoryEntity savedCategory = categoryRepository.save(categoryEntity);
         return CategoryEntityResponse.from(savedCategory);
     }

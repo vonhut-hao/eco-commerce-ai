@@ -5,13 +5,12 @@ import { ALL_PRODUCTS } from "./ShopPage";
 import type { Product } from "./ShopPage";
 import { useAuthStore } from "../../store/authStore";
 import { statisticsApi } from "../../api/statistics";
+import { categoriesApi, Category } from "../../api/categories";
 
 import imgHero1 from "../../imports/Homepage/ad594a362ca9f01e32ef654ed2558bf212d42c6b.png";
 import imgHero2 from "../../imports/Homepage/f6aed8954f7b8995c083ee7f5fa9a423fd3feff0.png";
 import imgHero3 from "../../imports/Homepage/fd3c27e888c95fc4c471ae218112f085bb1204c6.png";
 import imgHero4 from "../../imports/Homepage/cb597c14aa466186896b0278899817127b88c8ab.png";
-
-const CATEGORIES = ["All", "Home & Kitchen", "Personal Care", "Fashion", "Food & Beverage", "Office", "Travel", "Pet"];
 
 // ─── Hero ──────────────────────────────────────────────────────────────────
 function HeroSection({ onNavigate }: { onNavigate: (p: string) => void }) {
@@ -83,12 +82,13 @@ function HeroSection({ onNavigate }: { onNavigate: (p: string) => void }) {
 }
 
 // ─── Category Chips ────────────────────────────────────────────────────────
-function CategoryStrip({ active, setActive }: { active: string; setActive: (v: string) => void }) {
+function CategoryStrip({ active, setActive, categories }: { active: string; setActive: (v: string) => void; categories: Category[] }) {
+  const cats = ["All", ...categories.map(c => c.name)];
   return (
     <div className="border-t border-b border-[#dbe3d3] bg-white/55 backdrop-blur-sm">
       <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-3.5">
         <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map((cat) => (
+          {cats.map((cat) => (
             <button
               key={cat}
               onClick={() => setActive(cat)}
@@ -115,6 +115,7 @@ function TrendingSection({
   wishlistIds,
   onWishlist,
   products = ALL_PRODUCTS,
+  dbCategories = [],
 }: {
   onNavigate: (p: string, id?: number) => void;
   activeCategory: string;
@@ -122,11 +123,19 @@ function TrendingSection({
   wishlistIds: number[];
   onWishlist: (p: Product) => void;
   products?: Product[];
+  dbCategories?: Category[];
 }) {
   const TRENDING = products.slice(0, 5);
-  const displayProducts = activeCategory === "All"
-    ? TRENDING
-    : products.filter((p) => p.category === activeCategory).slice(0, 5);
+  let displayProducts = TRENDING;
+  if (activeCategory !== "All") {
+    const targetIds: number[] = [];
+    const cat = dbCategories.find(c => c.name === activeCategory);
+    if (cat) {
+      const subs = dbCategories.filter(c => c.parentId === cat.id).map(c => c.id);
+      targetIds.push(cat.id, ...subs);
+    }
+    displayProducts = products.filter(p => (p.categoryIds && p.categoryIds.some(id => targetIds.includes(id))) || p.category === activeCategory).slice(0, 5);
+  }
 
   const display = displayProducts.length ? displayProducts : TRENDING;
 
@@ -284,11 +293,15 @@ export function HomePage({
   products?: Product[];
 }) {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
+  useEffect(() => {
+    categoriesApi.getAll().then(setDbCategories).catch(console.error);
+  }, []);
 
   return (
     <main className="flex-1 pb-20 md:pb-0 flex flex-col">
       <HeroSection onNavigate={onNavigate} />
-      <CategoryStrip active={activeCategory} setActive={setActiveCategory} />
+      <CategoryStrip active={activeCategory} setActive={setActiveCategory} categories={dbCategories} />
       <TrendingSection
         onNavigate={onNavigate}
         activeCategory={activeCategory}
@@ -296,6 +309,7 @@ export function HomePage({
         wishlistIds={wishlistIds}
         onWishlist={onWishlist}
         products={products}
+        dbCategories={dbCategories}
       />
       <ImpactBanner onNavigate={onNavigate} />
     </main>

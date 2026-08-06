@@ -4,14 +4,7 @@ export interface CategoryBE {
   id: number;
   name: string;
   description: string;
-}
-
-import client from './client';
-
-export interface CategoryBE {
-  id: number;
-  name: string;
-  description: string;
+  parentId?: number | null;
 }
 
 export interface MaterialBE {
@@ -106,6 +99,8 @@ export function mapProductBeToFe(be: ProductBE): any {
     id: be.id,
     name: be.name,
     category: be.categories?.[0]?.name || "N/A",
+    categoryId: be.categories?.[0]?.id || null,
+    categoryIds: be.categories?.map(c => c.id) || [],
     price: Number(be.price),
     priceLabel: `${Number(be.price).toLocaleString("vi-VN")} VND`,
     carbonIndex: Number(be.carbonIndex),

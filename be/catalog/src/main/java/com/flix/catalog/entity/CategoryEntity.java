@@ -29,6 +29,14 @@ public class CategoryEntity {
     @Column(length = 100)
     private LocalDateTime deletedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private CategoryEntity parent;
+
+    @OneToMany(mappedBy = "parent")
+    @Builder.Default
+    private List<CategoryEntity> subCategories = new ArrayList<>();
+
     @ManyToMany(mappedBy = "categories")
     @Builder.Default
     private List<ProductEntity> productEntities = new ArrayList<>();

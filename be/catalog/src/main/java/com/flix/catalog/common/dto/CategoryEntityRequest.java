@@ -6,7 +6,8 @@ import jakarta.validation.constraints.Size;
 
 public record CategoryEntityRequest(
         @NotBlank @Size(max = 100) String name,
-        String description
+        String description,
+        Long parentId
 ) {
 
     public void toEntity(CategoryEntity entity) {

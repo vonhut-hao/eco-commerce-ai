@@ -57,9 +57,18 @@ export default function Products() {
     productsApi.getCategories().then(setCategories).catch(console.error);
   }, []);
 
+  const getCategoryIdsToFilter = (catId: number | 'ALL'): (number | 'ALL')[] => {
+    if (catId === 'ALL') return ['ALL'];
+    const subs = categories.filter(c => c.parentId === catId).map(c => c.id);
+    return [catId, ...subs];
+  };
+
   const filtered = products.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase())
-    const matchCat = filterCategory === 'ALL' || (p.categories && p.categories[0]?.id === filterCategory)
+    
+    const targetCatIds = getCategoryIdsToFilter(filterCategory);
+    const matchCat = filterCategory === 'ALL' || (p.categories && p.categories.some(cat => targetCatIds.includes(cat.id)))
+    
     const matchStock = filterStock === 'ALL' || (filterStock === 'IN_STOCK' ? p.stock > 0 : p.stock === 0)
     return matchSearch && matchCat && matchStock
   })

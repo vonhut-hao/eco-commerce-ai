@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import {
-  Search, SlidersHorizontal, X, ChevronDown, GitCompare,
+  Search, SlidersHorizontal, X, ChevronDown, ChevronRight, GitCompare,
   ArrowUpDown, Check,
 } from "lucide-react";
 import { ProductCard } from "./ProductCard";
+import { categoriesApi, Category } from "../../api/categories";
 
 import imgBamboo from "../../imports/Homepage/df364685721837b1c94e206231a2459a5567c713.png";
 import imgTote from "../../imports/Homepage/2453e361fa67829ce12b4285c2cd0104c9033f4f.png";
@@ -19,6 +20,8 @@ export type Product = {
   id: number;
   name: string;
   category: string;
+  categoryId: number | null;
+  categoryIds: number[];
   price: number;
   priceLabel: string;
   carbonIndex: number;
@@ -301,6 +304,8 @@ function FilterPanel({
   selectedCerts,
   setSelectedCerts,
   onClose,
+  categories,
+  certs,
 }: {
   selectedCats: string[];
   setSelectedCats: (v: string[]) => void;
@@ -311,7 +316,12 @@ function FilterPanel({
   selectedCerts: string[];
   setSelectedCerts: (v: string[]) => void;
   onClose?: () => void;
+  categories: Category[];
+  certs: string[];
 }) {
+  const [expandedCats, setExpandedCats] = useState<number[]>([]);
+  const toggleExpand = (id: number) => setExpandedCats(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
   const toggleCat = (cat: string) =>
     setSelectedCats(selectedCats.includes(cat) ? selectedCats.filter((c) => c !== cat) : [...selectedCats, cat]);
   const toggleCert = (cert: string) =>
@@ -329,15 +339,46 @@ function FilterPanel({
       {/* Categories */}
       <div className="flex flex-col gap-3">
         <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Danh mục</h4>
-        {CATEGORIES.filter((c) => c !== "All").map((cat) => (
-          <label key={cat} className="flex items-center gap-2.5 cursor-pointer group">
-            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedCats.includes(cat) ? "bg-[#25521f] border-[#25521f]" : "border-[#c2c9bb] group-hover:border-[#25521f]"}`}>
-              {selectedCats.includes(cat) && <Check size={10} className="text-white" />}
+        {categories.filter(c => !c.parentId).map((cat) => {
+          const subs = categories.filter(c => c.parentId === cat.id);
+          const hasSubs = subs.length > 0;
+          const isExpanded = expandedCats.includes(cat.id);
+          return (
+            <div key={cat.id} className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2.5 cursor-pointer group flex-1">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedCats.includes(cat.name) ? "bg-[#25521f] border-[#25521f]" : "border-[#c2c9bb] group-hover:border-[#25521f]"}`}>
+                    {selectedCats.includes(cat.name) && <Check size={10} className="text-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={selectedCats.includes(cat.name)} onChange={() => toggleCat(cat.name)} />
+                  <span className="text-[#42493e] text-[13px] font-medium">{cat.name}</span>
+                </label>
+                {hasSubs && (
+                  <button 
+                    onClick={() => toggleExpand(cat.id)}
+                    className="p-1 text-[#6b7280] hover:text-[#42493e] shrink-0"
+                  >
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </button>
+                )}
+              </div>
+              
+              {hasSubs && isExpanded && (
+                <div className="flex flex-col gap-2.5 pl-[11px] border-l border-[#e2e3de] ml-[7px]">
+                  {subs.map(sub => (
+                    <label key={sub.id} className="flex items-center gap-2.5 cursor-pointer group">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedCats.includes(sub.name) ? "bg-[#25521f] border-[#25521f]" : "border-[#c2c9bb] group-hover:border-[#25521f]"}`}>
+                        {selectedCats.includes(sub.name) && <Check size={10} className="text-white" />}
+                      </div>
+                      <input type="checkbox" className="hidden" checked={selectedCats.includes(sub.name)} onChange={() => toggleCat(sub.name)} />
+                      <span className="text-[#6b7280] text-[13px]">{sub.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
-            <input type="checkbox" className="hidden" checked={selectedCats.includes(cat)} onChange={() => toggleCat(cat)} />
-            <span className="text-[#42493e] text-[13px]">{cat}</span>
-          </label>
-        ))}
+          );
+        })}
       </div>
 
       {/* Price Range */}
@@ -384,7 +425,7 @@ function FilterPanel({
       {/* Certifications */}
       <div className="flex flex-col gap-3">
         <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Chứng nhận</h4>
-        {CERTS.map((cert) => (
+        {certs.map((cert) => (
           <label key={cert} className="flex items-center gap-2.5 cursor-pointer group">
             <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedCerts.includes(cert) ? "bg-[#25521f] border-[#25521f]" : "border-[#c2c9bb] group-hover:border-[#25521f]"}`}>
               {selectedCerts.includes(cert) && <Check size={10} className="text-white" />}
@@ -432,6 +473,16 @@ export function ShopPage({
   initialCarbonFilter?: string;
   initialCerts?: string[];
 }) {
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
+  useEffect(() => {
+    categoriesApi.getAll().then(setDbCategories).catch(console.error);
+  }, []);
+
+  const availableCerts = useMemo(() => {
+    const allCerts = products.flatMap(p => p.certifications || []);
+    return Array.from(new Set(allCerts));
+  }, [products]);
+
   const [search, setSearch] = useState(initialSearch || "");
   const [selectedCats, setSelectedCats] = useState<string[]>(initialCategory && initialCategory !== "All" ? [initialCategory] : []);
 
@@ -472,7 +523,17 @@ export function ShopPage({
       const q = search.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.material.toLowerCase().includes(q));
     }
-    if (selectedCats.length > 0) list = list.filter((p) => selectedCats.includes(p.category));
+    if (selectedCats.length > 0) {
+      const targetIds: number[] = [];
+      for (const name of selectedCats) {
+        const cat = dbCategories.find(c => c.name === name);
+        if (cat) {
+          const subs = dbCategories.filter(c => c.parentId === cat.id).map(c => c.id);
+          targetIds.push(cat.id, ...subs);
+        }
+      }
+      list = list.filter((p) => (p.categoryIds && p.categoryIds.some(id => targetIds.includes(id))) || selectedCats.includes(p.category));
+    }
     if (priceRange[0] > 0) list = list.filter((p) => p.price >= priceRange[0]);
     if (priceRange[1] < 1000000) list = list.filter((p) => p.price <= priceRange[1]);
     if (carbonFilter === "low") list = list.filter((p) => p.carbonIndex < 0.3);
@@ -563,6 +624,7 @@ export function ShopPage({
             priceRange={priceRange} setPriceRange={setPriceRange}
             carbonFilter={carbonFilter} setCarbonFilter={setCarbonFilter}
             selectedCerts={selectedCerts} setSelectedCerts={setSelectedCerts}
+            categories={dbCategories} certs={availableCerts}
           />
         </aside>
 
@@ -620,6 +682,7 @@ export function ShopPage({
                 priceRange={priceRange} setPriceRange={setPriceRange}
                 carbonFilter={carbonFilter} setCarbonFilter={setCarbonFilter}
                 selectedCerts={selectedCerts} setSelectedCerts={setSelectedCerts}
+                categories={dbCategories} certs={availableCerts}
                 onClose={() => setShowFilter(false)}
               />
               <button
