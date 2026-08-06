@@ -767,20 +767,32 @@ const ORDER_STATUS_TABS = [
 function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOpenChatbot?: (opts?: any) => void }) {
   const [reviewTarget, setReviewTarget] = useState<{ orderId: number; productName: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [reviewedItems, setReviewedItems] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('reviewedItems') || '[]');
+    } catch { return []; }
+  });
 
   const handleReviewClose = (submitted: boolean, orderId: number, productName: string) => {
     if (submitted) {
-      // In a real app we would call a review API here and update the order state
+      const newItems = [...reviewedItems, `${orderId}-${productName}`];
+      setReviewedItems(newItems);
+      localStorage.setItem('reviewedItems', JSON.stringify(newItems));
     }
     setReviewTarget(null);
   };
 
   // Filter logic
-  const isAwaitingReview = (order: OrderResponse) => {
+  const isAwaitingReview = (order: OrderResponse, productName?: string) => {
     if (order.status !== 'COMPLETED' || !order.createdAt) return false;
     const created = new Date(order.createdAt);
     const days = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
-    return days <= 14;
+    if (days > 14) return false;
+    if (productName) {
+      return !reviewedItems.includes(`${order.id}-${productName}`);
+    }
+    // For order level: true if at least one item can be reviewed
+    return order.orderItems?.some(i => !reviewedItems.includes(`${order.id}-${i.productName}`)) ?? false;
   };
 
   const filteredOrders = orders.filter(order => {
@@ -914,7 +926,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                         {/* Review logic */}
                         {order.status === 'COMPLETED' && (
                           <div className="flex justify-end items-center mt-1">
-                            {isAwaitingReview(order) ? (
+                            {isAwaitingReview(order, p.productName) ? (
                               <button
                                 onClick={() => setReviewTarget({ orderId: order.id, productName: p.productName })}
                                 className="flex items-center gap-1.5 text-[#25521f] text-[12px] border border-[#25521f] px-4 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
