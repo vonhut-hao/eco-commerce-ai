@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Icon } from './Icon'
+import { useAuthStore } from '../../../store/authStore'
+import { useCartStore } from '../../../store/cartStore'
 import logo from '../../../imports/rmbg-logo.png'
+import logoIcon from '../../../imports/rmbg-logo-only.png'
 import Dashboard from './Dashboard'
 import Products from './Products'
 import Orders from './Orders'
@@ -49,9 +52,11 @@ export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void
           minHeight: 68, overflow: 'hidden',
         }}>
           {collapsed ? (
-            <div style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="Leaf" size={22} color="#ffffff" />
-            </div>
+            <img
+              src={logoIcon}
+              alt="GreenLife"
+              style={{ height: 30, width: 30, objectFit: 'contain', flexShrink: 0, filter: 'brightness(0) invert(1)' }}
+            />
           ) : (
             <>
               <img src={logo} alt="GreenLife" style={{ height: 28, width: 'auto', flexShrink: 0, filter: 'brightness(0) invert(1)' }} />
@@ -128,13 +133,26 @@ export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void
             </div>
           )}
           {!collapsed && (
-            <button 
-              onClick={() => onNavigate && onNavigate("home")}
-              title="Về Cửa hàng"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
-            >
-              <Icon name="LogOut" size={13} color="#8ab87a" />
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button 
+                onClick={() => onNavigate && onNavigate("home")}
+                title="Về Cửa hàng"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
+              >
+                <Icon name="Home" size={13} color="#8ab87a" />
+              </button>
+              <button 
+                onClick={() => {
+                  useAuthStore.getState().logout()
+                  useCartStore.getState().clearCart()
+                  if (onNavigate) onNavigate("home")
+                }}
+                title="Đăng xuất"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
+              >
+                <Icon name="LogOut" size={13} color="#8ab87a" />
+              </button>
+            </div>
           )}
         </div>
       </aside>

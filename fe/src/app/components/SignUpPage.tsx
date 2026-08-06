@@ -69,7 +69,7 @@ export function SignUpPage({ onNavigate }: { onNavigate: (page: string) => void 
     setErrorMsg("");
     try {
       await authApi.registerNormal({ username, email, password });
-      toast.success("Account created!", "Please sign in");
+      toast.success("Đăng ký thành công!", "Vui lòng đăng nhập để tiếp tục.");
       onNavigate("signin");
     } catch (e: any) {
       console.error(e);

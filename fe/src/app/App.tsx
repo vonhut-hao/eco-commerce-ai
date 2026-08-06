@@ -303,6 +303,13 @@ function DesktopHeader({
             >
               {isAuthenticated && avatarUrl ? (
                 <img src={avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-[#c2c9bb]" />
+              ) : isAuthenticated ? (
+                <div 
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white border border-[#c2c9bb]"
+                  style={{ background: "#3d7035" }}
+                >
+                  {(user?.email?.[0] || "U").toUpperCase()}
+                </div>
               ) : (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d={svgPaths.p33ced450} fill={activePage === "profile" ? "#25521f" : "#42493E"} />
@@ -843,8 +850,14 @@ function BottomNav({
                 isActive ? "text-[#25521f]" : "text-[#6b7280]"
               }`}
             >
-              {item.key === "me" && isAuthenticated && avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
+              {item.key === "me" && isAuthenticated ? (
+                avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
+                ) : (
+                  <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-bold text-white ${isActive ? 'border-2 border-[#25521f]' : ''}`} style={{ background: "#3d7035" }}>
+                    {(user?.email?.[0] || "U").toUpperCase()}
+                  </div>
+                )
               ) : (
                 <Icon size={21} strokeWidth={isActive ? 2.2 : 1.6} />
               )}
@@ -1050,8 +1063,8 @@ export default function App() {
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
   // Auth pages render standalone (no app shell)
-  if (activePage === "signin") return <SignInPage onNavigate={navigate} />;
-  if (activePage === "signup") return <SignUpPage onNavigate={navigate} />;
+  if (activePage === "signin") return <><ToastContainer /><SignInPage onNavigate={navigate} /></>;
+  if (activePage === "signup") return <><ToastContainer /><SignUpPage onNavigate={navigate} /></>;
   if (activePage === "admin") {
     // Basic protection: normally we would check role here, e.g., if (user?.role !== "ADMIN") return <NotFound />
     return (
