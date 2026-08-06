@@ -64,6 +64,8 @@ const icons = {
   ),
   Send:          path('M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z'),
   CheckCheck:    path('M17 3l-9 9-4-4M22 8l-9 9-2-2'),
+  Award:         path('M12 15c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7z', 'M8.21 13.89L7 23l5-3 5 3-1.21-9.12'),
+  Info:          path('M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z', 'M12 16v-4M12 8h.01'),
 }
 
 export type IconName = keyof typeof icons

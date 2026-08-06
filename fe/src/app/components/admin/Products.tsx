@@ -12,9 +12,11 @@ interface ProductForm {
   carbonIndex: number;
   greenPoints: number;
   ecoFriendliness: string;
+  description: string;
+  mainImage: string;
 }
 
-const EMPTY: ProductForm = { id: 0, name: '', categoryId: null, price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE' }
+const EMPTY: ProductForm = { id: 0, name: '', categoryId: null, price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE', description: '', mainImage: '' }
 const ECO = ['BIODEGRADABLE','100% ORGANIC','ZERO PLASTIC','RECYCLABLE','100% NATURAL','FSC CERTIFIED','BPA FREE','SUSTAINABLE','PLANTABLE','PET SAFE']
 const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
 const LMONO = '"Liberation Mono","Courier New",monospace'
@@ -66,7 +68,9 @@ export default function Products() {
       stock: p.stock,
       carbonIndex: p.carbonIndex || 0,
       greenPoints: p.greenPoints || 0,
-      ecoFriendliness: p.ecoFriendliness || 'BIODEGRADABLE'
+      ecoFriendliness: p.ecoFriendliness || 'BIODEGRADABLE',
+      description: p.description || '',
+      mainImage: p.mainImage || ''
     }); 
     setIsNew(false) 
   }
@@ -83,6 +87,8 @@ export default function Products() {
         ecoFriendliness: modal.ecoFriendliness,
         carbonIndex: modal.carbonIndex,
         categoryIds: modal.categoryId ? [modal.categoryId] : [],
+        description: modal.description,
+        mainImage: modal.mainImage,
       };
       
       if (isNew) {
@@ -249,10 +255,30 @@ export default function Products() {
                 </div>
                 <div>
                   <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Eco Friendliness</label>
-                  <select value={modal.ecoFriendliness} onChange={e => setModal({ ...modal, ecoFriendliness: e.target.value })} style={{ ...INPUT, cursor: 'pointer' }}>
-                    {ECO.map(b => <option key={b}>{b}</option>)}
-                  </select>
+                  <input list="eco-list" value={modal.ecoFriendliness} onChange={e => setModal({ ...modal, ecoFriendliness: e.target.value })} 
+                    style={INPUT} placeholder="Nhập hoặc chọn..." 
+                    onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                    onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+                  <datalist id="eco-list">
+                    {ECO.map(b => <option key={b} value={b} />)}
+                  </datalist>
                 </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link hình ảnh chính</label>
+                  <input value={modal.mainImage} onChange={e => setModal({ ...modal, mainImage: e.target.value })}
+                    style={INPUT} placeholder="https://..."
+                    onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                    onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Mô tả sản phẩm</label>
+                <textarea value={modal.description} onChange={e => setModal({ ...modal, description: e.target.value })} rows={3}
+                  style={{ ...INPUT, resize: 'vertical' }}
+                  onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                  onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {([['Giá (VNĐ) *','price'],['Tồn kho','stock']] as const).map(([lbl, fld]) => (
