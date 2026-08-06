@@ -27,7 +27,7 @@ const NAV: { id: Page; label: string; icon: Parameters<typeof Icon>[0]['name'] }
 
 const CHAT_UNREAD = 3
 
-export function AdminPanel() {
+export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [page, setPage] = useState<Page>('dashboard')
   const [collapsed, setCollapsed] = useState(false)
 
@@ -128,7 +128,11 @@ export function AdminPanel() {
             </div>
           )}
           {!collapsed && (
-            <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}>
+            <button 
+              onClick={() => onNavigate && onNavigate("home")}
+              title="Về Cửa hàng"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
+            >
               <Icon name="LogOut" size={13} color="#8ab87a" />
             </button>
           )}

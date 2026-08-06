@@ -1086,11 +1086,19 @@ function WishlistSection({
 
 // ─── Account Preferences ───────────────────────────────────────────────────
 function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void }) {
+  const userRoles = useAuthStore.getState().user?.roles || [];
+  const isAdmin = userRoles.includes('ADMIN') || userRoles.includes('ROLE_ADMIN');
+
   const rows = [
-    { label: "Địa chỉ giao hàng",    sublabel: "Quản lý địa chỉ đã lưu",      icon: MapPin,     danger: false },
-    { label: "Phương thức thanh toán", sublabel: "Thẻ và ví điện tử",           icon: CreditCard, danger: false },
-    { label: "Cài đặt thông báo",     sublabel: "Email, push và tin nhắn",      icon: Bell,       danger: false },
-    { label: "Đăng xuất",             sublabel: "Thoát khỏi tài khoản này",     icon: LogOut,     danger: true  },
+    { label: "Địa chỉ giao hàng",    sublabel: "Quản lý địa chỉ đã lưu",      icon: MapPin,     danger: false, action: () => {} },
+    { label: "Phương thức thanh toán", sublabel: "Thẻ và ví điện tử",           icon: CreditCard, danger: false, action: () => {} },
+    ...(isAdmin ? [{ label: "Trang Quản trị", sublabel: "Admin Panel", icon: Award, danger: false, action: () => onNavigate("admin") }] : []),
+    { label: "Cài đặt thông báo",     sublabel: "Email, push và tin nhắn",      icon: Bell,       danger: false, action: () => {} },
+    { label: "Đăng xuất",             sublabel: "Thoát khỏi tài khoản này",     icon: LogOut,     danger: true,  action: () => {
+        useAuthStore.getState().logout();
+        useCartStore.getState().clearCart();
+        onNavigate("home");
+    }},
   ];
 
   return (
@@ -1103,13 +1111,7 @@ function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void })
           return (
             <button
               key={row.label}
-              onClick={() => { 
-                if (row.danger) {
-                  useAuthStore.getState().logout();
-                  useCartStore.getState().clearCart();
-                  onNavigate("home");
-                } 
-              }}
+              onClick={row.action}
               className={`w-full flex items-center gap-4 px-5 py-4 hover:bg-[#f5f9f3] active:bg-[#eef6eb] transition-colors text-left ${
                 i < rows.length - 1 ? "border-b border-[#e8f0e4]" : ""
               }`}

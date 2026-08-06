@@ -1057,7 +1057,7 @@ export default function App() {
     return (
       <>
         <ToastContainer />
-        <AdminPanel />
+        <AdminPanel onNavigate={navigate} />
       </>
     );
   }
