@@ -793,11 +793,11 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
   };
 
   const isAwaitingReview = (order: OrderResponse, productName?: string) => {
-    if (productName) {
+    if (typeof productName === 'string') {
       return checkReviewStatus(order, productName) === 'PENDING';
     }
     // For order level: true if at least one item can be reviewed
-    return order.orderItems?.some(i => !reviewedItems.includes(`${order.id}-${i.productName}`)) ?? false;
+    return order.orderItems?.some(i => checkReviewStatus(order, i.productName) === 'PENDING') ?? false;
   };
 
   const filteredOrders = orders.filter(order => {
@@ -809,7 +809,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
   // Count per tab
   const countFor = (key: string) => {
     if (key === "ALL") return orders.length;
-    if (key === "REVIEW") return orders.filter(isAwaitingReview).length;
+    if (key === "REVIEW") return orders.filter(o => isAwaitingReview(o)).length;
     return orders.filter(o => o.status === key).length;
   };
 
@@ -903,7 +903,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
               <div className="px-5 py-4 flex flex-col gap-4">
                 {order.orderItems?.map((p) => {
                   return (
-                    <div key={p.id} className="flex gap-4">
+                    <div key={p.id} className="flex gap-4 border-b border-[#e2e3de] pb-4 last:border-0 last:pb-0">
                       <div className="w-[80px] h-[80px] md:w-[90px] md:h-[90px] shrink-0 bg-[#eeeee9] rounded-lg overflow-hidden">
                         <img src={p.mainImage} alt={p.productName} className="w-full h-full object-cover" />
                       </div>
