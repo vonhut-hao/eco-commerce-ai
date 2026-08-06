@@ -17,11 +17,21 @@ public record OrderResponse(
         String paymentMethodName,
         String createdAt,
         Long promotionId,
+        Integer totalGreenPoints,
         List<OrderItemResponse> orderItems
 ) {
     public static OrderResponse from(OrderEntity entity) {
         if (entity == null) {
             return null;
+        }
+
+        int totalGreenPoints = 0;
+        if (entity.getOrderItems() != null) {
+            for (var item : entity.getOrderItems()) {
+                if (item.getProductEntity() != null && item.getProductEntity().getGreenPoints() != null) {
+                    totalGreenPoints += item.getProductEntity().getGreenPoints() * item.getQuantity();
+                }
+            }
         }
 
         return new OrderResponse(
@@ -35,6 +45,7 @@ public record OrderResponse(
                 entity.getPaymentMethodEntity() != null ? entity.getPaymentMethodEntity().getMethodName() : null,
                 entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null,
                 entity.getPromotion() != null ? entity.getPromotion().getId() : null,
+                totalGreenPoints,
                 entity.getOrderItems() != null ? entity.getOrderItems().stream()
                                                  .map(OrderItemResponse::from)
                                                  .toList() : List.of()

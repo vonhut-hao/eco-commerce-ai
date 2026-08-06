@@ -21,6 +21,7 @@ export interface OrderBE {
   paymentMethodName: string;
   createdAt: string;
   promotionId: number;
+  totalGreenPoints: number;
   orderItems: OrderItemBE[];
 }
 

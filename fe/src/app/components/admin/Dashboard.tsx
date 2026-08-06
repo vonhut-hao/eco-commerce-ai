@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import { Icon } from './Icon'
 import { GLASS, MONO, SECTION_LABEL, PAGE_TITLE } from './ui'
-import { ordersApi, OrderResponse } from '../../../api/orders'
+import { ordersApi, OrderBE } from '../../../api/orders'
 import { statisticsApi } from '../../../api/statistics'
 
 import { productsApi, ProductBE } from '../../../api/products'
@@ -60,12 +60,12 @@ function timeAgo(dateString?: string) {
 }
 
 export default function Dashboard() {
-  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [orders, setOrders] = useState<OrderBE[]>([]);
   const [products, setProducts] = useState<ProductBE[]>([]);
   const [revenueThisMonth, setRevenueThisMonth] = useState(0);
 
   useEffect(() => {
-    ordersApi.getAllOrdersAdmin().then(setOrders).catch(console.error);
+    ordersApi.getOrdersAdmin().then(setOrders).catch(console.error);
     productsApi.getProducts(0, 1000).then(res => setProducts(res.content)).catch(console.error);
     const today = new Date().toISOString().split('T')[0];
     statisticsApi.getRevenue('MONTHLY', today).then(setRevenueThisMonth).catch(console.error);
