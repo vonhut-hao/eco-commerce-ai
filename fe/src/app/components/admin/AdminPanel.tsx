@@ -30,9 +30,26 @@ const NAV: { id: Page; label: string; icon: Parameters<typeof Icon>[0]['name'] }
 
 const CHAT_UNREAD = 3
 
+const getInitialPage = (): Page => {
+  const hash = window.location.hash.replace('#', '') as Page;
+  return NAV.some(n => n.id === hash) ? hash : 'dashboard';
+};
+
 export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void }) {
-  const [page, setPage] = useState<Page>('dashboard')
+  const [page, setPage] = useState<Page>(getInitialPage)
   const [collapsed, setCollapsed] = useState(false)
+  
+  // Sync hash when page changes
+  useState(() => {
+    const handleHashChange = () => setPage(getInitialPage());
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  });
+  
+  const handleSetPage = (newPage: Page) => {
+    setPage(newPage);
+    window.location.hash = newPage;
+  };
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'linear-gradient(180deg, #f5f8f1 0%, #fafaf5 50%, #f3f6ee 100%)' }}>
@@ -83,7 +100,7 @@ export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void
           {NAV.map(({ id, label, icon }) => {
             const active = page === id
             return (
-              <button key={id} onClick={() => setPage(id)} title={collapsed ? label : undefined} style={{
+              <button key={id} onClick={() => handleSetPage(id)} title={collapsed ? label : undefined} style={{
                 width: '100%', display: 'flex', alignItems: 'center',
                 gap: 10, padding: collapsed ? '10px 0' : '10px 12px',
                 justifyContent: collapsed ? 'center' : 'flex-start',
