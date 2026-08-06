@@ -5,6 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 interface User {
   id: number;
   email: string;
+  username?: string;
   roles: string[];
 }
 
@@ -35,6 +36,7 @@ export const useAuthStore = create<AuthState>()(
             user: {
               id: decoded.userId || decoded.sub, // adjust based on your JWT payload
               email: decoded.email || decoded.sub,
+              username: decoded.userName,
               roles: decoded.roles || (decoded.scope ? decoded.scope.split(' ') : []),
             },
             isAuthenticated: true,

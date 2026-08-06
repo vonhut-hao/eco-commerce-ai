@@ -308,7 +308,7 @@ function DesktopHeader({
                   className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white border border-[#c2c9bb]"
                   style={{ background: "#3d7035" }}
                 >
-                  {(user?.email?.[0] || "U").toUpperCase()}
+                  {(user?.username?.[0] || user?.email?.[0] || "U").toUpperCase()}
                 </div>
               ) : (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -855,7 +855,7 @@ function BottomNav({
                   <img src={avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
                 ) : (
                   <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-bold text-white ${isActive ? 'border-2 border-[#25521f]' : ''}`} style={{ background: "#3d7035" }}>
-                    {(user?.email?.[0] || "U").toUpperCase()}
+                    {(user?.username?.[0] || user?.email?.[0] || "U").toUpperCase()}
                   </div>
                 )
               ) : (
