@@ -82,7 +82,7 @@ export default function Orders() {
       toast.success('Cập nhật thành công', 'Trạng thái đơn hàng đã được thay đổi.');
     } catch (error: any) {
       console.error(error);
-      const backendMsg = error.response?.data?.message;
+      const backendMsg = error.response?.data?.detail || error.response?.data?.message;
       const msg = backendMsg ? (ERROR_MESSAGES[backendMsg] || backendMsg) : 'Có lỗi xảy ra, không thể thay đổi trạng thái.';
       toast.error('Không thể cập nhật', msg);
     } finally {

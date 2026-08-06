@@ -203,10 +203,6 @@ public class OrderService {
             log.warn("Update order failed: Order ID {} is already completed", id);
             throw new BusinessException(ErrorCode.ORDER_ALREADY_COMPLETED);
         }
-        if (orderEntity.getStatus() == OrderStatus.DELIVERY) {
-            log.warn("Update order failed: Order ID {} is in delivery state", id);
-            throw new BusinessException(ErrorCode.ORDER_IN_DELIVERY);
-        }
         if (orderEntity.getStatus() == OrderStatus.CANCELLED) {
             log.warn("Update order failed: Order ID {} is cancelled and cannot be updated", id);
             throw new BusinessException(ErrorCode.ORDER_CANNOT_CANCEL);
