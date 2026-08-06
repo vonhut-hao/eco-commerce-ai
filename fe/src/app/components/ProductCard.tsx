@@ -64,7 +64,7 @@ export function ProductCard({
                   ? "bg-[#25521f] border-transparent"
                   : "bg-white/75 border border-white/60 hover:border-[#25521f]"
               }`}
-              title="So sánh"
+              title="Compare"
             >
               {compareSelected && <Check size={11} className="text-white" />}
             </button>

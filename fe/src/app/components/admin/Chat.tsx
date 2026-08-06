@@ -47,20 +47,20 @@ type ConvoState = {
 
 const COLORS = ['#3d6b35', '#5a7fa8', '#7a5fa8', '#a8613d', '#8a5fa8', '#4a8a6a']
 
-type Status = 'Chờ xác nhận' | 'Đang giao' | 'Đã giao' | 'Đã hủy'
+type Status = 'Pending' | 'Delivering' | 'Completed' | 'Cancelled'
 
 const STATUS_MAP: Record<string, Status> = {
-  PENDING: 'Chờ xác nhận',
-  DELIVERY: 'Đang giao',
-  COMPLETED: 'Đã giao',
-  CANCELLED: 'Đã hủy'
+  PENDING: 'Pending',
+  DELIVERY: 'Delivering',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled'
 }
 
 const statusStyle: Record<Status, React.CSSProperties> = {
-  'Chờ xác nhận': { background: '#fdf6ec', color: '#6f6143', border: '1px solid #e8d8ae' },
-  'Đang giao':    { background: '#efe8ff', color: '#6b35a3', border: '1px solid #d0b8f5' },
-  'Đã giao':      { background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba' },
-  'Đã hủy':       { background: '#fff0f0', color: '#ba1a1a', border: '1px solid #f5c2c2' },
+  'Pending': { background: '#fdf6ec', color: '#6f6143', border: '1px solid #e8d8ae' },
+  'Delivering':    { background: '#efe8ff', color: '#6b35a3', border: '1px solid #d0b8f5' },
+  'Completed':      { background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba' },
+  'Cancelled':       { background: '#fff0f0', color: '#ba1a1a', border: '1px solid #f5c2c2' },
 }
 
 function getInitials(name: string) {
@@ -104,7 +104,7 @@ export default function Chat() {
           const customerName = isUser1Admin ? c.user2Username : c.user1Username
           const customerId = isUser1Admin ? c.user2_id : c.user1_id
           const avatarUrl = isUser1Admin ? c.user2AvatarUrl : c.user1AvatarUrl
-          const name = customerName || `Khách hàng ${customerId}`
+          const name = customerName || `Customer ${customerId}`
           
           const rawMessages = await getMessagesByConversation(c.id, user.id)
           
@@ -123,7 +123,7 @@ export default function Chat() {
             initials: getInitials(name),
             color: COLORS[i % COLORS.length],
             avatarUrl,
-            topic: 'Hỗ trợ khách hàng',
+            topic: 'Customer Support',
             unread: 0,
             online: false,
             messages
@@ -242,7 +242,7 @@ export default function Chat() {
     if (profileModal) {
       setModalLoading(true)
       profileApi.getProfile(profileModal).then(p => { setProfileData(p); setModalLoading(false) })
-        .catch(err => { console.error(err); toast.error('Lỗi', 'Không thể lấy hồ sơ'); setProfileModal(null); setModalLoading(false) })
+        .catch(err => { console.error(err); toast.error('Error', 'Cannot fetch profile'); setProfileModal(null); setModalLoading(false) })
     } else {
       setProfileData(null)
     }
@@ -256,7 +256,7 @@ export default function Chat() {
         setModalLoading(false)
       }).catch(err => {
         console.error(err)
-        toast.error('Lỗi', 'Không thể tải đơn hàng')
+        toast.error('Error', 'Cannot load orders')
         setOrdersModal(null)
         setModalLoading(false)
       })
@@ -288,16 +288,16 @@ export default function Chat() {
         const idx = currentConvos.findIndex(x => x.id === activeId)
         if (idx === -1) return prev
         const target = currentConvos[idx]
-        target.messages.push({ id: tmpId, from: 'admin', text: '[Hình ảnh]', time, fileUrl: url })
+        target.messages.push({ id: tmpId, from: 'admin', text: '[Image]', time, fileUrl: url })
         
         currentConvos.splice(idx, 1)
         currentConvos.unshift(target)
         return currentConvos
       })
 
-      sendMessage({ conversationId: activeId, senderId: user.id, content: '[Hình ảnh]', fileUrl: url }).catch(err => console.error(err))
+      sendMessage({ conversationId: activeId, senderId: user.id, content: '[Image]', fileUrl: url }).catch(err => console.error(err))
     } catch (err) {
-      toast.error('Lỗi', 'Lỗi tải ảnh lên')
+      toast.error('Error', 'Error uploading image')
     } finally {
       setIsUploadingImage(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -336,7 +336,7 @@ export default function Chat() {
   }
 
   if (loading) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>Đang tải tin nhắn...</div>
+    return <div style={{ padding: 40, textAlign: 'center' }}>Loading messages...</div>
   }
 
   return (
@@ -344,7 +344,7 @@ export default function Chat() {
       {/* Page title row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexShrink: 0 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1a1c19', margin: 0, fontFamily: '"Nimbus Sans","Helvetica Neue",Arial,sans-serif' }}>
-          Chat khách hàng
+          Customer Chat
         </h1>
         {totalUnread > 0 && (
           <span style={{ background: '#ba1a1a', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 700, padding: '2px 9px' }}>
@@ -380,7 +380,7 @@ export default function Chat() {
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Tìm hội thoại..."
+                placeholder="Search conversations..."
                 style={{
                   border: 'none', background: 'transparent', outline: 'none',
                   fontSize: 12.5, color: '#42493e', width: '100%',
@@ -395,7 +395,7 @@ export default function Chat() {
             {filtered.map(c => {
               const isActive = c.id === activeId
               const lastMsgObj = c.messages.length > 0 ? c.messages[c.messages.length - 1] : null
-              const lastMsgText = lastMsgObj ? (lastMsgObj.text || (lastMsgObj.fileUrl ? '[Hình ảnh]' : '')) : 'Chưa có tin nhắn'
+              const lastMsgText = lastMsgObj ? (lastMsgObj.text || (lastMsgObj.fileUrl ? '[Image]' : '')) : 'No messages yet'
               const lastMsgTime = lastMsgObj ? lastMsgObj.time : ''
               
               return (
@@ -478,7 +478,7 @@ export default function Chat() {
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1c19', fontFamily: 'Inter, sans-serif' }}>{active.name}</div>
                 <div style={{ fontSize: 11, color: active.online ? '#22c55e' : '#b0bab0', fontFamily: 'Inter, sans-serif' }}>
-                  {active.online ? 'Đang hoạt động' : 'Ngoại tuyến'}
+                  {active.online ? 'Active now' : 'Offline'}
                   <span style={{ color: '#d1d5db', margin: '0 5px' }}>·</span>
                   <span style={{ color: '#9ca3af' }}>{active.topic}</span>
                 </div>
@@ -490,7 +490,7 @@ export default function Chat() {
                   cursor: 'pointer', fontSize: 12, color: '#42493e', fontFamily: 'Inter, sans-serif',
                 }}>
                   <Icon name="User" size={12} color="#6b7280" />
-                  Hồ sơ
+                  Profile
                 </button>
                 <button onClick={() => setOrdersModal(active.customerId)} style={{
                   display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
@@ -498,7 +498,7 @@ export default function Chat() {
                   cursor: 'pointer', fontSize: 12, color: '#42493e', fontFamily: 'Inter, sans-serif',
                 }}>
                   <Icon name="ShoppingBag" size={12} color="#6b7280" />
-                  Đơn hàng
+                  Orders
                 </button>
               </div>
             </div>
@@ -589,7 +589,7 @@ export default function Chat() {
                     background: 'transparent', border: 'none', padding: 4, cursor: isUploadingImage ? 'default' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isUploadingImage ? 0.3 : 1
                   }}
-                  title="Gửi hình ảnh"
+                  title="Send image"
                 >
                   <Icon name="Image" size={18} color="#b0bab0" />
                 </button>
@@ -602,7 +602,7 @@ export default function Chat() {
                     e.target.style.height = Math.min(e.target.scrollHeight, 110) + 'px'
                   }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                  placeholder="Nhập tin nhắn... (Enter để gửi, Shift+Enter xuống dòng)"
+                  placeholder="Enter message... (Enter to send, Shift+Enter for new line)"
                   rows={1}
                   style={{
                     flex: 1, border: 'none', outline: 'none', resize: 'none',
@@ -629,7 +629,7 @@ export default function Chat() {
           </div>
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-            Chọn một hội thoại để bắt đầu
+            Select a conversation to start
           </div>
         )}
       </div>
@@ -639,11 +639,11 @@ export default function Chat() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 400, border: '1px solid #dde8d8', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #eef2eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#1a1c19', fontFamily: '"Nimbus Sans", sans-serif' }}>Hồ sơ khách hàng</h3>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#1a1c19', fontFamily: '"Nimbus Sans", sans-serif' }}>Customer Profile</h3>
               <button onClick={() => setProfileModal(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 20, lineHeight: 1 }}>✕</button>
             </div>
             <div style={{ padding: '20px' }}>
-              {modalLoading ? <div style={{ textAlign: 'center', color: '#6b7280' }}>Đang tải...</div> : profileData ? (
+              {modalLoading ? <div style={{ textAlign: 'center', color: '#6b7280' }}>Loading...</div> : profileData ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <img src={profileData.avatarUrl || 'https://via.placeholder.com/60'} alt="avatar" style={{ width: 60, height: 60, borderRadius: 999, objectFit: 'cover' }} />
@@ -653,16 +653,16 @@ export default function Chat() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#f9fbf8', padding: 12, borderRadius: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>Số điện thoại:</span><span style={{ color: '#1a1c19', fontWeight: 500 }}>{profileData.phoneNumber || 'Chưa cập nhật'}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>Tên đăng nhập:</span><span style={{ color: '#1a1c19', fontWeight: 500 }}>{profileData.userName}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>Điểm xanh:</span><span style={{ color: '#25521f', fontWeight: 700 }}>{profileData.greenPoints} pt</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>Chỉ số CO2:</span><span style={{ color: '#3d6b35', fontWeight: 700 }}>{typeof profileData.totalCarbonIndex === 'number' ? profileData.totalCarbonIndex.toFixed(2) : '0'} kg</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>Phone number:</span><span style={{ color: '#1a1c19', fontWeight: 500 }}>{profileData.phoneNumber || 'Not updated'}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>Username:</span><span style={{ color: '#1a1c19', fontWeight: 500 }}>{profileData.userName}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>Green points:</span><span style={{ color: '#25521f', fontWeight: 700 }}>{profileData.greenPoints} pt</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>CO2 index:</span><span style={{ color: '#3d6b35', fontWeight: 700 }}>{typeof profileData.totalCarbonIndex === 'number' ? profileData.totalCarbonIndex.toFixed(2) : '0'} kg</span></div>
                   </div>
                 </div>
-              ) : <div style={{ color: '#ba1a1a', textAlign: 'center' }}>Không tìm thấy thông tin</div>}
+              ) : <div style={{ color: '#ba1a1a', textAlign: 'center' }}>Information not found</div>}
             </div>
             <div style={{ padding: '16px 20px', borderTop: '1px solid #eef2eb', textAlign: 'right' }}>
-              <button onClick={() => setProfileModal(null)} style={{ background: '#25521f', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 500 }}>Đóng</button>
+              <button onClick={() => setProfileModal(null)} style={{ background: '#25521f', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 500 }}>Close</button>
             </div>
           </div>
         </div>
@@ -673,32 +673,32 @@ export default function Chat() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 500, border: '1px solid #dde8d8', boxShadow: '0 24px 60px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #eef2eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#1a1c19', fontFamily: '"Nimbus Sans", sans-serif' }}>Lịch sử đơn hàng</h3>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#1a1c19', fontFamily: '"Nimbus Sans", sans-serif' }}>Order History</h3>
               <button onClick={() => setOrdersModal(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 20, lineHeight: 1 }}>✕</button>
             </div>
             <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
-              {modalLoading ? <div style={{ textAlign: 'center', color: '#6b7280' }}>Đang tải...</div> : ordersData.length > 0 ? (
+              {modalLoading ? <div style={{ textAlign: 'center', color: '#6b7280' }}>Loading...</div> : ordersData.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {ordersData.map(o => {
-                    const statusKey = STATUS_MAP[o.status] || 'Chờ xác nhận'
+                    const statusKey = STATUS_MAP[o.status] || 'Pending'
                     return (
                     <div key={o.id} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#f9fbf8', border: '1px solid #eef2eb', padding: 14, borderRadius: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: '#3d6b35', fontFamily: 'monospace' }}>#{o.id}</span>
                         <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, ...statusStyle[statusKey] }}>{statusKey}</span>
                       </div>
-                      <div style={{ fontSize: 13, color: '#42493e', fontFamily: 'Inter, sans-serif' }}>Ngày đặt: {new Date(o.createdAt).toLocaleDateString('vi-VN')}</div>
-                      <div style={{ fontSize: 13, color: '#42493e', fontFamily: 'Inter, sans-serif' }}>Tổng tiền: <strong style={{ color: '#1a1c19' }}>{o.totalAmount.toLocaleString('vi-VN')}đ</strong></div>
+                      <div style={{ fontSize: 13, color: '#42493e', fontFamily: 'Inter, sans-serif' }}>Order date: {new Date(o.createdAt).toLocaleDateString('vi-VN')}</div>
+                      <div style={{ fontSize: 13, color: '#42493e', fontFamily: 'Inter, sans-serif' }}>Total amount: <strong style={{ color: '#1a1c19' }}>{o.totalAmount.toLocaleString('vi-VN')}đ</strong></div>
                       <div style={{ fontSize: 12, color: '#6b7280' }}>
-                        {o.orderItems.length} sản phẩm ({o.orderItems.map(i => i.productName).join(', ')})
+                        {o.orderItems.length} products ({o.orderItems.map(i => i.productName).join(', ')})
                       </div>
                     </div>
                   )})}
                 </div>
-              ) : <div style={{ textAlign: 'center', color: '#6b7280' }}>Khách hàng chưa có đơn hàng nào.</div>}
+              ) : <div style={{ textAlign: 'center', color: '#6b7280' }}>The customer has no orders yet.</div>}
             </div>
             <div style={{ padding: '16px 20px', borderTop: '1px solid #eef2eb', textAlign: 'right' }}>
-              <button onClick={() => setOrdersModal(null)} style={{ background: '#25521f', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 500 }}>Đóng</button>
+              <button onClick={() => setOrdersModal(null)} style={{ background: '#25521f', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 500 }}>Close</button>
             </div>
           </div>
         </div>

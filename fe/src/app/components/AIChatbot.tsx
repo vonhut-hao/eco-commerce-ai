@@ -16,16 +16,16 @@ interface Message {
 }
 
 // ─── AI tab data ─────────────────────────────────────────────────────────────
-const LEARN_MORE_RESPONSE = `Thông tin chi tiết về Bamboo Toothbrush Set 🌍
+const LEARN_MORE_RESPONSE = `Detailed information about Bamboo Toothbrush Set 🌍
 
-Bamboo vs Nhựa thông thường:
-• CO2 thải ra: 0.3kg vs 1.8kg → tiết kiệm 83%
-• Thời gian phân hủy: 6 tháng vs 400+ năm
-• Nhựa tiết kiệm: ~1.5kg/người/năm
+Bamboo vs Regular Plastic:
+• Emitted CO2: 0.3kg vs 1.8kg → 83% saved
+• Decomposition time: 6 months vs 400+ years
+• Plastic saved: ~1.5kg/person/year
 
-Tay cầm tre thu hoạch bền vững từ rừng Moso, lông bàn chải BPA-free mềm mại, bao bì giấy tái chế 100%.
+Sustainably harvested bamboo handle from Moso forest, soft BPA-free bristles, 100% recycled paper packaging.
 
-Bạn có muốn tính toán carbon footprint cá nhân không? 🌿`;
+Would you like to calculate your personal carbon footprint? 🌿`;
 
 // Removed mock getAIResponse and getAdminResponse
 
@@ -48,13 +48,13 @@ function formatTime(val: any) {
 }
 
 const INITIAL_AI: Message[] = [
-  { id: "ai-1", role: "bot", content: "Xin chào! Em là trợ lý AI của GreenLife 🌿" },
-  { id: "ai-2", role: "bot", content: "Em chuyên tư vấn về chỉ số carbon và tác động môi trường của sản phẩm. Anh/Chị cần hỏi gì ạ?" },
+  { id: "ai-1", role: "bot", content: "Hello! I am the AI assistant for GreenLife 🌿" },
+  { id: "ai-2", role: "bot", content: "I specialize in consulting on carbon indices and environmental impacts of products. How can I help you?" },
 ];
 
 const INITIAL_ADMIN: Message[] = [
-  { id: "adm-1", role: "admin", content: "Xin chào Anh/Chị! Em là nhân viên hỗ trợ GreenLife 👋", time: now() },
-  { id: "adm-2", role: "admin", content: "Em có thể hỗ trợ Anh/Chị về đơn hàng, đổi trả, hoặc bất kỳ thắc mắc nào khác. Anh/Chị cần giúp gì ạ?", time: now() },
+  { id: "adm-1", role: "admin", content: "Hello! I am a GreenLife support agent 👋", time: now() },
+  { id: "adm-2", role: "admin", content: "I can assist you with orders, returns, or any other inquiries. How can I help you?", time: now() },
 ];
 
 const renderMarkdown = (text: string) => {
@@ -143,7 +143,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
   useEffect(() => {
     if (activeTab === "admin" && user) {
       if (user.roles?.includes("ADMIN") || user.roles?.includes("ROLE_ADMIN")) {
-        setAdminMessages([{ id: "admin-sys", role: "admin", content: "Bạn đang đăng nhập bằng tài khoản Admin. Khung chat này dành cho khách hàng. Vui lòng đăng nhập tài khoản User để test hoặc vào Admin Dashboard.", time: now() }]);
+        setAdminMessages([{ id: "admin-sys", role: "admin", content: "You are logged in with an Admin account. This chat window is for customers. Please log in with a User account to test or go to the Admin Dashboard.", time: now() }]);
         return;
       }
 
@@ -202,7 +202,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
         stompClientRef.current = client;
       }).catch(() => {
         if (active) {
-          setAdminMessages([{ id: "err", role: "admin", content: "Lỗi kết nối hoặc bạn chưa đăng nhập.", time: now() }]);
+          setAdminMessages([{ id: "err", role: "admin", content: "Connection error or you are not logged in.", time: now() }]);
         }
       });
 
@@ -254,13 +254,13 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
         const res = await chatWithAi({ message: text, productId });
         setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: res.reply }]);
       } catch (error) {
-        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: "Xin lỗi, AI đang bận. Vui lòng thử lại sau." }]);
+        setAiMessages((prev) => [...prev, { id: msgId + "r", role: "bot", content: "Sorry, AI is busy. Please try again later." }]);
       } finally {
         setIsTyping(false);
       }
     } else {
       if (!conversationId) {
-        setAdminMessages(prev => [...prev, { id: msgId, role: "admin", content: "Vui lòng đăng nhập để chat trực tiếp.", time: now() }]);
+        setAdminMessages(prev => [...prev, { id: msgId, role: "admin", content: "Please log in to chat directly.", time: now() }]);
         return;
       }
       
@@ -269,7 +269,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
       if (customText === undefined) setInput("");
       setIsTyping(false);
 
-      const sendContent = text || "[Hình ảnh]";
+      const sendContent = text || "[Image]";
 
       sendLiveMessage({ conversationId, content: sendContent, senderId: user!.id, fileUrl: imageUrl }).then((res) => {
         setAdminMessages(prev => {
@@ -285,7 +285,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
           } : m);
         });
       }).catch(() => {
-        setAdminMessages(prev => [...prev, { id: tmpId + "err", role: "admin", content: "Gửi lỗi.", time: now() }]);
+        setAdminMessages(prev => [...prev, { id: tmpId + "err", role: "admin", content: "Send error.", time: now() }]);
       });
     }
   };
@@ -327,7 +327,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
       handleSend(input.trim(), url);
       setInput("");
     } catch (err) {
-      setAdminMessages(prev => [...prev, { id: Date.now().toString(), role: "admin", content: "Lỗi tải ảnh lên, vui lòng thử lại.", time: now() }]);
+      setAdminMessages(prev => [...prev, { id: Date.now().toString(), role: "admin", content: "Failed to upload image, please try again.", time: now() }]);
     } finally {
       setIsUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -373,10 +373,10 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
                 <span className="text-white text-[15px] font-semibold">GreenLife</span>
               </div>
               <div className="flex gap-0.5">
-                <button onClick={handleReset} className="text-white/50 hover:text-white transition-colors p-1.5 rounded" title="Làm mới">
+                <button onClick={handleReset} className="text-white/50 hover:text-white transition-colors p-1.5 rounded" title="Refresh">
                   <RefreshCw size={14} />
                 </button>
-                <button onClick={() => setChatOpen(false)} className="text-white/50 hover:text-white transition-colors p-1.5 rounded" title="Thu nhỏ">
+                <button onClick={() => setChatOpen(false)} className="text-white/50 hover:text-white transition-colors p-1.5 rounded" title="Minimize">
                   <Minus size={14} />
                 </button>
               </div>
@@ -396,7 +396,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
                 >
                   {tab === "ai"
                     ? <><Leaf size={12} />AI Carbon</>
-                    : <><Headphones size={12} />Hỗ trợ</>
+                    : <><Headphones size={12} />Support</>
                   }
                 </button>
               ))}
@@ -409,7 +409,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
             {activeTab === "admin" && (
               <div className="flex items-center gap-2 bg-[#f0f7ee] rounded-xl px-3 py-2 border border-[#dde8d8]">
                 <div className="w-2 h-2 rounded-full bg-[#25521f] shrink-0" />
-                <span className="text-[#25521f] text-[11px]">Nhân viên hỗ trợ đang trực tuyến</span>
+                <span className="text-[#25521f] text-[11px]">Support agent is online</span>
               </div>
             )}
 
@@ -444,7 +444,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
                           <img src={msg.fileUrl} alt="attachment" className="max-w-full rounded-lg" style={{ maxHeight: "150px", objectFit: "contain" }} />
                         </div>
                       )}
-                      {msg.content !== "[Hình ảnh]" ? (activeTab === "ai" ? renderMarkdown(msg.content) : msg.content) : ""}
+                      {msg.content !== "[Image]" ? (activeTab === "ai" ? renderMarkdown(msg.content) : msg.content) : ""}
                     </div>
                     {msg.time && !isUser && (
                       <span className="text-[10px] text-[#9ca3af] px-1">{msg.time}</span>
@@ -491,7 +491,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingImage || !conversationId}
                     className="text-gray-400 hover:text-[#274f4f] transition-colors disabled:opacity-30 p-1"
-                    title="Gửi hình ảnh"
+                    title="Send image"
                   >
                     {isUploadingImage ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />}
                   </button>
@@ -502,7 +502,7 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !isUploadingImage && handleSend()}
-                placeholder={activeTab === "ai" ? "Hỏi về carbon, sản phẩm..." : "Nhập tin nhắn hỗ trợ..."}
+                placeholder={activeTab === "ai" ? "Ask about carbon, products..." : "Type a support message..."}
                 className="flex-1 text-[13px] text-gray-700 outline-none placeholder-gray-400 bg-transparent min-w-0"
                 disabled={isUploadingImage}
               />
@@ -516,8 +516,8 @@ export function AIChatbot({ chatIntent, activeProductId }: { chatIntent?: Chatbo
             </div>
             <p className="text-[10px] text-gray-400 mt-2 text-center leading-tight">
               {activeTab === "ai"
-                ? "Thông tin AI chỉ mang tính tham khảo"
-                : "Hỗ trợ trực tuyến 8:00 – 22:00 hàng ngày"
+                ? "AI information is for reference only"
+                : "Online support 8:00 – 22:00 daily"
               }
             </p>
           </div>

@@ -41,16 +41,16 @@ export function CartPage({
   // Validation function
   const validateCoupon = useCallback((coupon: Promotion | null, currentSubtotal: number, ordersList: OrderBE[]): { valid: boolean; reason?: string } => {
     if (!coupon) return { valid: false };
-    if (coupon.isActive === false) return { valid: false, reason: "Mã giảm giá đã bị khóa." };
+    if (coupon.isActive === false) return { valid: false, reason: "Coupon code is inactive." };
     
     const now = new Date();
-    if (coupon.startDate && new Date(coupon.startDate) > now) return { valid: false, reason: "Mã giảm giá chưa đến thời gian sử dụng." };
-    if (coupon.endDate && new Date(coupon.endDate) < now) return { valid: false, reason: "Mã giảm giá đã hết hạn." };
-    if (coupon.usageLimit != null && coupon.usedCount != null && coupon.usedCount >= coupon.usageLimit) return { valid: false, reason: "Mã giảm giá đã hết lượt sử dụng." };
-    if (coupon.minOrderValue && currentSubtotal < coupon.minOrderValue) return { valid: false, reason: `Đơn hàng phải từ ${fmt(coupon.minOrderValue)} để áp dụng.` };
+    if (coupon.startDate && new Date(coupon.startDate) > now) return { valid: false, reason: "Coupon code is not valid yet." };
+    if (coupon.endDate && new Date(coupon.endDate) < now) return { valid: false, reason: "Coupon code has expired." };
+    if (coupon.usageLimit != null && coupon.usedCount != null && coupon.usedCount >= coupon.usageLimit) return { valid: false, reason: "Coupon usage limit reached." };
+    if (coupon.minOrderValue && currentSubtotal < coupon.minOrderValue) return { valid: false, reason: `Order total must be at least ${fmt(coupon.minOrderValue)} to apply.` };
 
     const alreadyUsed = ordersList.some(o => o.promotionId != null && Number(o.promotionId) === Number(coupon.id) && o.status !== 'CANCELLED');
-    if (alreadyUsed) return { valid: false, reason: "Bạn đã sử dụng mã giảm giá này cho đơn hàng trước đó." };
+    if (alreadyUsed) return { valid: false, reason: "You have already used this coupon code on a previous order." };
 
     return { valid: true };
   }, []);
@@ -91,14 +91,14 @@ export function CartPage({
 
       const check = validateCoupon(promotion, subtotal, currentOrders);
       if (!check.valid) {
-        setCouponError(check.reason || "Mã giảm giá không hợp lệ.");
+        setCouponError(check.reason || "Invalid coupon code.");
         setAppliedCoupon(null);
         return;
       }
 
       setAppliedCoupon(promotion);
     } catch (e: any) {
-      setCouponError("Mã giảm giá không hợp lệ hoặc không tồn tại.");
+      setCouponError("Invalid coupon code or does not exist.");
       setAppliedCoupon(null);
     } finally {
       setLoadingCoupon(false);
@@ -113,14 +113,14 @@ export function CartPage({
             <ShoppingBag size={32} className="text-[#25521f]" strokeWidth={1.5} />
           </div>
           <div>
-            <p className="text-[#1a1c19] text-[20px] font-['Nimbus_Sans:Bold',sans-serif] mb-1">Giỏ hàng trống</p>
-            <p className="text-[#6b7280] text-[14px]">Hãy khám phá và thêm sản phẩm xanh vào giỏ nhé!</p>
+            <p className="text-[#1a1c19] text-[20px] font-['Nimbus_Sans:Bold',sans-serif] mb-1">Your Cart is Empty</p>
+            <p className="text-[#6b7280] text-[14px]">Explore and add eco-friendly products to your cart!</p>
           </div>
           <button
             onClick={() => onNavigate("shop")}
             className="bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase px-8 py-3 rounded-full shadow-md hover:shadow-lg transition-all"
           >
-            Khám phá sản phẩm
+            Explore Products
           </button>
         </div>
       </main>
@@ -132,7 +132,7 @@ export function CartPage({
       <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-6 md:py-10">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[12px] text-[#6b7280] mb-6">
-          {["Giỏ hàng", "Thanh toán", "Xác nhận"].map((step, i) => (
+          {["Cart", "Checkout", "Confirmation"].map((step, i) => (
             <span key={step} className={`flex items-center gap-2 ${i === 0 ? "text-[#25521f] font-medium" : ""}`}>
               {i > 0 && <ArrowRight size={12} />}
               {step}
@@ -141,7 +141,7 @@ export function CartPage({
         </div>
 
         <h1 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[28px] md:text-[36px] mb-6">
-          Giỏ hàng ({items.reduce((s, i) => s + i.quantity, 0)} sản phẩm)
+          Shopping Cart ({items.reduce((s, i) => s + i.quantity, 0)} items)
         </h1>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -167,7 +167,7 @@ export function CartPage({
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="bg-[#3d6b35] text-[#b5eaa6] text-[10px] px-1.5 py-0.5 rounded-sm">CO₂ {item.carbonIndex}kg</span>
-                    <span className="text-[#25521f] text-[10px]">+{item.greenPoints || 0} pts/sản phẩm</span>
+                    <span className="text-[#25521f] text-[10px]">+{item.greenPoints || 0} pts/item</span>
                   </div>
                   <div className="flex items-start justify-between">
                     <div className="flex flex-col">
@@ -188,12 +188,12 @@ export function CartPage({
                         </button>
                       </div>
                       {item.stock !== undefined && item.quantity >= item.stock && item.stock > 0 && (
-                        <span className="text-[#ba1a1a] text-[11px] mt-1">Còn {item.stock} sản phẩm</span>
+                        <span className="text-[#ba1a1a] text-[11px] mt-1">{item.stock} items left in stock</span>
                       )}
                     </div>
                     <div className="flex flex-col items-end justify-center">
                       {item.quantity > 1 && (
-                        <span className="text-[#6b7280] text-[11px] mt-1">{fmt(item.price)}/sp</span>
+                        <span className="text-[#6b7280] text-[11px] mt-1">{fmt(item.price)}/item</span>
                       )}
                       <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px]">
                         {fmt(item.price * item.quantity)}
@@ -209,25 +209,25 @@ export function CartPage({
               onClick={() => onNavigate("shop")}
               className="flex items-center gap-2 text-[#25521f] text-[13px] hover:underline transition-all self-start"
             >
-              ← Tiếp tục mua sắm
+              ← Continue Shopping
             </button>
           </div>
 
           {/* Order summary */}
           <div className="md:w-[340px] shrink-0">
             <div className="bg-white/80 border border-[#e2e3de] rounded-xl p-5 flex flex-col gap-4 sticky top-[100px]">
-              <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[16px]">Tóm tắt đơn hàng</h2>
+              <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[16px]">Order Summary</h2>
 
               {/* Coupon */}
               <div className="flex flex-col gap-2">
-                <label className="text-[11px] text-[#6b7280] uppercase tracking-widest">Mã giảm giá</label>
+                <label className="text-[11px] text-[#6b7280] uppercase tracking-widest">Coupon Code</label>
                 {appliedCoupon ? (
                   <div className="flex items-center justify-between bg-[#f0f7ee] border border-[#25521f]/30 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Tag size={13} className="text-[#25521f]" />
                       <span className="text-[#25521f] text-[13px] font-medium">{appliedCoupon.code}</span>
                       <span className="text-[#6b7280] text-[11px]">
-                        – Giảm {appliedCoupon.discountType === 'PERCENTAGE' ? `${appliedCoupon.discountValue}%` : fmt(appliedCoupon.discountValue)}
+                        – {appliedCoupon.discountType === 'PERCENTAGE' ? `${appliedCoupon.discountValue}%` : fmt(appliedCoupon.discountValue)} Off
                       </span>
                     </div>
                     <button onClick={() => { setAppliedCoupon(null); setCouponInput(""); }} className="text-[#6b7280] hover:text-[#ba1a1a]">
@@ -240,7 +240,7 @@ export function CartPage({
                       value={couponInput}
                       onChange={(e) => { setCouponInput(e.target.value); setCouponError(""); }}
                       onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                      placeholder="Nhập mã (VD: GREEN10)"
+                      placeholder="Enter code (e.g. GREEN10)"
                       className="flex-1 border border-[#c2c9bb] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#25521f] text-[#1a1c19] placeholder-[#9ca3af]"
                     />
                     <button
@@ -248,7 +248,7 @@ export function CartPage({
                       disabled={loadingCoupon}
                       className="px-3 py-2 bg-[#25521f] text-white rounded-lg text-[12px] hover:bg-[#1e4219] transition-colors disabled:opacity-50"
                     >
-                      {loadingCoupon ? "..." : "Áp dụng"}
+                      {loadingCoupon ? "..." : "Apply"}
                     </button>
                   </div>
                 )}
@@ -258,26 +258,26 @@ export function CartPage({
               {/* Summary rows */}
               <div className="flex flex-col gap-2 border-t border-[#e2e3de] pt-3">
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b7280]">Tạm tính</span>
+                  <span className="text-[#6b7280]">Subtotal</span>
                   <span className="text-[#1a1c19]">{fmt(subtotal)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-[13px]">
-                    <span className="text-[#25521f]">Giảm giá</span>
+                    <span className="text-[#25521f]">Discount</span>
                     <span className="text-[#25521f]">– {fmt(discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b7280]">Vận chuyển</span>
+                  <span className="text-[#6b7280]">Shipping</span>
                   <span className={shipping === 0 ? "text-[#25521f]" : "text-[#1a1c19]"}>
-                    {shipping === 0 ? "Miễn phí" : fmt(shipping)}
+                    {shipping === 0 ? "Free" : fmt(shipping)}
                   </span>
                 </div>
-                {shipping === 0 && <p className="text-[#25521f] text-[11px] italic">Đơn hàng trên 200.000 VND miễn phí vận chuyển</p>}
+                {shipping === 0 && <p className="text-[#25521f] text-[11px] italic">Free shipping on orders over 200,000 VND</p>}
               </div>
 
               <div className="border-t border-[#e2e3de] pt-3 flex justify-between">
-                <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[15px]">Tổng cộng</span>
+                <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[15px]">Total</span>
                 <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#25521f] text-[18px]">{fmt(total)}</span>
               </div>
 
@@ -285,14 +285,14 @@ export function CartPage({
               <div className="bg-[#f0f7ee] rounded-xl p-3 flex flex-col gap-1.5">
                 <div className="flex items-center gap-1.5">
                   <Leaf size={13} className="text-[#25521f]" />
-                  <span className="text-[#25521f] text-[12px] font-medium">Tác động môi trường</span>
+                  <span className="text-[#25521f] text-[12px] font-medium">Environmental Impact</span>
                 </div>
                 <div className="text-[#42493e] text-[12px] flex justify-between">
-                  <span>Tổng carbon footprint:</span>
+                  <span>Total carbon footprint:</span>
                   <span className="font-medium">{totalCO2.toFixed(2)} kg CO₂</span>
                 </div>
                 <div className="text-[#42493e] text-[12px] flex justify-between">
-                  <span>Green Points nhận được:</span>
+                  <span>Green Points earned:</span>
                   <span className="font-medium text-[#25521f]">+{totalGreenPts} pts</span>
                 </div>
               </div>
@@ -301,7 +301,7 @@ export function CartPage({
                 onClick={() => onNavigate("checkout")}
                 className="w-full bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3.5 rounded-full shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
-                Tiến hành thanh toán
+                Proceed to Checkout
                 <ArrowRight size={14} />
               </button>
             </div>

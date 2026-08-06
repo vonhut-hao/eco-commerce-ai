@@ -1,27 +1,72 @@
 import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, MapPin, CreditCard, Banknote, Smartphone, ArrowRight, Package, Leaf } from "lucide-react";
 import { CartItem, useCartStore } from "../../store/cartStore";
-import {OrderBE, ordersApi} from "../../api/orders";
+import { OrderBE, ordersApi } from "../../api/orders";
 import { paymentApi, PaymentMethodResponse } from "../../api/payment";
 import { addressesApi, AddressBE } from "../../api/addresses";
 import { AddressModal } from "./AddressModal";
 import { useAuthStore } from "../../store/authStore";
 import { toast } from "./Toast";
+
 type Step = "address" | "payment" | "confirm";
 
 function fmt(n: number) { return n.toLocaleString("vi-VN") + " VND"; }
 
 const PROVINCES = [
-  "TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng",
-  "Bình Dương", "Đồng Nai", "Khánh Hòa", "Thừa Thiên Huế", "Quảng Nam",
+  "Ho Chi Minh City", "Ha Noi", "Da Nang", "Can Tho", "Hai Phong",
+  "An Giang", "Binh Duong", "Binh Dinh", "Binh Thuan", "Bac Lieu",
+  "Bac Giang", "Bac Kan", "Bac Ninh", "Ben Tre", "Cao Bang",
+  "Dak Lak", "Dak Nong", "Dien Bien", "Dong Nai", "Dong Thap",
+  "Gia Lai", "Ha Giang", "Ha Nam", "Ha Tinh", "Hai Duong",
+  "Hau Giang", "Hoa Binh", "Hung Yen", "Khanh Hoa", "Kien Giang",
+  "Kon Tum", "Lai Chau", "Lam Dong", "Lang Son", "Lao Cai",
+  "Long An", "Nam Dinh", "Nghe An", "Ninh Binh", "Ninh Thuan",
+  "Phu Tho", "Phu Yen", "Quang Binh", "Quang Nam", "Quang Ngai",
+  "Quang Ninh", "Quang Tri", "Soc Trang", "Son La", "Tay Ninh",
+  "Thai Binh", "Thai Nguyen", "Thanh Hoa", "Thua Thien Hue", "Tien Giang",
+  "Tra Vinh", "Tuyen Quang", "Vinh Long", "Vinh Phuc", "Yen Bai", "Ba Ria - Vung Tau"
 ];
+
+function extractProvince(fullAddr: string): string {
+  if (!fullAddr) return "Ho Chi Minh City";
+  const lower = fullAddr.toLowerCase();
+
+  for (const p of PROVINCES) {
+    if (lower.includes(p.toLowerCase())) {
+      return p;
+    }
+  }
+
+  if (lower.includes("hồ chí minh") || lower.includes("hcm") || lower.includes("sài gòn") || lower.includes("saigon")) return "Ho Chi Minh City";
+  if (lower.includes("hà nội") || lower.includes("hanoi") || lower.includes("hn")) return "Ha Noi";
+  if (lower.includes("đà nẵng") || lower.includes("danang")) return "Da Nang";
+  if (lower.includes("cần thơ") || lower.includes("cantho")) return "Can Tho";
+  if (lower.includes("hải phòng") || lower.includes("haiphong")) return "Hai Phong";
+  if (lower.includes("bình dương")) return "Binh Duong";
+  if (lower.includes("đồng nai")) return "Dong Nai";
+  if (lower.includes("khánh hòa") || lower.includes("nha trang")) return "Khanh Hoa";
+  if (lower.includes("huế") || lower.includes("thừa thiên")) return "Thua Thien Hue";
+  if (lower.includes("quảng nam") || lower.includes("hội an")) return "Quang Nam";
+  if (lower.includes("bà rịa") || lower.includes("vũng tàu")) return "Ba Ria - Vung Tau";
+  if (lower.includes("lâm đồng") || lower.includes("đà lạt") || lower.includes("dalat")) return "Lam Dong";
+
+  const parts = fullAddr.split(",").map(s => s.trim()).filter(Boolean);
+  if (parts.length > 0) {
+    const lastPart = parts[parts.length - 1];
+    const matchLast = PROVINCES.find(p => p.toLowerCase() === lastPart.toLowerCase());
+    if (matchLast) return matchLast;
+    if (lastPart.length > 2) return lastPart;
+  }
+
+  return "Ho Chi Minh City";
+}
 
 // ─── Step Indicator ────────────────────────────────────────────────────────────
 function StepBar({ current }: { current: Step }) {
   const steps: { key: Step; label: string }[] = [
-    { key: "address", label: "Địa chỉ" },
-    { key: "payment", label: "Thanh toán" },
-    { key: "confirm", label: "Xác nhận" },
+    { key: "address", label: "Address" },
+    { key: "payment", label: "Payment" },
+    { key: "confirm", label: "Confirmation" },
   ];
   const idx = steps.findIndex((s) => s.key === current);
 
@@ -78,10 +123,11 @@ function AddressStep({
 
   const applyAddress = (addr: AddressBE) => {
     setSelectedAddrId(addr.id);
+    const matchedProvince = extractProvince(addr.fullAddress);
     setForm({
       name: addr.recipientName,
       phone: addr.phoneNumber,
-      province: PROVINCES.find(p => addr.fullAddress.includes(p)) || "TP. Hồ Chí Minh",
+      province: matchedProvince,
       address: addr.fullAddress,
       note: form.note || ""
     });
@@ -95,19 +141,19 @@ function AddressStep({
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <MapPin size={18} className="text-[#25521f]" />
-          <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Địa chỉ giao hàng</h2>
+          <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Shipping Address</h2>
         </div>
         <button
           onClick={() => setModalOpen(true)}
           className="text-[#25521f] text-[13px] border border-[#25521f] px-3.5 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
         >
-          {savedAddresses.length > 0 ? "Sổ địa chỉ" : "+ Thêm địa chỉ mới"}
+          {savedAddresses.length > 0 ? "Address Book" : "+ Add New Address"}
         </button>
       </div>
 
       {savedAddresses.length > 0 && (
         <div className="flex flex-col gap-2">
-          <label className="text-[12px] text-[#6b7280] tracking-wide">Chọn từ địa chỉ đã lưu:</label>
+          <label className="text-[12px] text-[#6b7280] tracking-wide">Select from saved addresses:</label>
           <div className="grid grid-cols-1 gap-2">
             {savedAddresses.map((addr) => (
               <button
@@ -124,7 +170,7 @@ function AddressStep({
                     <span className="text-[#6b7280]">({addr.phoneNumber})</span>
                     {addr.isDefault && (
                       <span className="bg-[#25521f] text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
-                        Mặc định
+                        Default
                       </span>
                     )}
                   </div>
@@ -137,27 +183,27 @@ function AddressStep({
         </div>
       )}
 
-      <Field label="Họ và tên *">
-        <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Nguyễn Văn An" className={inputCls} />
+      <Field label="Full Name *">
+        <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="John Doe" className={inputCls} />
       </Field>
 
-      <Field label="Số điện thoại *">
-        <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="0912 345 678" className={inputCls} />
+      <Field label="Phone Number *">
+        <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+1 (555) 000-0000" className={inputCls} />
       </Field>
 
-      <Field label="Tỉnh / Thành phố *">
+      <Field label="City / Province *">
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowProvince((v) => !v)}
             className={`${inputCls} flex items-center justify-between text-left`}
           >
-            <span className={form.province ? "text-[#1a1c19]" : "text-[#9ca3af]"}>{form.province || "Chọn tỉnh / thành phố"}</span>
+            <span className={form.province ? "text-[#1a1c19]" : "text-[#9ca3af]"}>{form.province || "Select city / province"}</span>
             <ChevronDown size={15} className="text-[#6b7280] shrink-0" />
           </button>
           {showProvince && (
             <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#c2c9bb] rounded-xl shadow-lg z-20 max-h-[200px] overflow-y-auto py-1">
-              {PROVINCES.map((p) => (
+              {Array.from(new Set([...PROVINCES, ...(form.province ? [form.province] : [])])).map((p) => (
                 <button
                   key={p}
                   onClick={() => { set("province", p); setShowProvince(false); }}
@@ -171,15 +217,15 @@ function AddressStep({
         </div>
       </Field>
 
-      <Field label="Địa chỉ cụ thể *">
-        <input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Số nhà, tên đường, phường/xã, quận/huyện" className={inputCls} />
+      <Field label="Street Address *">
+        <input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="House number, street name, district/ward" className={inputCls} />
       </Field>
 
-      <Field label="Ghi chú (tùy chọn)">
+      <Field label="Delivery Notes (optional)">
         <textarea
           value={form.note}
           onChange={(e) => set("note", e.target.value)}
-          placeholder="Hướng dẫn giao hàng..."
+          placeholder="Special delivery instructions..."
           rows={2}
           className={`${inputCls} resize-none`}
         />
@@ -190,14 +236,23 @@ function AddressStep({
         onClick={() => { onSave(form); onNext(); }}
         className="w-full bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3.5 rounded-full shadow-md disabled:opacity-40 hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-2"
       >
-        Tiếp tục <ArrowRight size={14} />
+        Continue <ArrowRight size={14} />
       </button>
 
       <AddressModal
         isOpen={modalOpen}
         onClose={() => {
           setModalOpen(false);
-          addressesApi.getUserAddresses().then(setSavedAddresses).catch(console.error);
+          addressesApi.getUserAddresses().then((list) => {
+            setSavedAddresses(list);
+            if (list.length > 0) {
+              const currentStillExists = list.find((a) => a.id === selectedAddrId);
+              if (!currentStillExists) {
+                const def = list.find((a) => a.isDefault) || list[0];
+                applyAddress(def);
+              }
+            }
+          }).catch(console.error);
         }}
         selectedAddressId={selectedAddrId}
         onSelectAddress={(addr) => {
@@ -213,10 +268,10 @@ function AddressStep({
 type AddressForm = { name: string; phone: string; province: string; address: string; note: string };
 
 const PAYMENT_META: Record<string, { label: string; desc: string; Icon: React.ElementType; color: string }> = {
-  COD: { label: "Thanh toán khi nhận hàng", desc: "Trả tiền mặt khi shipper giao tới", Icon: Banknote, color: "#42493e" },
-  BANK_TRANSFER: { label: "Chuyển khoản ngân hàng", desc: "Chuyển khoản qua QR / số tài khoản", Icon: CreditCard, color: "#1d4ed8" },
-  MOMO: { label: "Ví MoMo", desc: "Quét mã QR MoMo để thanh toán", Icon: Smartphone, color: "#a21caf" },
-  ZALOPAY: { label: "ZaloPay", desc: "Thanh toán qua ứng dụng ZaloPay", Icon: Smartphone, color: "#0284c7" },
+  COD: { label: "Cash on Delivery", desc: "Pay in cash when delivered by courier", Icon: Banknote, color: "#42493e" },
+  BANK_TRANSFER: { label: "Bank Transfer", desc: "Transfer via QR code / bank account", Icon: CreditCard, color: "#1d4ed8" },
+  MOMO: { label: "MoMo E-Wallet", desc: "Scan MoMo QR code to pay", Icon: Smartphone, color: "#a21caf" },
+  ZALOPAY: { label: "ZaloPay", desc: "Pay via ZaloPay application", Icon: Smartphone, color: "#0284c7" },
 };
 
 function PaymentStep({ onNext, onBack, total, methods }: { onNext: (method: PaymentMethodResponse) => void; onBack: () => void; total: number; methods: PaymentMethodResponse[] }) {
@@ -228,12 +283,12 @@ function PaymentStep({ onNext, onBack, total, methods }: { onNext: (method: Paym
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-2 mb-2">
         <CreditCard size={18} className="text-[#25521f]" />
-        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Phương thức thanh toán</h2>
+        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[20px]">Payment Method</h2>
       </div>
 
       <div className="flex flex-col gap-3">
         {methods.map((method) => {
-          const meta = PAYMENT_META[method.methodName] || { label: method.methodName, desc: "Phương thức thanh toán", Icon: CreditCard, color: "#42493e" };
+          const meta = PAYMENT_META[method.methodName] || { label: method.methodName, desc: "Payment Method", Icon: CreditCard, color: "#42493e" };
           const Icon = meta.Icon;
           const active = selectedId === method.id;
           return (
@@ -259,40 +314,40 @@ function PaymentStep({ onNext, onBack, total, methods }: { onNext: (method: Paym
 
       {methods.find(m => m.id === selectedId)?.methodName === "BANK_TRANSFER" && (
         <div className="bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#42493e]">
-          <p className="font-medium text-[#1a1c19]">Thông tin chuyển khoản Ngân hàng:</p>
-          <p>Ngân hàng: <span className="font-medium">Vietcombank</span></p>
-          <p>Số TK: <span className="font-medium">1234567890</span></p>
-          <p>Tên TK: <span className="font-medium">GREENLIFE COMPANY</span></p>
-          <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+          <p className="font-medium text-[#1a1c19]">Bank Transfer Information:</p>
+          <p>Bank: <span className="font-medium">Vietcombank</span></p>
+          <p>Account No: <span className="font-medium">1234567890</span></p>
+          <p>Account Name: <span className="font-medium">GREENLIFE COMPANY</span></p>
+          <p>Reference: <span className="font-medium">Name + Phone</span></p>
         </div>
       )}
 
       {methods.find(m => m.id === selectedId)?.methodName === "MOMO" && (
         <div className="bg-[#fdf4ff] border border-[#f5d0fe] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#701a75]">
-          <p className="font-medium text-[#4a044e]">Thông tin thanh toán MoMo:</p>
-          <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
-          <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
-          <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+          <p className="font-medium text-[#4a044e]">MoMo Payment Details:</p>
+          <p>Phone Number: <span className="font-medium">+1 (555) 000-0000</span></p>
+          <p>Recipient: <span className="font-medium">GREENLIFE COMPANY</span></p>
+          <p>Reference: <span className="font-medium">Name + Phone</span></p>
         </div>
       )}
 
       {methods.find(m => m.id === selectedId)?.methodName === "ZALOPAY" && (
         <div className="bg-[#f0f9ff] border border-[#bae6fd] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#0369a1]">
-          <p className="font-medium text-[#0c4a6e]">Thông tin thanh toán ZaloPay:</p>
-          <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
-          <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
-          <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+          <p className="font-medium text-[#0c4a6e]">ZaloPay Payment Details:</p>
+          <p>Phone Number: <span className="font-medium">+1 (555) 000-0000</span></p>
+          <p>Recipient: <span className="font-medium">GREENLIFE COMPANY</span></p>
+          <p>Reference: <span className="font-medium">Name + Phone</span></p>
         </div>
       )}
 
       <div className="border-t border-[#e2e3de] pt-4 flex justify-between items-center">
-        <span className="text-[#6b7280] text-[13px]">Tổng thanh toán</span>
+        <span className="text-[#6b7280] text-[13px]">Total Payment</span>
         <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#25521f] text-[20px]">{fmt(total)}</span>
       </div>
 
       <div className="flex gap-3">
         <button onClick={onBack} disabled={loading} className="flex-1 border border-[#c2c9bb] text-[#42493e] text-[13px] tracking-widest uppercase py-3 rounded-full hover:bg-[#fafaf5] transition-colors disabled:opacity-50">
-          Quay lại
+          Back
         </button>
         <button
           onClick={async () => {
@@ -305,7 +360,7 @@ function PaymentStep({ onNext, onBack, total, methods }: { onNext: (method: Paym
           disabled={loading || !selectedId}
           className="flex-1 bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3 rounded-full shadow-md hover:shadow-lg transition-all disabled:opacity-50"
         >
-          {loading ? "Đang xử lý..." : "Đặt hàng"}
+          {loading ? "Processing..." : "Place Order"}
         </button>
       </div>
     </div>
@@ -338,38 +393,38 @@ function ConfirmStep({
         <Check size={36} className="text-[#25521f]" strokeWidth={2.5} />
       </div>
       <div>
-        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[24px] mb-1">Đặt hàng thành công!</h2>
-        <p className="text-[#6b7280] text-[14px]">Cảm ơn bạn đã mua hàng tại GreenLife 🌿</p>
+        <h2 className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] text-[24px] mb-1">Order Placed Successfully!</h2>
+        <p className="text-[#6b7280] text-[14px]">Thank you for shopping at GreenLife 🌿</p>
       </div>
 
       <div className="w-full bg-white/80 border border-[#e2e3de] rounded-2xl p-5 flex flex-col gap-3 text-left">
         <div className="flex justify-between text-[13px]">
-          <span className="text-[#6b7280]">Mã đơn hàng</span>
+          <span className="text-[#6b7280]">Order ID</span>
           <span className="font-medium text-[#1a1c19]">{orderId}</span>
         </div>
         <div className="flex justify-between text-[13px]">
-          <span className="text-[#6b7280]">Giao tới</span>
+          <span className="text-[#6b7280]">Deliver to</span>
           <span className="text-[#1a1c19] text-right max-w-[200px]">{address.name} · {address.address}, {address.province}</span>
         </div>
         <div className="flex justify-between text-[13px]">
-          <span className="text-[#6b7280]">Thanh toán</span>
+          <span className="text-[#6b7280]">Payment Method</span>
           <span className="text-[#1a1c19]">{payLabel}</span>
         </div>
         <div className="flex justify-between text-[13px]">
-          <span className="text-[#6b7280]">Tổng tiền</span>
+          <span className="text-[#6b7280]">Total Amount</span>
           <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#25521f]">{fmt(total)}</span>
         </div>
         <div className="border-t border-[#e2e3de] pt-3">
           <div className="bg-[#f0f7ee] rounded-xl p-3 flex flex-col gap-1">
             <div className="flex items-center gap-1.5 mb-1">
               <Leaf size={13} className="text-[#25521f]" />
-              <span className="text-[#25521f] text-[12px] font-medium">Tác động xanh của đơn hàng</span>
+              <span className="text-[#25521f] text-[12px] font-medium">Green Impact of this Order</span>
             </div>
             <div className="flex justify-between text-[12px] text-[#42493e]">
               <span>Carbon footprint</span><span className="font-medium">{co2.toFixed(2)} kg CO₂</span>
             </div>
             <div className="flex justify-between text-[12px] text-[#42493e]">
-              <span>Green Points tích lũy</span><span className="font-medium text-[#25521f]">+{greenPts} pts</span>
+              <span>Green Points earned</span><span className="font-medium text-[#25521f]">+{greenPts} pts</span>
             </div>
           </div>
         </div>
@@ -378,8 +433,8 @@ function ConfirmStep({
       <div className="w-full bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex items-center gap-3">
         <Package size={18} className="text-[#25521f] shrink-0" />
         <div className="text-left">
-          <p className="text-[#1a1c19] text-[13px] font-medium">Dự kiến giao hàng: 3–5 ngày làm việc</p>
-          <p className="text-[#6b7280] text-[11px]">Bạn sẽ nhận được email xác nhận và cập nhật trạng thái.</p>
+          <p className="text-[#1a1c19] text-[13px] font-medium">Estimated delivery: 3–5 business days</p>
+          <p className="text-[#6b7280] text-[11px]">You will receive a confirmation email and status updates.</p>
         </div>
       </div>
 
@@ -387,7 +442,7 @@ function ConfirmStep({
         onClick={onContinue}
         className="w-full bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[13px] tracking-widest uppercase py-3.5 rounded-full shadow-md hover:shadow-lg transition-all"
       >
-        Tiếp tục mua sắm
+        Continue Shopping
       </button>
     </div>
   );
@@ -431,7 +486,7 @@ export function CheckoutPage({
         if (appliedCoupon) {
           const alreadyUsed = list.some(o => o.promotionId != null && Number(o.promotionId) === Number(appliedCoupon.id) && o.status !== 'CANCELLED');
           if (alreadyUsed) {
-            toast.info("Thông báo", `Mã giảm giá ${appliedCoupon.code} đã được sử dụng trước đó cho tài khoản của bạn và đã bị gỡ.`);
+            toast.info("Notice", `Coupon code ${appliedCoupon.code} was previously used on your account and has been removed.`);
             setAppliedCoupon(null);
           }
         }
@@ -478,13 +533,13 @@ export function CheckoutPage({
     return (
       <main className="flex-1 pb-20 md:pb-0 flex items-center justify-center">
         <div className="text-center py-20">
-          <h2 className="text-[20px] font-['Nimbus_Sans:Bold',sans-serif] mb-4">Vui lòng đăng nhập</h2>
-          <p className="text-[#6b7280] mb-6">Bạn cần đăng nhập để tiến hành đặt hàng.</p>
+          <h2 className="text-[20px] font-[#Nimbus_Sans:Bold',sans-serif] mb-4">Please Sign In</h2>
+          <p className="text-[#6b7280] mb-6">You need to sign in to place an order.</p>
           <button
             onClick={() => onNavigate("signin")}
             className="bg-[#25521f] text-white px-8 py-3 rounded-full hover:bg-[#1e4219] transition-colors"
           >
-            Đăng nhập ngay
+            Sign In Now
           </button>
         </div>
       </main>
@@ -501,7 +556,7 @@ export function CheckoutPage({
         const alreadyUsed = userOrders.some(o => o.promotionId != null && Number(o.promotionId) === Number(appliedCoupon.id) && o.status !== 'CANCELLED');
         if (alreadyUsed) {
           setAppliedCoupon(null);
-          toast.error("Không thể đặt hàng", `Mã giảm giá ${appliedCoupon.code} đã được sử dụng cho tài khoản của bạn trước đó.`);
+          toast.error("Cannot Place Order", `Coupon code ${appliedCoupon.code} has already been used on your account.`);
           return; // Strictly stop checkout!
         }
       } catch (err) {
@@ -518,6 +573,19 @@ export function CheckoutPage({
       });
       if (res && res.id) {
         setOrderId("#GL-" + res.id);
+        if (address) {
+          try {
+            const savedOrderAddresses = JSON.parse(localStorage.getItem('orderAddresses') || '{}');
+            savedOrderAddresses[res.id] = {
+              name: address.name,
+              phone: address.phone,
+              address: `${address.address}, ${address.province}`
+            };
+            localStorage.setItem('orderAddresses', JSON.stringify(savedOrderAddresses));
+          } catch (err) {
+            console.error("Failed to save order address locally", err);
+          }
+        }
       }
       clearCart();
       setStep("confirm");
@@ -527,7 +595,7 @@ export function CheckoutPage({
       if (errDetail.toLowerCase().includes("promotion") || errDetail.toLowerCase().includes("mã giảm giá")) {
         setAppliedCoupon(null);
       }
-      toast.error("Đặt hàng thất bại", errDetail || "Không thể đặt hàng, vui lòng thử lại.");
+      toast.error("Order Failed", errDetail || "Failed to place order. Please try again.");
     }
   };
 

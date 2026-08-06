@@ -139,12 +139,12 @@ export const ALL_PRODUCTS: Product[] = [
 
 const CATEGORIES = ["All", "Home & Kitchen", "Personal Care", "Fashion", "Food & Beverage", "Office", "Travel", "Pet"];
 const SORT_OPTIONS = [
-  { value: "default",     label: "Mặc định" },
-  { value: "price_asc",   label: "Giá tăng dần" },
-  { value: "price_desc",  label: "Giá giảm dần" },
-  { value: "carbon_asc",  label: "Carbon thấp nhất" },
-  { value: "rating_desc", label: "Đánh giá cao nhất" },
-  { value: "newest",      label: "Mới nhất" },
+  { value: "default",     label: "Default" },
+  { value: "price_asc",   label: "Price: Low to High" },
+  { value: "price_desc",  label: "Price: High to Low" },
+  { value: "carbon_asc",  label: "Lowest Carbon" },
+  { value: "rating_desc", label: "Highest Rating" },
+  { value: "newest",      label: "Newest" },
 ];
 const CERTS = ["BIODEGRADABLE", "BPA FREE", "100% ORGANIC", "RECYCLABLE", "ZERO PLASTIC", "FSC CERTIFIED", "PLANTABLE"];
 
@@ -167,7 +167,7 @@ function CompareBar({
       <div className="md:hidden px-4 pt-2.5 pb-2 flex flex-col gap-2">
         <div className="flex items-center gap-2 overflow-x-auto">
           <GitCompare size={15} className="text-[#25521f] shrink-0" />
-          <span className="text-[#42493e] text-[12px] shrink-0">So sánh ({items.length}/3):</span>
+          <span className="text-[#42493e] text-[12px] shrink-0">Compare ({items.length}/3):</span>
           {items.map((p) => (
             <div key={p.id} className="flex items-center gap-1 bg-[#f0f7ee] border border-[#c2c9bb] rounded-full px-2.5 py-0.5 shrink-0">
               <span className="text-[#1a1c19] text-[11px] max-w-[90px] truncate">{p.name}</span>
@@ -179,14 +179,14 @@ function CompareBar({
         </div>
         <div className="flex items-center gap-2">
           <button onClick={onClear} className="flex-1 text-[12px] text-[#6b7280] border border-[#dde8d8] rounded-full py-1.5 hover:bg-[#f5f9f3] transition-colors">
-            Xóa tất cả
+            Clear all
           </button>
           <button
             onClick={onCompare}
             disabled={items.length < 2}
             className="flex-1 bg-[#25521f] text-white text-[12px] tracking-wide py-1.5 rounded-full disabled:opacity-40 hover:bg-[#1e4219] transition-colors"
           >
-            So sánh ngay
+            Compare now
           </button>
         </div>
       </div>
@@ -194,7 +194,7 @@ function CompareBar({
       {/* Desktop: single row, padding-right to clear chatbot button */}
       <div className="hidden md:flex items-center gap-4 px-16 pr-24 py-3">
         <GitCompare size={18} className="text-[#25521f] shrink-0" />
-        <span className="text-[#42493e] text-[13px] shrink-0">So sánh ({items.length}/3):</span>
+        <span className="text-[#42493e] text-[13px] shrink-0">Compare ({items.length}/3):</span>
         <div className="flex items-center gap-2 overflow-x-auto flex-1">
           {items.map((p) => (
             <div key={p.id} className="flex items-center gap-1.5 bg-[#f0f7ee] border border-[#c2c9bb] rounded-full px-3 py-1 shrink-0">
@@ -206,13 +206,13 @@ function CompareBar({
           ))}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={onClear} className="text-[13px] text-[#6b7280] hover:text-[#42493e] underline">Xóa</button>
+          <button onClick={onClear} className="text-[13px] text-[#6b7280] hover:text-[#42493e] underline">Clear</button>
           <button
             onClick={onCompare}
             disabled={items.length < 2}
             className="bg-[#25521f] text-white text-[12px] tracking-widest uppercase px-5 py-2 rounded-full disabled:opacity-40 hover:bg-[#1e4219] transition-colors"
           >
-            So sánh
+            Compare
           </button>
         </div>
       </div>
@@ -223,26 +223,26 @@ function CompareBar({
 // ─── Compare Modal ─────────────────────────────────────────────────────────────
 function CompareModal({ items, onClose, onAddToCart }: { items: Product[]; onClose: () => void; onAddToCart: (p: Product) => void }) {
   const fields: { label: string; key: keyof Product }[] = [
-    { label: "Giá", key: "priceLabel" },
+    { label: "Price", key: "priceLabel" },
     { label: "Carbon Index", key: "carbonLabel" },
-    { label: "Đánh giá", key: "rating" },
-    { label: "Vật liệu", key: "material" },
-    { label: "Phân hủy", key: "decomposition" },
+    { label: "Rating", key: "rating" },
+    { label: "Material", key: "material" },
+    { label: "Decomposition", key: "decomposition" },
     { label: "Green Points", key: "greenPoints" },
-    { label: "Tồn kho", key: "stock" },
+    { label: "Stock", key: "stock" },
   ];
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8 px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[900px] overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e3de] sticky top-0 bg-white z-10">
-          <h3 className="text-[#1a1c19] text-[18px] font-['Nimbus_Sans:Bold',sans-serif]">So sánh sản phẩm</h3>
+          <h3 className="text-[#1a1c19] text-[18px] font-['Nimbus_Sans:Bold',sans-serif]">Compare Products</h3>
           <button onClick={onClose} className="text-[#6b7280] hover:text-[#1a1c19] p-1"><X size={20} /></button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#e2e3de]">
-                <th className="text-left px-6 py-3 text-[#6b7280] text-[11px] tracking-widest uppercase w-[140px]">Thuộc tính</th>
+                <th className="text-left px-6 py-3 text-[#6b7280] text-[11px] tracking-widest uppercase w-[140px]">Property</th>
                 {items.map((p) => (
                   <th key={p.id} className="px-4 py-3 text-center">
                     <div className="flex flex-col items-center gap-2">
@@ -266,7 +266,7 @@ function CompareModal({ items, onClose, onAddToCart }: { items: Product[]; onClo
                     return (
                       <td key={p.id} className={`px-4 py-3 text-center text-[14px] ${isBest ? "text-[#25521f] font-bold" : "text-[#1a1c19]"}`}>
                         {f.key === "rating" ? `${val} ⭐` : f.key === "greenPoints" ? `+${val} pts` : String(val)}
-                        {isBest && <span className="ml-1 text-[10px] text-[#25521f]">✓ thấp nhất</span>}
+                        {isBest && <span className="ml-1 text-[10px] text-[#25521f]">✓ lowest</span>}
                       </td>
                     );
                   })}
@@ -280,7 +280,7 @@ function CompareModal({ items, onClose, onAddToCart }: { items: Product[]; onClo
                       onClick={() => onAddToCart(p)}
                       className="bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white text-[11px] tracking-widest uppercase px-4 py-2 rounded-full hover:shadow-md transition-all"
                     >
-                      Thêm vào giỏ
+                      Add to cart
                     </button>
                   </td>
                 ))}
@@ -331,14 +331,14 @@ function FilterPanel({
     <div className="flex flex-col gap-6">
       {onClose && (
         <div className="flex items-center justify-between pb-2 border-b border-[#e2e3de]">
-          <h3 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[16px]">Bộ lọc</h3>
+          <h3 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[16px]">Filters</h3>
           <button onClick={onClose}><X size={18} className="text-[#6b7280]" /></button>
         </div>
       )}
 
       {/* Categories */}
       <div className="flex flex-col gap-3">
-        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Danh mục</h4>
+        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Categories</h4>
         {categories.filter(c => !c.parentId).map((cat) => {
           const subs = categories.filter(c => c.parentId === cat.id);
           const hasSubs = subs.length > 0;
@@ -383,7 +383,7 @@ function FilterPanel({
 
       {/* Price Range */}
       <div className="flex flex-col gap-3">
-        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Khoảng giá (VND)</h4>
+        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Price Range (VND)</h4>
         <div className="flex gap-2 items-center">
           <input
             type="number"
@@ -405,12 +405,12 @@ function FilterPanel({
 
       {/* Carbon Index */}
       <div className="flex flex-col gap-3">
-        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Chỉ số Carbon</h4>
+        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Carbon Index</h4>
         {[
-          { value: "all", label: "Tất cả" },
-          { value: "low", label: "Thấp (< 0.3 kg)" },
-          { value: "mid", label: "Trung bình (0.3–0.6 kg)" },
-          { value: "high", label: "Cao (> 0.6 kg)" },
+          { value: "all", label: "All" },
+          { value: "low", label: "Low (< 0.3 kg)" },
+          { value: "mid", label: "Medium (0.3–0.6 kg)" },
+          { value: "high", label: "High (> 0.6 kg)" },
         ].map((opt) => (
           <label key={opt.value} className="flex items-center gap-2.5 cursor-pointer">
             <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${carbonFilter === opt.value ? "border-[#25521f]" : "border-[#c2c9bb]"}`}>
@@ -424,7 +424,7 @@ function FilterPanel({
 
       {/* Certifications */}
       <div className="flex flex-col gap-3">
-        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Chứng nhận</h4>
+        <h4 className="text-[#1a1c19] text-[11px] tracking-widest uppercase font-['Nimbus_Sans:Bold',sans-serif]">Certifications</h4>
         {certs.map((cert) => (
           <label key={cert} className="flex items-center gap-2.5 cursor-pointer group">
             <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedCerts.includes(cert) ? "bg-[#25521f] border-[#25521f]" : "border-[#c2c9bb] group-hover:border-[#25521f]"}`}>
@@ -445,7 +445,7 @@ function FilterPanel({
         }}
         className="text-[#6b7280] text-[12px] underline self-start hover:text-[#42493e]"
       >
-        Xóa tất cả bộ lọc
+        Clear all filters
       </button>
     </div>
   );
@@ -558,7 +558,7 @@ export function ShopPage({
     }
   };
 
-  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Mặc định";
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Default";
 
   return (
     <main className="flex-1 pb-[120px] md:pb-20">
@@ -572,7 +572,7 @@ export function ShopPage({
               id="shop-search-input"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm sản phẩm xanh..."
+              placeholder="Search for green products..."
               className="flex-1 text-[13px] text-gray-700 outline-none placeholder-[#9ca3af] bg-transparent"
             />
             {search && <button onClick={() => setSearch("")}><X size={13} className="text-[#9ca3af]" /></button>}
@@ -584,7 +584,7 @@ export function ShopPage({
             className={`flex items-center gap-1.5 border px-3 py-2 rounded-md text-[12px] transition-colors ${activeFilterCount > 0 ? "border-[#25521f] text-[#25521f] bg-[#f0f7ee]" : "border-[#c2c9bb] text-[#42493e] hover:border-[#25521f]"}`}
           >
             <SlidersHorizontal size={14} />
-            <span>Lọc{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
+            <span>Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
           </button>
 
           {/* Sort */}
@@ -631,10 +631,10 @@ export function ShopPage({
         {/* Product grid */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[#6b7280] text-[13px]">{filtered.length} sản phẩm</p>
+            <p className="text-[#6b7280] text-[13px]">{filtered.length} products</p>
             {compareItems.length > 0 && (
               <span className="text-[#25521f] text-[12px] flex items-center gap-1">
-                <GitCompare size={13} /> Đã chọn {compareItems.length} để so sánh
+                <GitCompare size={13} /> Selected {compareItems.length} to compare
               </span>
             )}
           </div>
@@ -644,12 +644,12 @@ export function ShopPage({
               <div className="w-16 h-16 rounded-full bg-[#f0f7ee] flex items-center justify-center">
                 <Search size={24} className="text-[#25521f]" />
               </div>
-              <p className="text-[#42493e] text-[16px]">Không tìm thấy sản phẩm phù hợp</p>
+              <p className="text-[#42493e] text-[16px]">No matching products found</p>
               <button
                 onClick={() => { setSearch(""); setSelectedCats([]); setCarbonFilter("all"); setSelectedCerts([]); setPriceRange([0, 1000000]); }}
                 className="text-[#25521f] underline text-[13px]"
               >
-                Xóa bộ lọc
+                Clear filters
               </button>
             </div>
           ) : (
@@ -689,7 +689,7 @@ export function ShopPage({
                 onClick={() => setShowFilter(false)}
                 className="mt-4 w-full bg-[#25521f] text-white text-[13px] tracking-widest uppercase py-3 rounded-full"
               >
-                Xem {filtered.length} sản phẩm
+                View {filtered.length} products
               </button>
             </div>
           </div>

@@ -18,7 +18,7 @@ function Stars({ rating }: { rating: number }) {
 
 type ReviewStatus = 'VISIBLE' | 'HIDDEN' | 'PENDING'
 
-const STATUS_LABEL: Record<ReviewStatus, string> = { VISIBLE: 'Hiển thị', HIDDEN: 'Đã ẩn', PENDING: 'Chờ duyệt' }
+const STATUS_LABEL: Record<ReviewStatus, string> = { VISIBLE: 'Visible', HIDDEN: 'Hidden', PENDING: 'Pending' }
 const STATUS_STYLE: Record<ReviewStatus, React.CSSProperties> = {
   VISIBLE: { background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba' },
   HIDDEN:  { background: '#fff0f0', color: '#ba1a1a', border: '1px solid #f5c2c2' },
@@ -41,31 +41,31 @@ export default function Reviews() {
       setReviews(data.sort((a, b) => b.id - a.id))
     }).catch(err => {
       console.error(err)
-      toast.error('Lỗi', 'Không thể tải danh sách đánh giá')
+      toast.error('Error', 'Cannot load reviews')
     }).finally(() => {
       setLoading(false)
     })
   }
 
   function remove(id: number) {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa đánh giá này không?')) return;
+    if (!window.confirm('Are you sure you want to delete this review?')) return;
     
     reviewsApi.deleteReview(id).then(() => {
-      toast.success('Thành công', 'Đã xóa đánh giá')
+      toast.success('Success', 'Review deleted')
       setReviews(prev => prev.filter(r => r.id !== id))
     }).catch(err => {
       console.error(err)
-      toast.error('Lỗi', 'Không thể xóa đánh giá')
+      toast.error('Error', 'Cannot delete review')
     })
   }
 
   function setStatus(id: number, status: ReviewStatus) {
     reviewsApi.changeReviewStatus(id, status).then(() => {
       setReviews(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-      toast.success('Thành công', 'Đã cập nhật trạng thái')
+      toast.success('Success', 'Status updated')
     }).catch(err => {
       console.error(err)
-      toast.error('Lỗi', 'Không thể cập nhật trạng thái')
+      toast.error('Error', 'Cannot update status')
     })
   }
 
@@ -80,7 +80,7 @@ export default function Reviews() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div><p style={SECTION_LABEL}>Kiểm duyệt nội dung</p><h1 style={PAGE_TITLE}>Đánh giá</h1></div>
+        <div><p style={SECTION_LABEL}>Content Moderation</p><h1 style={PAGE_TITLE}>Reviews</h1></div>
       </div>
 
       {/* Filter tabs */}
@@ -93,7 +93,7 @@ export default function Reviews() {
             fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: NS,
             backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', gap: 7,
           }}>
-            {f === 'all' ? 'Tất cả' : STATUS_LABEL[f]}
+            {f === 'all' ? 'All' : STATUS_LABEL[f]}
             <span style={{
               fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '1px 7px',
               background: filter === f ? 'rgba(255,255,255,0.25)' : '#f5f9f3',
@@ -105,7 +105,7 @@ export default function Reviews() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#6b7280', fontFamily: NS }}>Đang tải đánh giá...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: '#6b7280', fontFamily: NS }}>Loading reviews...</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map(r => {
@@ -125,7 +125,7 @@ export default function Reviews() {
                       {STATUS_LABEL[rStatus]}
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, marginBottom: 8 }}>📦 {r.productName || `Sản phẩm ID: ${r.productId}`}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, marginBottom: 8 }}>📦 {r.productName || `Product ID: ${r.productId}`}</div>
                   <p style={{ fontSize: 14, color: '#1a1c19', fontFamily: NS, margin: 0, lineHeight: 1.55 }}>{r.content}</p>
                 </div>
               </div>
@@ -133,16 +133,16 @@ export default function Reviews() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 14, paddingTop: 14, borderTop: '1px solid #eef2eb' }}>
                 {rStatus !== 'VISIBLE' && (
                   <button onClick={() => setStatus(r.id, 'VISIBLE')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 500, color: '#25521f', background: '#e8f5e4', border: '1px solid #c2deba', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: NS }}>
-                    <Icon name="CheckCircle" size={13} color="#25521f" /> Duyệt hiển thị
+                    <Icon name="CheckCircle" size={13} color="#25521f" /> Approve visible
                   </button>
                 )}
                 {rStatus !== 'HIDDEN' && (
                   <button onClick={() => setStatus(r.id, 'HIDDEN')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 500, color: '#6b7280', background: '#f5f5f0', border: '1px solid #e0e0d8', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: NS }}>
-                    <Icon name="EyeOff" size={13} color="#6b7280" /> Ẩn
+                    <Icon name="EyeOff" size={13} color="#6b7280" /> Hide
                   </button>
                 )}
                 <button onClick={() => remove(r.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 500, color: '#ba1a1a', background: '#fff0f0', border: '1px solid #f5c2c2', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: NS }}>
-                  <Icon name="Trash2" size={13} color="#ba1a1a" /> Xóa
+                  <Icon name="Trash2" size={13} color="#ba1a1a" /> Delete
                 </button>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function Reviews() {
           {filtered.length === 0 && (
             <div style={{ ...GLASS, padding: 60, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>⭐</div>
-              <p style={{ fontSize: 14, color: '#6b7280', fontFamily: NS, margin: 0 }}>Không có đánh giá nào</p>
+              <p style={{ fontSize: 14, color: '#6b7280', fontFamily: NS, margin: 0 }}>No reviews</p>
             </div>
           )}
         </div>

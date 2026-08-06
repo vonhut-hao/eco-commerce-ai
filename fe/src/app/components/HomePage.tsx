@@ -144,7 +144,7 @@ function TrendingSection({
       {/* Header */}
       <div className="flex items-end justify-between">
         <div className="flex flex-col gap-1">
-          <span className="text-[#6b7280] text-[11px] tracking-[1.4px] uppercase">Xu hướng</span>
+          <span className="text-[#6b7280] text-[11px] tracking-[1.4px] uppercase">Trending</span>
           <h2
             className="text-[#1a1c19] text-[24px] md:text-[32px]"
             style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}

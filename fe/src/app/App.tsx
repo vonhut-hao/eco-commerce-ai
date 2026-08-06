@@ -122,7 +122,7 @@ function MobileHeader({
                 }
               }}
               className="text-[#42493e]"
-              aria-label="Tìm kiếm"
+              aria-label="Search"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d={svgPaths.p8a35e00} fill="#42493E" />
@@ -151,20 +151,20 @@ function MobileHeader({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Tìm kiếm..."
+                placeholder="Search..."
                 className="flex-1 text-[22px] font-['Nimbus_Sans:Regular',sans-serif] text-[#1a1c19] outline-none placeholder-[#9ca3af] bg-transparent"
                 onKeyDown={handleSearch}
               />
             </div>
 
             <div className="mt-8">
-              <h4 className="text-[#9ca3af] text-[11px] tracking-widest uppercase mb-4">Liên Kết Nhanh</h4>
+              <h4 className="text-[#9ca3af] text-[11px] tracking-widest uppercase mb-4">Quick Links</h4>
               <ul className="flex flex-col gap-5">
                 {[
-                  "Bàn chải tre tự phân hủy",
-                  "Túi vải dệt hữu cơ",
-                  "Đồ dùng bếp không nhựa",
-                  "Sản phẩm chứng nhận FSC"
+                  "Biodegradable bamboo toothbrush",
+                  "Organic woven fabric bag",
+                  "Plastic-free kitchenware",
+                  "FSC certified products"
                 ].map((link, idx) => (
                   <li key={idx}>
                     <button
@@ -295,7 +295,7 @@ function DesktopHeader({
                 }
               }}
               className={`transition-colors ${searchOpen ? "text-[#25521f]" : "text-[#42493e] hover:text-[#25521f]"}`}
-              aria-label="Tìm kiếm"
+              aria-label="Search"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d={svgPaths.p8a35e00} fill={searchOpen ? "#25521f" : "#42493E"} />
@@ -344,20 +344,20 @@ function DesktopHeader({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Tìm kiếm trên GreenLife..."
+                  placeholder="Search on GreenLife..."
                   className="flex-1 text-[22px] font-['Nimbus_Sans:Regular',sans-serif] text-[#1a1c19] outline-none placeholder-[#9ca3af] bg-transparent"
                   onKeyDown={handleSearch}
                 />
               </div>
 
               <div className="mt-8 pl-1">
-                <h4 className="text-[#9ca3af] text-[11px] tracking-widest uppercase mb-4">Liên Kết Nhanh</h4>
+                <h4 className="text-[#9ca3af] text-[11px] tracking-widest uppercase mb-4">Quick Links</h4>
                 <ul className="flex flex-col gap-3">
                   {[
-                    "Bàn chải tre tự phân hủy",
-                    "Túi vải dệt hữu cơ",
-                    "Đồ dùng bếp không nhựa",
-                    "Sản phẩm chứng nhận FSC"
+                    "Biodegradable bamboo toothbrush",
+                    "Organic woven fabric bag",
+                    "Plastic-free kitchenware",
+                    "FSC certified products"
                   ].map((link, idx) => (
                     <li key={idx}>
                       <button
@@ -433,7 +433,7 @@ function ProductGallery({
           >
             <img
               src={thumb}
-              alt={`Góc nhìn ${i + 1}`}
+              alt={`View ${i + 1}`}
               className="w-full h-full object-cover"
             />
           </button>
@@ -836,7 +836,7 @@ function BottomNav({
     { key: "shop",    label: "Shop",     icon: ShoppingBag, action: () => onNavigate("shop") },
     { key: "greenai", label: "Green AI", icon: Leaf,        action: onOpenChatbot },
     { key: "impact",  label: "Impact",   icon: BarChart2,   action: () => onNavigate("impact") },
-    { key: "me",      label: "Tôi",      icon: User,        action: () => onNavigate(isAuthenticated ? "profile" : "signin") },
+    { key: "me",      label: "Me",      icon: User,        action: () => onNavigate(isAuthenticated ? "profile" : "signin") },
   ];
 
   const activeKey = activePage === "profile" ? "me"
@@ -1029,8 +1029,8 @@ export default function App() {
 
     if (existingQty + quantity > product.stock) {
       toast.error(
-        "Vượt quá giới hạn",
-        `Bạn đã có ${existingQty} sản phẩm trong giỏ hàng. Không thể thêm số lượng đã chọn vào giỏ hàng vì sẽ vượt quá giới hạn tồn kho của sản phẩm.`
+        "Limit Exceeded",
+        `You have ${existingQty} items in your cart. Cannot add the selected quantity because it exceeds the product's stock limit.`
       );
       return;
     }
@@ -1046,9 +1046,9 @@ export default function App() {
         category: product.category,
         mainImage: product.img
       });
-      toast.success("Thêm vào giỏ!", `${product.name} đã được thêm vào giỏ hàng.`);
+      toast.success("Added to cart!", `${product.name} has been added to your cart.`);
     } catch (e) {
-      toast.error("Thất bại", "Không đủ số lượng trong kho hoặc có lỗi xảy ra.");
+      toast.error("Failed", "Insufficient stock or an error occurred.");
     }
   };
 
@@ -1060,7 +1060,7 @@ export default function App() {
           res.isFavorite ? [...prev, product.id] : prev.filter(id => id !== product.id)
         );
       } catch (err) {
-        toast.error("Lỗi", "Không thể cập nhật danh sách yêu thích");
+        toast.error("Error", "Could not update wishlist");
       }
     } else {
       setWishlistIds((prev) =>

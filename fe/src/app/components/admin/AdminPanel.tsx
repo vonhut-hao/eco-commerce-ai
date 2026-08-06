@@ -17,14 +17,14 @@ import Chat from './Chat'
 type Page = 'dashboard' | 'products' | 'orders' | 'users' | 'categories' | 'coupons' | 'reviews' | 'banners' | 'chat'
 
 const NAV: { id: Page; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
-  { id: 'dashboard',  label: 'Thống kê',   icon: 'BarChart2'   },
-  { id: 'products',   label: 'Sản phẩm',   icon: 'Package'     },
-  { id: 'orders',     label: 'Đơn hàng',   icon: 'ShoppingBag' },
-  { id: 'users',      label: 'Người dùng', icon: 'Users'       },
-  { id: 'categories', label: 'Danh mục',   icon: 'Layers'      },
-  { id: 'coupons',    label: 'Mã giảm giá',icon: 'Tag'         },
-  { id: 'reviews',    label: 'Đánh giá',   icon: 'Star'        },
-  { id: 'banners',    label: 'Banner',     icon: 'Image'       },
+  { id: 'dashboard',  label: 'Statistics',   icon: 'BarChart2'   },
+  { id: 'products',   label: 'Products',   icon: 'Package'     },
+  { id: 'orders',     label: 'Orders',   icon: 'ShoppingBag' },
+  { id: 'users',      label: 'Users', icon: 'Users'       },
+  { id: 'categories', label: 'Categories',   icon: 'Layers'      },
+  { id: 'coupons',    label: 'Coupons',icon: 'Tag'         },
+  { id: 'reviews',    label: 'Reviews',   icon: 'Star'        },
+  { id: 'banners',    label: 'Banners',     icon: 'Image'       },
   { id: 'chat',       label: 'Chat',       icon: 'MessageCircle' },
 ]
 
@@ -160,7 +160,7 @@ export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void
             <div style={{ display: 'flex', gap: 8 }}>
               <button 
                 onClick={() => onNavigate && onNavigate("home")}
-                title="Về Cửa hàng"
+                title="Go to Store"
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
               >
                 <Icon name="Home" size={13} color="#8ab87a" />
@@ -171,7 +171,7 @@ export function AdminPanel({ onNavigate }: { onNavigate?: (page: string) => void
                   useCartStore.getState().clearCart()
                   if (onNavigate) onNavigate("home")
                 }}
-                title="Đăng xuất"
+                title="Log out"
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
               >
                 <Icon name="LogOut" size={13} color="#8ab87a" />

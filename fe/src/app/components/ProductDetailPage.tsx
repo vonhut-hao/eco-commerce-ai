@@ -51,16 +51,38 @@ export function ProductDetailPage({
     return <div className="py-32 text-center text-[#ba1a1a]">Product not found</div>;
   }
 
-  const images = [product.mainImage];
+  const images: string[] = [];
+  if (product.mainImage) {
+    images.push(product.mainImage);
+  }
+
   if (product.subImages) {
-    try {
-      const parsed = JSON.parse(product.subImages);
-      if (Array.isArray(parsed)) images.push(...parsed);
-    } catch (e) {
-      // ignore
+    if (Array.isArray(product.subImages)) {
+      product.subImages.forEach((img) => {
+        if (typeof img === 'string' && img.trim() && !images.includes(img.trim())) {
+          images.push(img.trim());
+        }
+      });
+    } else if (typeof product.subImages === 'string') {
+      try {
+        const parsed = JSON.parse(product.subImages);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((img: any) => {
+            if (typeof img === 'string' && img.trim() && !images.includes(img.trim())) {
+              images.push(img.trim());
+            }
+          });
+        }
+      } catch (e) {
+        (product.subImages as string).split(/[\n,]/).forEach((img: string) => {
+          if (img && img.trim() && !images.includes(img.trim())) {
+            images.push(img.trim());
+          }
+        });
+      }
     }
   }
-  
+
   // Pad images if less than 4 for gallery layout
   while (images.length < 4 && images.length > 0) {
     images.push(images[0]);
@@ -138,7 +160,7 @@ export function ProductDetailPage({
                   selectedThumb === i ? "border-[#25521f] scale-[0.97]" : "border-[#c2c9bb] hover:border-[#42493e]"
                 }`}
               >
-                <img src={thumb} alt={`Góc nhìn ${i + 1}`} className="w-full h-full object-cover" />
+                <img src={thumb} alt={`View ${i + 1}`} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -163,7 +185,7 @@ export function ProductDetailPage({
                 </span>
               </div>
               <span className="text-[#25521f] text-[13px] bg-[#f0f7ee] px-2 py-0.5 rounded-full border border-[#c2c9bb] tracking-wide">
-                Còn {product.stock}
+                {product.stock} left in stock
               </span>
             </div>
           </div>

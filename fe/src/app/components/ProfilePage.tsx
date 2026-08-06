@@ -8,6 +8,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useCartStore } from "../../store/cartStore";
 import { profileApi, UserProfileResponse } from "../../api/profile";
 import { ordersApi, OrderResponse } from "../../api/orders";
+import { addressesApi, AddressBE } from "../../api/addresses";
 import { AddressModal } from "./AddressModal";
 import imageCompression from 'browser-image-compression';
 import { getTier, ECO_TIERS } from "./ImpactPage";
@@ -110,7 +111,7 @@ function EditProfilePanel({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Lỗi", "Kích thước ảnh không được vượt quá 5MB.");
+      toast.error("Error", "Image size must not exceed 5MB.");
       return;
     }
 
@@ -129,7 +130,7 @@ function EditProfilePanel({
       const url = await profileApi.uploadFile(compressedFile);
       setForm((f) => ({ ...f, avatarUrl: url, avatarInitial: "" }));
     } catch (err: any) {
-      toast.error("Lỗi", err.response?.data?.message || "Không thể upload ảnh, vui lòng thử lại sau.");
+      toast.error("Error", err.response?.data?.message || "Could not upload image, please try again later.");
     } finally {
       setUploadingAvatar(false);
     }
@@ -220,7 +221,7 @@ function EditProfilePanel({
             <input
               value={form.fullName}
               onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
-              placeholder="Nguyễn Văn A"
+              placeholder="John Doe"
               className="w-full border border-[#c2c9bb] px-4 py-3 text-[15px] text-[#1a1c19] placeholder-[#6b7280] outline-none focus:border-[#25521f] transition-colors bg-white"
             />
           </div>
@@ -374,9 +375,9 @@ function UserInfoCard({ profile, ordersCount, onUpdateProfile }: { profile: User
       });
       onUpdateProfile(res);
       setEditing(false);
-      toast.success("Thành công", pw ? "Cập nhật hồ sơ và mật khẩu thành công" : "Cập nhật hồ sơ thành công");
+      toast.success("Success", pw ? "Profile and password updated successfully" : "Profile updated successfully");
     } catch (err) {
-      toast.error("Lỗi", "Không thể cập nhật hồ sơ. Vui lòng kiểm tra lại mật khẩu cũ.");
+      toast.error("Error", "Could not update profile. Please check your old password.");
     }
   };
 
@@ -535,7 +536,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
       <div className="px-5 py-3 flex items-center justify-between border-b border-[#e2e3de]">
         <div className="flex items-center gap-2">
           <Sprout size={14} className="text-[#25521f]" />
-          <span className="text-[#42493e] text-[11px] tracking-[1.4px] uppercase">Hành trình Eco của bạn</span>
+          <span className="text-[#42493e] text-[11px] tracking-[1.4px] uppercase">Your Eco Journey</span>
         </div>
         {/* Dynamic tier badge */}
         <span
@@ -568,7 +569,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
         <div className="px-5 py-4 flex flex-col gap-1">
           <div className="flex items-center gap-1.5 mb-1">
             <TrendingDown size={12} className="text-[#3d6b35]" />
-            <span className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">CO₂ tiết kiệm</span>
+            <span className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">CO₂ Saved</span>
           </div>
           <span
             className="text-[#3d6b35] leading-tight"
@@ -583,7 +584,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
         <div className="px-5 py-4 flex flex-col gap-1">
           <div className="flex items-center gap-1.5 mb-1">
             <Leaf size={12} className="text-[#6b5d3f]" />
-            <span className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">Đơn hàng xanh</span>
+            <span className="text-[#6b7280] text-[10px] tracking-[1.2px] uppercase">Green Orders</span>
           </div>
           <span
             className="text-[#6b5d3f] leading-tight"
@@ -591,7 +592,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
           >
             {ordersCount}
           </span>
-          <span className="text-[#6b7280] text-[11px]">đơn</span>
+          <span className="text-[#6b7280] text-[11px]">orders</span>
         </div>
       </div>
 
@@ -601,10 +602,10 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
           <>
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-[#42493e]">
-                Tiến độ đến{" "}
+                Progress to{" "}
                 <span style={{ color: next.color, fontWeight: 600 }}>{next.label}</span>
               </span>
-              <span className="text-[#6b7280]">{pct}% — còn {(next.req - pts).toLocaleString()} pts</span>
+              <span className="text-[#6b7280]">{pct}% — {(next.req - pts).toLocaleString()} pts remaining</span>
             </div>
             <div className="h-2 bg-[#e2e3de] rounded-full overflow-hidden">
               <div
@@ -614,7 +615,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
             </div>
           </>
         ) : (
-          <p className="text-[12px] text-[#7c3aed] font-medium text-center">Bạn đã đạt cấp bậc cao nhất!</p>
+          <p className="text-[12px] text-[#7c3aed] font-medium text-center">You have reached the highest tier!</p>
         )}
       </div>
     </div>
@@ -624,10 +625,10 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
 // ─── Status badge helper ────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    COMPLETED:  { label: "Đã giao",      cls: "bg-[#d4eddb] text-[#1e5e2e]" },
-    DELIVERY:   { label: "Đang giao",    cls: "bg-[#ddeeff] text-[#1a4f8a]" },
-    PROCESSING: { label: "Đang xử lý",  cls: "bg-[#fff3cd] text-[#856404]" },
-    CANCELLED:  { label: "Đã hủy",      cls: "bg-[#fde8e8] text-[#ba1a1a]" },
+    COMPLETED:  { label: "Delivered",      cls: "bg-[#d4eddb] text-[#1e5e2e]" },
+    DELIVERY:   { label: "Delivery",    cls: "bg-[#ddeeff] text-[#1a4f8a]" },
+    PROCESSING: { label: "Processing",  cls: "bg-[#fff3cd] text-[#856404]" },
+    CANCELLED:  { label: "Cancelled",      cls: "bg-[#fde8e8] text-[#ba1a1a]" },
   };
   const badge = map[status] || { label: status, cls: "bg-gray-100 text-gray-800" };
   return (
@@ -665,17 +666,17 @@ function ReviewModal({
     setSubmitting(true);
     try {
       await reviewsApi.createReview(productId, rating, text, user.id);
-      toast.success("Cảm ơn bạn!", "Đánh giá đã được ghi nhận.");
+      toast.success("Thank you!", "Review has been recorded.");
       onClose(true);
     } catch (e) {
       console.error(e);
-      toast.error("Lỗi", "Không thể gửi đánh giá lúc này.");
+      toast.error("Error", "Could not submit review at this time.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const LABELS = ["", "Rất tệ", "Tệ", "Bình thường", "Tốt", "Rất tốt"];
+  const LABELS = ["", "Very Poor", "Poor", "Average", "Good", "Very Good"];
 
   return (
     <>
@@ -687,7 +688,7 @@ function ReviewModal({
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e3de] sticky top-0 bg-white z-10">
             <div className="flex items-center gap-2">
               <MessageSquarePlus size={18} className="text-[#25521f]" />
-              <h3 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[17px]">Đánh giá sản phẩm</h3>
+              <h3 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[17px]">Product Review</h3>
             </div>
             <button onClick={() => onClose(false)} className="text-[#6b7280] hover:text-[#1a1c19] p-1 transition-colors">
               <X size={20} />
@@ -697,15 +698,15 @@ function ReviewModal({
           <div className="px-6 py-5 flex flex-col gap-5">
             {/* Product info */}
             <div className="bg-[#f7faf5] rounded-xl px-4 py-3 flex flex-col gap-0.5">
-              <p className="text-[#6b7280] text-[11px] tracking-widest uppercase">Sản phẩm</p>
+              <p className="text-[#6b7280] text-[11px] tracking-widest uppercase">Product</p>
               <p className="text-[#1a1c19] text-[14px] font-['Nimbus_Sans:Bold',sans-serif]">{productName}</p>
-              <p className="text-[#6b7280] text-[12px]">Đơn hàng {orderId}</p>
+              <p className="text-[#6b7280] text-[12px]">Order {orderId}</p>
             </div>
 
             {/* Star rating */}
             <div className="flex flex-col gap-2">
               <label className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[13px] tracking-[1.2px] uppercase">
-                Xếp hạng tổng thể
+                Overall Rating
               </label>
               <div className="flex items-center gap-2">
                 {[1,2,3,4,5].map((s) => (
@@ -732,16 +733,16 @@ function ReviewModal({
             {/* Review text */}
             <div className="flex flex-col gap-2">
               <label className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[13px] tracking-[1.2px] uppercase">
-                Nhận xét chi tiết
+                Detailed Review
               </label>
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Chia sẻ trải nghiệm thực tế của bạn — chất lượng, độ bền, tác động môi trường..."
+                placeholder="Share your actual experience — quality, durability, environmental impact..."
                 rows={4}
                 className="border border-[#c2c9bb] rounded-xl px-4 py-3 text-[14px] text-[#1a1c19] placeholder-[#9ca3af] outline-none focus:border-[#25521f] resize-none bg-white transition-colors"
               />
-              <p className="text-[#9ca3af] text-[11px] text-right">{text.length} ký tự {text.length < 10 && text.length > 0 && "· Tối thiểu 10 ký tự"}</p>
+              <p className="text-[#9ca3af] text-[11px] text-right">{text.length} characters {text.length < 10 && text.length > 0 && "· Minimum 10 characters"}</p>
             </div>
 
             {/* Actions */}
@@ -751,13 +752,13 @@ function ReviewModal({
                 disabled={!canSubmit || submitting}
                 className="w-full bg-gradient-to-r from-[#3d6b35] to-[#25521f] text-white font-['Nimbus_Sans:Bold',sans-serif] text-[13px] tracking-widest uppercase py-3.5 rounded-full disabled:opacity-40 hover:shadow-md transition-all"
               >
-                {submitting ? "Đang gửi..." : "Gửi đánh giá"}
+                {submitting ? "Submitting..." : "Submit Review"}
               </button>
               <button
                 onClick={() => onClose(false)}
                 className="w-full border border-[#c2c9bb] text-[#42493e] text-[13px] tracking-widest uppercase py-3 rounded-full hover:bg-[#fafaf5] transition-colors"
               >
-                Hủy
+                Cancel
               </button>
             </div>
           </div>
@@ -769,22 +770,27 @@ function ReviewModal({
 
 // ─── Order History ─────────────────────────────────────────────────────
 const ORDER_STATUS_TABS = [
-  { key: "ALL",       label: "Tất cả" },
-  { key: "PENDING",   label: "Chờ xác nhận" },
-  { key: "DELIVERY",  label: "Đang giao" },
-  { key: "COMPLETED", label: "Hoàn thành" },
-  { key: "REVIEW",    label: "Chờ đánh giá" },
-  { key: "CANCELLED", label: "Đã hủy" },
+  { key: "ALL",       label: "All" },
+  { key: "PENDING",   label: "Pending" },
+  { key: "DELIVERY",  label: "Delivery" },
+  { key: "COMPLETED", label: "Completed" },
+  { key: "REVIEW",    label: "Awaiting Review" },
+  { key: "CANCELLED", label: "Cancelled" },
 ];
 
 function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOpenChatbot?: (opts?: any) => void }) {
   const [reviewTarget, setReviewTarget] = useState<{ orderId: number; productId: number; productName: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [savedUserAddresses, setSavedUserAddresses] = useState<AddressBE[]>([]);
   const [reviewedItems, setReviewedItems] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('reviewedItems') || '[]');
     } catch { return []; }
   });
+
+  useEffect(() => {
+    addressesApi.getUserAddresses().then(setSavedUserAddresses).catch(console.error);
+  }, []);
 
   const handleReviewClose = (submitted: boolean, orderId: number, productName: string) => {
     if (submitted) {
@@ -868,11 +874,26 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
             <div className="w-12 h-12 rounded-full bg-[#f0f0eb] flex items-center justify-center">
               <Leaf size={20} className="text-[#9ca3af]" />
             </div>
-            <p className="text-[#6b7280] text-[14px]">Không có đơn hàng nào trong mục này.</p>
+            <p className="text-[#6b7280] text-[14px]">No orders in this category.</p>
           </div>
         ) : filteredOrders.map((order) => {
           const totalCO2 = order.orderItems?.reduce((sum, i) => sum + (i.lineCarbonFootprint || 0), 0) || 0;
           const estPts = Math.floor((order.totalAmount || 0) / 10000);
+
+          const savedOrderAddresses = (() => {
+            try {
+              return JSON.parse(localStorage.getItem('orderAddresses') || '{}');
+            } catch { return {}; }
+          })();
+
+          const orderAddr = savedOrderAddresses[order.id];
+          const defaultAddr = savedUserAddresses.find(a => a.isDefault) || savedUserAddresses[0];
+
+          const shippingAddrText = orderAddr
+            ? `${orderAddr.name} (${orderAddr.phone}) — ${orderAddr.address}`
+            : defaultAddr
+              ? `${defaultAddr.recipientName} (${defaultAddr.phoneNumber}) — ${defaultAddr.fullAddress}`
+              : null;
 
           return (
             <div key={order.id} className="bg-white/70 border border-[#e2e3de] rounded-xl overflow-hidden p-0">
@@ -892,7 +913,7 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                   )}
                   {order.paymentMethodName && (
                     <span className="bg-[#eef2ff] text-[#4338ca] text-[11px] px-2.5 py-0.5 rounded-full border border-[#c7d2fe]">
-                      Thanh toán: {order.paymentMethodName}
+                      Payment: {order.paymentMethodName}
                     </span>
                   )}
                 </div>
@@ -903,14 +924,29 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                     order.status === 'DELIVERY' ? 'text-[#0284c7]' :
                     'text-[#25521f]'
                   } text-[12px] uppercase tracking-wide font-medium`}>
-                    {order.status === 'COMPLETED' ? 'Hoàn Thành' :
-                     order.status === 'PENDING' ? 'Chờ Xác Nhận' :
-                     order.status === 'CANCELLED' ? 'Đã Hủy' :
-                     order.status === 'DELIVERY' ? 'Đang Giao' :
+                    {order.status === 'COMPLETED' ? 'Completed' :
+                     order.status === 'PENDING' ? 'Pending Confirmation' :
+                     order.status === 'CANCELLED' ? 'Cancelled' :
+                     order.status === 'DELIVERY' ? 'Delivering' :
                      order.status}
                   </span>
                 </div>
               </div>
+
+              {/* Shipping address info */}
+              {shippingAddrText && (
+                <div className="bg-[#fafaf5] px-5 py-2.5 flex items-start gap-2 text-[12px] border-b border-[#e2e3de] text-[#42493e]">
+                  <MapPin size={14} className="text-[#25521f] shrink-0 mt-0.5" />
+                  <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+                    <span className="font-['Nimbus_Sans:Bold',sans-serif] text-[#1a1c19] uppercase text-[11px] tracking-wide shrink-0">
+                      Shipping Address:
+                    </span>
+                    <span className="text-[#25521f] font-medium leading-snug">
+                      {shippingAddrText}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Order body: products */}
               <div className="px-5 py-4 flex flex-col gap-4">
@@ -926,17 +962,17 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                             <p className="text-[#1a1c19] text-[14px] md:text-[15px] line-clamp-2 leading-tight">{p.productName}</p>
                             <p className="text-[#6b7280] text-[12px]">x{p.quantity}</p>
                             <span className="bg-[#3d6b35] text-[#b5eaa6] text-[10px] px-1.5 py-0.5 rounded-sm self-start mt-1">
-                              CO₂ {((p.lineCarbonFootprint || 0) / (p.quantity || 1)).toFixed(1)}kg{p.quantity > 1 ? "/sp" : ""}
+                              CO₂ {((p.lineCarbonFootprint || 0) / (p.quantity || 1)).toFixed(1)}kg{p.quantity > 1 ? "/item" : ""}
                             </span>
                           </div>
                           <div className="flex flex-col items-end justify-center shrink-0">
                             {(p.quantity || 1) > 1 && (
                               <span className="text-[#6b7280] text-[11px] mt-1">
-                                {((p.price || 0) / (p.quantity || 1)).toLocaleString()}đ/sp
+                                {((p.price || 0) / (p.quantity || 1)).toLocaleString()} VND/item
                               </span>
                             )}
                             <span className="text-[#25521f] font-['Nimbus_Sans:Bold',sans-serif] text-[14px]">
-                              {(p.price || 0).toLocaleString()}đ
+                              {(p.price || 0).toLocaleString()} VND
                             </span>
                           </div>
                         </div>
@@ -949,14 +985,14 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                                 onClick={() => setReviewTarget({ orderId: order.id, productId: p.productId, productName: p.productName })}
                                 className="flex items-center gap-1.5 text-[#25521f] text-[12px] border border-[#25521f] px-4 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
                               >
-                                Đánh giá
+                                Review
                               </button>
                             )}
                             {checkReviewStatus(order, p.productName) === 'REVIEWED' && (
-                              <span className="text-[#3d6b35] text-[11px] font-medium">Đã đánh giá</span>
+                              <span className="text-[#3d6b35] text-[11px] font-medium">Reviewed</span>
                             )}
                             {checkReviewStatus(order, p.productName) === 'EXPIRED' && (
-                              <span className="text-[#9ca3af] text-[11px]">Hết hạn đánh giá</span>
+                              <span className="text-[#9ca3af] text-[11px]">Review Expired</span>
                             )}
                           </div>
                         )}
@@ -968,27 +1004,27 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
 
               {order.status === 'PENDING' && order.paymentMethodName === 'BANK_TRANSFER' && (
                 <div className="mx-5 mb-4 bg-[#f0f7ee] border border-[#c2c9bb] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#42493e]">
-                  <p className="font-medium text-[#1a1c19]">Thông tin chuyển khoản Ngân hàng:</p>
-                  <p>Ngân hàng: <span className="font-medium">Vietcombank</span></p>
-                  <p>Số TK: <span className="font-medium">1234567890</span></p>
-                  <p>Tên TK: <span className="font-medium">GREENLIFE COMPANY</span></p>
-                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                  <p className="font-medium text-[#1a1c19]">Bank Transfer Information:</p>
+                  <p>Bank: <span className="font-medium">Vietcombank</span></p>
+                  <p>Account No: <span className="font-medium">1234567890</span></p>
+                  <p>Account Name: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Description: <span className="font-medium">Name + Phone</span></p>
                 </div>
               )}
               {order.status === 'PENDING' && order.paymentMethodName === 'MOMO' && (
                 <div className="mx-5 mb-4 bg-[#fdf4ff] border border-[#f5d0fe] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#701a75]">
-                  <p className="font-medium text-[#4a044e]">Thông tin thanh toán MoMo:</p>
-                  <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
-                  <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
-                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                  <p className="font-medium text-[#4a044e]">MoMo Payment Information:</p>
+                  <p>Phone Number: <span className="font-medium">0912 345 678</span></p>
+                  <p>Recipient: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Description: <span className="font-medium">Name + Phone</span></p>
                 </div>
               )}
               {order.status === 'PENDING' && order.paymentMethodName === 'ZALOPAY' && (
                 <div className="mx-5 mb-4 bg-[#f0f9ff] border border-[#bae6fd] rounded-xl p-4 flex flex-col gap-2 text-[13px] text-[#0369a1]">
-                  <p className="font-medium text-[#0c4a6e]">Thông tin thanh toán ZaloPay:</p>
-                  <p>Số điện thoại: <span className="font-medium">0912 345 678</span></p>
-                  <p>Người nhận: <span className="font-medium">GREENLIFE COMPANY</span></p>
-                  <p>Nội dung: <span className="font-medium">Tên + SDT</span></p>
+                  <p className="font-medium text-[#0c4a6e]">ZaloPay Payment Information:</p>
+                  <p>Phone Number: <span className="font-medium">0912 345 678</span></p>
+                  <p>Recipient: <span className="font-medium">GREENLIFE COMPANY</span></p>
+                  <p>Description: <span className="font-medium">Name + Phone</span></p>
                 </div>
               )}
 
@@ -1002,22 +1038,22 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                   return (
                     <div className="flex flex-col gap-1.5 md:w-[320px] ml-auto bg-[#f5f9f3] p-4 rounded-xl border border-[#e2e3de]">
                       <div className="flex justify-between text-[13px] text-[#6b7280]">
-                        <span>Tổng tiền hàng:</span>
-                        <span className="text-[#1a1c19] font-medium">{rawSubtotal.toLocaleString()}đ</span>
+                        <span>Subtotal:</span>
+                        <span className="text-[#1a1c19] font-medium">{rawSubtotal.toLocaleString()} VND</span>
                       </div>
                       <div className="flex justify-between text-[13px] text-[#6b7280]">
-                        <span>Phí vận chuyển:</span>
-                        <span className="text-[#1a1c19] font-medium">{shipping === 0 ? "Miễn phí" : `${shipping.toLocaleString()}đ`}</span>
+                        <span>Shipping Fee:</span>
+                        <span className="text-[#1a1c19] font-medium">{shipping === 0 ? "Free" : `${shipping.toLocaleString()} VND`}</span>
                       </div>
                       {discount > 0 && (
                         <div className="flex justify-between text-[13px] text-[#6b7280]">
-                          <span className="flex items-center gap-1"><Tag size={12}/> Mã giảm giá:</span>
-                          <span className="text-[#25521f] font-medium">- {discount.toLocaleString()}đ</span>
+                          <span className="flex items-center gap-1"><Tag size={12}/> Discount Code:</span>
+                          <span className="text-[#25521f] font-medium">- {discount.toLocaleString()} VND</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center border-t border-[#e2e3de] pt-2 mt-1">
-                        <span className="text-[#1a1c19] text-[14px]">Thành tiền:</span>
-                        <span className="text-[#25521f] text-[20px] font-['Nimbus_Sans:Bold',sans-serif]">{(order.totalAmount || 0).toLocaleString()}đ</span>
+                        <span className="text-[#1a1c19] text-[14px]">Total:</span>
+                        <span className="text-[#25521f] text-[20px] font-['Nimbus_Sans:Bold',sans-serif]">{(order.totalAmount || 0).toLocaleString()} VND</span>
                       </div>
                     </div>
                   );
@@ -1029,23 +1065,23 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                       onClick={() => ordersApi.viewInvoice(order.id).catch(console.error)}
                       className="w-full md:w-auto text-[#42493e] text-[13px] tracking-widest uppercase border border-[#c2c9bb] px-6 py-2.5 rounded-full bg-white hover:bg-[#fafaf5] transition-colors"
                     >
-                      Xem hóa đơn PDF
+                      View PDF Invoice
                     </button>
                   )}
                   <button
                     onClick={() => {
-                      const itemList = order.orderItems?.map(i => `${i.quantity || 1}x ${i.productName}`).join(", ") || "không có sản phẩm";
-                      if (onOpenChatbot) onOpenChatbot({ mode: "ai", autoSendPrompt: `Phân tích chi tiết lượng phát thải CO2 của đơn hàng #${order.id} (gồm: ${itemList}) giúp tôi.` });
+                      const itemList = order.orderItems?.map(i => `${i.quantity || 1}x ${i.productName}`).join(", ") || "no products";
+                      if (onOpenChatbot) onOpenChatbot({ mode: "ai", autoSendPrompt: `Analyze the detailed CO2 emissions of order #${order.id} (including: ${itemList}) for me.` });
                     }}
                     className="w-full md:w-auto text-[#25521f] text-[13px] tracking-widest uppercase border border-[#25521f] px-6 py-2.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
                   >
-                    Hỏi AI về phát thải đơn hàng
+                    Ask AI about order emissions
                   </button>
                   <button
-                    onClick={() => { if (onOpenChatbot) onOpenChatbot({ mode: "admin", prefillMessage: `Tôi cần hỗ trợ về đơn hàng #${order.id}` }); }}
+                    onClick={() => { if (onOpenChatbot) onOpenChatbot({ mode: "admin", prefillMessage: `I need support for order #${order.id}` }); }}
                     className="w-full md:w-auto text-[#42493e] text-[13px] tracking-widest uppercase border border-[#c2c9bb] px-6 py-2.5 rounded-full bg-white hover:bg-[#fafaf5] transition-colors"
                   >
-                    Liên hệ Admin
+                    Contact Admin
                   </button>
                 </div>
               </div>
@@ -1090,18 +1126,18 @@ function WishlistSection({
           <div className="w-12 h-12 rounded-full bg-[#f0f7ee] flex items-center justify-center">
             <Leaf size={20} className="text-[#9ca3af]" />
           </div>
-          <p className="text-[#42493e] text-[15px]">Chưa có sản phẩm nào được lưu</p>
+          <p className="text-[#42493e] text-[15px]">No saved products yet</p>
           <button
             onClick={() => onNavigate("shop")}
             className="text-[#25521f] text-[13px] border-b border-[#25521f] hover:opacity-70 transition-opacity"
           >
-            Khám phá cửa hàng →
+            Explore shop →
           </button>
         </div>
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <span className="text-[#6b7280] text-[13px]">{items.length} sản phẩm đã lưu</span>
+            <span className="text-[#6b7280] text-[13px]">{items.length} saved products</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {items.map((p) => (
@@ -1128,11 +1164,11 @@ function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void })
   const isAdmin = userRoles.includes('ADMIN') || userRoles.includes('ROLE_ADMIN');
 
   const rows = [
-    { label: "Địa chỉ giao hàng",    sublabel: "Quản lý địa chỉ đã lưu",      icon: MapPin,     danger: false, action: () => setAddressModalOpen(true) },
-    { label: "Phương thức thanh toán", sublabel: "Thẻ và ví điện tử",           icon: CreditCard, danger: false, action: () => {} },
-    ...(isAdmin ? [{ label: "Trang Quản trị", sublabel: "Admin Panel", icon: Award, danger: false, action: () => onNavigate("admin") }] : []),
-    { label: "Cài đặt thông báo",     sublabel: "Email, push và tin nhắn",      icon: Bell,       danger: false, action: () => {} },
-    { label: "Đăng xuất",             sublabel: "Thoát khỏi tài khoản này",     icon: LogOut,     danger: true,  action: () => {
+    { label: "Shipping Address",    sublabel: "Manage saved addresses",      icon: MapPin,     danger: false, action: () => setAddressModalOpen(true) },
+    { label: "Payment Methods", sublabel: "Cards and e-wallets",           icon: CreditCard, danger: false, action: () => {} },
+    ...(isAdmin ? [{ label: "Admin Panel", sublabel: "Admin Panel", icon: Award, danger: false, action: () => onNavigate("admin") }] : []),
+    { label: "Notification Settings",     sublabel: "Email, push, and SMS",      icon: Bell,       danger: false, action: () => {} },
+    { label: "Logout",             sublabel: "Sign out of this account",     icon: LogOut,     danger: true,  action: () => {
         useAuthStore.getState().logout();
         useCartStore.getState().clearCart();
         onNavigate("home");
@@ -1226,9 +1262,9 @@ export function ProfilePage({
         <div className="flex items-center gap-6 md:gap-10 border-b border-[#dde8d8] overflow-x-auto no-scrollbar">
           {(
             [
-              { key: "orders", label: "Đơn mua" },
-              { key: "wishlist", label: "Sản phẩm yêu thích" },
-              { key: "settings", label: "Cài đặt" }
+              { key: "orders", label: "My Orders" },
+              { key: "wishlist", label: "Wishlist" },
+              { key: "settings", label: "Settings" }
             ] as const
           ).map((tab) => (
             <button

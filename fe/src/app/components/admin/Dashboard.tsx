@@ -29,11 +29,11 @@ const statusStyle: Record<string, React.CSSProperties> = {
 }
 
 const statusMap: Record<string, string> = {
-  'PENDING': 'Chờ xác nhận',
-  'CONFIRMED': 'Đã xác nhận',
-  'SHIPPING': 'Đang giao',
-  'COMPLETED': 'Đã giao',
-  'CANCELLED': 'Đã hủy',
+  'PENDING': 'Pending',
+  'CONFIRMED': 'Confirmed',
+  'SHIPPING': 'Delivering',
+  'COMPLETED': 'Completed',
+  'CANCELLED': 'Cancelled',
 }
 
 type StatIcon = Parameters<typeof Icon>[0]['name']
@@ -54,9 +54,9 @@ function timeAgo(dateString?: string) {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffHrs = Math.floor(diffMs / 3600000);
-  if (diffHrs < 1) return 'Vừa xong';
-  if (diffHrs < 24) return `${diffHrs} giờ trước`;
-  return `${Math.floor(diffHrs / 24)} ngày trước`;
+  if (diffHrs < 1) return 'Just now';
+  if (diffHrs < 24) return `${diffHrs} hours ago`;
+  return `${Math.floor(diffHrs / 24)} days ago`;
 }
 
 export default function Dashboard() {
@@ -77,7 +77,7 @@ export default function Dashboard() {
       const d = new Date();
       d.setMonth(d.getMonth() - (6 - i));
       return {
-        month: `T${d.getMonth() + 1}`,
+        month: `M${d.getMonth() + 1}`,
         year: d.getFullYear(),
         monthNum: d.getMonth(),
         revenue: 0,
@@ -127,7 +127,7 @@ export default function Dashboard() {
           
           // Map to category
           const product = products.find(p => p.id === item.productId);
-          const categoryName = product?.categories?.[0]?.name || 'Khác';
+          const categoryName = product?.categories?.[0]?.name || 'Other';
           if (!categoryStats[categoryName]) {
             categoryStats[categoryName] = { 
               value: 0, 
@@ -168,10 +168,10 @@ export default function Dashboard() {
       }));
 
     const stats: { label: string; value: string; unit: string; trend: string; color: string; icon: StatIcon }[] = [
-      { label: `Doanh thu tháng ${new Date().getMonth() + 1}`, value: formatCurrency(revenueThisMonth), unit: 'VNĐ',      trend: 'Mới nhất', color: '#3d6b35', icon: 'TrendingUp'  },
-      { label: `Đơn hàng tháng ${new Date().getMonth() + 1}`,  value: totalOrdersThisMonth.toString(),   unit: 'đơn hàng', trend: 'Mới nhất', color: '#5a9448', icon: 'ShoppingBag' },
-      { label: 'Khách hàng',        value: uniqueCustomers.size.toString(), unit: 'tài khoản', trend: 'Tổng',  color: '#6f6143', icon: 'Users'       },
-      { label: 'Carbon tiết kiệm',  value: totalCarbonSaved.toFixed(1),   unit: 'kg CO₂ eq.', trend: 'Tổng',color: '#3b4fd4', icon: 'Leaf'        },
+      { label: `Revenue Month ${new Date().getMonth() + 1}`, value: formatCurrency(revenueThisMonth), unit: 'VND',      trend: 'Latest', color: '#3d6b35', icon: 'TrendingUp'  },
+      { label: `Orders Month ${new Date().getMonth() + 1}`,  value: totalOrdersThisMonth.toString(),   unit: 'orders', trend: 'Latest', color: '#5a9448', icon: 'ShoppingBag' },
+      { label: 'Customers',        value: uniqueCustomers.size.toString(), unit: 'accounts', trend: 'Total',  color: '#6f6143', icon: 'Users'       },
+      { label: 'Carbon saved',  value: totalCarbonSaved.toFixed(1),   unit: 'kg CO₂ eq.', trend: 'Total',color: '#3b4fd4', icon: 'Leaf'        },
     ];
 
     return {
@@ -187,8 +187,8 @@ export default function Dashboard() {
     <div>
       {/* Page header */}
       <div style={{ marginBottom: 28 }}>
-        <p style={SECTION_LABEL}>Tổng quan</p>
-        <h1 style={PAGE_TITLE}>Thống kê</h1>
+        <p style={SECTION_LABEL}>Overview</p>
+        <h1 style={PAGE_TITLE}>Statistics</h1>
       </div>
 
       {/* Stat cards */}
@@ -220,8 +220,8 @@ export default function Dashboard() {
         {/* Revenue area chart */}
         <div style={{ ...GLASS, padding: '22px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: 0 }}>Doanh thu 7 tháng</p>
-            <span style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>VNĐ</span>
+            <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: 0 }}>7 Months Revenue</p>
+            <span style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>VND</span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={data.revenueData}>
@@ -236,7 +236,7 @@ export default function Dashboard() {
               <YAxis tick={{ fontSize: 11, fill: '#6b7280', fontFamily: LMONO }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1e6).toFixed(0)}M`} />
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: '1px solid #dde8d8', fontSize: 12, fontFamily: NS, background: 'rgba(255,255,255,0.95)' }}
-                formatter={v => [`${(Number(v)/1e6).toFixed(1)}M đ`, 'Doanh thu']}
+                formatter={v => [`${(Number(v)/1e6).toFixed(1)}M đ`, 'Revenue']}
               />
               <Area type="monotone" dataKey="revenue" stroke="#3d6b35" strokeWidth={2} fill="url(#rv)" />
             </AreaChart>
@@ -245,7 +245,7 @@ export default function Dashboard() {
 
         {/* Pie chart */}
         <div style={{ ...GLASS, padding: '22px 24px' }}>
-          <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Danh mục bán chạy</p>
+          <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Top Selling Categories</p>
           <ResponsiveContainer width="100%" height={150}>
             <PieChart>
               <Pie data={data.categoryData} dataKey="value" cx="50%" cy="50%" outerRadius={62} innerRadius={30}>
@@ -265,7 +265,7 @@ export default function Dashboard() {
               </div>
             ))}
             {data.categoryData.length === 0 && (
-              <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>Chưa có dữ liệu</div>
+              <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>No data</div>
             )}
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* Top products */}
         <div style={{ ...GLASS, padding: '22px 24px' }}>
-          <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Sản phẩm bán chạy</p>
+          <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Top Selling Products</p>
           {data.topProducts.map((p, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <div style={{
@@ -287,19 +287,19 @@ export default function Dashboard() {
               }}>{i + 1}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1c19', fontFamily: NS, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>Đã bán: {p.sold} · CO₂ {p.carbon}kg</div>
+                <div style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>Sold: {p.sold} · CO₂ {p.carbon}kg</div>
               </div>
               <div style={{ ...MONO, fontSize: 13, fontWeight: 700, color: '#3d6b35', flexShrink: 0 }}>{p.revenue}</div>
             </div>
           ))}
           {data.topProducts.length === 0 && (
-            <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>Chưa có dữ liệu sản phẩm</div>
+            <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>No product data</div>
           )}
         </div>
 
         {/* Recent orders */}
         <div style={{ ...GLASS, padding: '22px 24px' }}>
-          <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Đơn hàng gần đây</p>
+          <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Recent Orders</p>
           {data.recentOrders.map(o => (
             <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -315,21 +315,21 @@ export default function Dashboard() {
             </div>
           ))}
           {data.recentOrders.length === 0 && (
-            <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>Chưa có đơn hàng nào</div>
+            <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>No orders yet</div>
           )}
         </div>
       </div>
 
       {/* Orders bar chart */}
       <div style={{ ...GLASS, padding: '22px 24px' }}>
-        <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Số đơn hàng theo tháng</p>
+        <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Monthly Orders</p>
         <ResponsiveContainer width="100%" height={150}>
           <BarChart data={data.revenueData} barSize={28}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2eb" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280', fontFamily: NS }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: '#6b7280', fontFamily: LMONO }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #dde8d8', fontSize: 12, fontFamily: NS }} />
-            <Bar dataKey="orders" fill="#5a9448" radius={[4, 4, 0, 0]} name="Đơn hàng" />
+            <Bar dataKey="orders" fill="#5a9448" radius={[4, 4, 0, 0]} name="Orders" />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -75,17 +75,17 @@ export default function Users() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div><p style={SECTION_LABEL}>Quản lý tài khoản</p><h1 style={PAGE_TITLE}>Người dùng</h1></div>
+        <div><p style={SECTION_LABEL}>Account Management</p><h1 style={PAGE_TITLE}>Users</h1></div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div style={{ background: 'rgba(255,255,255,0.75)', border: '1px solid #dde8d8', borderRadius: 12, padding: '8px 16px', fontSize: 13, color: '#42493e', fontFamily: NS }}>
-            Tổng: <strong style={{ color: '#1a1c19' }}>{totalCount}</strong> · Hoạt động: <strong style={{ color: '#25521f' }}>{activeCount}</strong>
+            Total: <strong style={{ color: '#1a1c19' }}>{totalCount}</strong> · Active: <strong style={{ color: '#25521f' }}>{activeCount}</strong>
           </div>
         </div>
       </div>
 
       <div style={{ position: 'relative', width: 300, marginBottom: 16 }}>
         <Icon name="Search" size={14} color="#6b7280" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm người dùng..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users..."
           style={{ width: '100%', background: 'rgba(255,255,255,0.70)', border: '1px solid #dde8d8', borderRadius: 999, padding: '8px 16px 8px 40px', fontSize: 14, color: '#1a1c19', fontFamily: NS, outline: 'none', backdropFilter: 'blur(8px)' }} />
       </div>
 
@@ -93,19 +93,19 @@ export default function Users() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>{['Người dùng','Liên hệ','Đơn hàng','Green Points','CO₂','Vai trò','Trạng thái',''].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
+              <tr>{['User','Contact','Orders','Green Points','CO₂','Role','Status',''].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '30px 0', color: '#6b7280', fontFamily: NS }}>
-                    Đang tải dữ liệu người dùng...
+                    Loading users data...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '30px 0', color: '#6b7280', fontFamily: NS }}>
-                    Không tìm thấy người dùng phù hợp.
+                    No matching users found.
                   </td>
                 </tr>
               ) : (
@@ -156,14 +156,14 @@ export default function Users() {
             </tbody>
           </table>
         </div>
-        <div style={{ padding: '10px 16px', fontSize: 12, color: '#6b7280', fontFamily: NS, borderTop: '1px solid #eef2eb' }}>{users.length} người dùng</div>
+        <div style={{ padding: '10px 16px', fontSize: 12, color: '#6b7280', fontFamily: NS, borderTop: '1px solid #eef2eb' }}>{users.length} users</div>
       </div>
 
       {detail && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #dde8d8', width: '100%', maxWidth: 420, boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 24px 18px', borderBottom: '1px solid #eef2eb' }}>
-              <h2 style={{ fontFamily: NS, fontWeight: 700, fontSize: 18, color: '#1a1c19', margin: 0 }}>Chi tiết người dùng</h2>
+              <h2 style={{ fontFamily: NS, fontWeight: 700, fontSize: 18, color: '#1a1c19', margin: 0 }}>User Details</h2>
               <button onClick={() => setDetail(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 20 }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px' }}>
@@ -178,7 +178,7 @@ export default function Users() {
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {[['Email', detail.email],['Điện thoại', detail.phone],['Tham gia', detail.joined],['Đơn hàng', String(detail.orders)],['Green Points', `🌿 ${detail.greenPoints.toLocaleString()}`],['Carbon tích lũy', `${detail.totalCarbon} kg CO₂`]].map(([lbl, val]) => (
+                {[['Email', detail.email],['Phone', detail.phone],['Joined', detail.joined],['Orders', String(detail.orders)],['Green Points', `🌿 ${detail.greenPoints.toLocaleString()}`],['Accumulated Carbon', `${detail.totalCarbon} kg CO₂`]].map(([lbl, val]) => (
                   <div key={lbl} style={{ background: '#f5f9f3', borderRadius: 10, padding: '10px 14px' }}>
                     <p style={{ ...SECTION_LABEL, margin: '0 0 4px', fontSize: 10 }}>{lbl}</p>
                     <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1c19', fontFamily: NS }}>{val}</div>
@@ -193,10 +193,10 @@ export default function Users() {
                   color: detail.isEnabled ? '#ba1a1a' : '#3d6b35',
                   borderColor: detail.isEnabled ? '#f5c2c2' : '#c2deba',
                 }}>
-                  {detail.isEnabled ? '🔒 Khóa tài khoản' : '🔓 Mở khóa'}
+                  {detail.isEnabled ? '🔒 Lock account' : '🔓 Unlock'}
                 </button>
               )}
-              <button onClick={() => setDetail(null)} style={BTN_PRIMARY}>Đóng</button>
+              <button onClick={() => setDetail(null)} style={BTN_PRIMARY}>Close</button>
             </div>
           </div>
         </div>

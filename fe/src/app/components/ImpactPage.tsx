@@ -84,9 +84,9 @@ function MonthlyCarbonChart() {
     <div className="bg-white border border-[#e2e3de] rounded-xl p-5 flex flex-col gap-4">
       <div>
         <h3 className="text-[#1a1c19] text-[16px]" style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}>
-          CO₂ tiết kiệm theo tháng
+          Monthly CO₂ Saved
         </h3>
-        <p className="text-[#6b7280] text-[12px]">kg CO₂e / tháng</p>
+        <p className="text-[#6b7280] text-[12px]">kg CO₂e / month</p>
       </div>
       <div className="flex items-end gap-2 h-[120px]">
         {data.map((d, i) => (
@@ -101,7 +101,7 @@ function MonthlyCarbonChart() {
         ))}
       </div>
       <div className="border-t border-[#e2e3de] pt-3 flex items-center justify-between">
-        <span className="text-[#6b7280] text-[12px]">Tổng 7 tháng:</span>
+        <span className="text-[#6b7280] text-[12px]">Total 7 months:</span>
         <span className="text-[#25521f] text-[14px]" style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700 }}>
           {total} kg CO₂e
         </span>
@@ -126,9 +126,9 @@ function MilestoneTracker({ currentPts }: { currentPts: number }) {
       <div className="px-5 py-4 border-b border-[#e2e3de] flex items-center justify-between">
         <div>
           <h3 className="text-[#1a1c19] text-[16px]" style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}>
-            Hành trình Eco
+            Eco Journey
           </h3>
-          <p className="text-[#6b7280] text-[12px]">Tích lũy điểm xanh để mở cấp bậc mới</p>
+          <p className="text-[#6b7280] text-[12px]">Accumulate green points to unlock new tiers</p>
         </div>
         {/* Current tier badge */}
         <div
@@ -192,7 +192,7 @@ function MilestoneTracker({ currentPts }: { currentPts: number }) {
           <div className="mt-4 flex flex-col gap-2 bg-[#f7faf5] rounded-lg p-3">
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-[#42493e]">
-                Tiến độ đến <span style={{ color: next.color, fontWeight: 600 }}>{next.label}</span>
+                Progress to <span style={{ color: next.color, fontWeight: 600 }}>{next.label}</span>
               </span>
               <span className="text-[#6b7280]">{currentPts.toLocaleString()} / {next.req.toLocaleString()} pts</span>
             </div>
@@ -203,13 +203,13 @@ function MilestoneTracker({ currentPts }: { currentPts: number }) {
               />
             </div>
             <p className="text-[12px]" style={{ color: next.color }}>
-              Còn {(next.req - currentPts).toLocaleString()} điểm nữa để đạt <strong>{next.label}</strong>
+              Need {(next.req - currentPts).toLocaleString()} more points to reach <strong>{next.label}</strong>
             </p>
           </div>
         )}
         {!next && (
           <div className="mt-4 bg-[#f3e8ff] rounded-lg p-3 text-center">
-            <p className="text-[#7c3aed] text-[13px] font-medium">Bạn đã đạt cấp bậc cao nhất!</p>
+            <p className="text-[#7c3aed] text-[13px] font-medium">You have reached the highest tier!</p>
           </div>
         )}
       </div>
@@ -220,14 +220,14 @@ function MilestoneTracker({ currentPts }: { currentPts: number }) {
 // ─── Eco Tips ─────────────────────────────────────────────────────────────────
 function EcoTips({ onNavigate }: { onNavigate: (p: string, id?: number, cat?: string, search?: string, extra?: any) => void }) {
   const tips = [
-    { Icon: ShoppingBag, title: "Mua sản phẩm Carbon thấp", desc: "Ưu tiên sản phẩm có carbon index < 0.3kg/đơn vị", action: "Khám phá", page: "shop", extra: { carbon: "low" } },
-    { Icon: RefreshCw,   title: "Chọn bao bì tái chế",      desc: "Tìm sản phẩm có chứng nhận BIODEGRADABLE hoặc ZERO PLASTIC", action: "Lọc ngay", page: "shop", extra: { certs: ["BIODEGRADABLE", "ZERO PLASTIC"] } },
-    { Icon: Sprout,      title: "Tích lũy Green Points",     desc: "Mỗi giao dịch đều tích điểm — lên cấp để nhận ưu đãi đặc biệt", action: "Xem profile", page: "profile" },
+    { Icon: ShoppingBag, title: "Buy Low Carbon products", desc: "Prioritize products with carbon index < 0.3kg/unit", action: "Explore", page: "shop", extra: { carbon: "low" } },
+    { Icon: RefreshCw,   title: "Choose recyclable packaging",      desc: "Find products with BIODEGRADABLE or ZERO PLASTIC certifications", action: "Filter now", page: "shop", extra: { certs: ["BIODEGRADABLE", "ZERO PLASTIC"] } },
+    { Icon: Sprout,      title: "Accumulate Green Points",     desc: "Every transaction earns points — level up to receive special offers", action: "View profile", page: "profile" },
   ];
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-[#1a1c19] text-[18px]" style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}>
-        Gợi ý cải thiện tác động
+        Tips to improve impact
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {tips.map((tip) => {
@@ -288,20 +288,20 @@ export function ImpactPage({ onNavigate }: { onNavigate: (p: string, id?: number
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <BarChart2 size={20} className="text-[#25521f]" strokeWidth={1.8} />
-            <span className="text-[#6b7280] text-[11px] tracking-widest uppercase">Bảng điều khiển</span>
+            <span className="text-[#6b7280] text-[11px] tracking-widest uppercase">Dashboard</span>
           </div>
           <h1 className="text-[#1a1c19] text-[28px] md:text-[36px] leading-tight" style={{ fontFamily: "'Nimbus Sans', sans-serif", fontWeight: 700 }}>
-            Tác động Môi trường của Bạn
+            Your Environmental Impact
           </h1>
           <p className="text-[#42493e] text-[15px] max-w-[560px]">
-            Mỗi sản phẩm xanh bạn mua đều có ý nghĩa. Dưới đây là hành trình eco của bạn với GreenLife.
+            Every green product you buy matters. Here is your eco journey with GreenLife.
           </p>
         </div>
 
         {/* Hero comparison banner */}
         <div className="bg-gradient-to-r from-[#e7f2e1] via-[#eef6e9] to-[#d7edcd] border border-[#cfe0c4] rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col gap-2">
-            <p className="text-[#42493e] text-[12px] tracking-widest uppercase">CO₂ bạn ĐÃ tiết kiệm được</p>
+            <p className="text-[#42493e] text-[12px] tracking-widest uppercase">CO₂ you HAVE saved</p>
             <div className="flex items-baseline gap-2">
               <span className="text-[#1a1c19] text-[48px] md:text-[56px] leading-none" style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700 }}>
                 {savedCO2}
@@ -309,13 +309,13 @@ export function ImpactPage({ onNavigate }: { onNavigate: (p: string, id?: number
               <span className="text-[#42493e] text-[18px]">kg CO₂e</span>
             </div>
             <p className="text-[#25521f] text-[13px]">
-              Tương đương trồng {Math.ceil(savedCO2 / 5)} cây xanh
+              Equivalent to planting {Math.ceil(savedCO2 / 5)} trees
             </p>
           </div>
           <div className="flex flex-col gap-3 w-full md:w-[320px]">
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[12px]">
-                <span className="text-[#6b5d3f]">Phát thải nếu dùng đồ thường: {standardCO2} kg</span>
+                <span className="text-[#6b5d3f]">Emissions if using regular items: {standardCO2} kg</span>
               </div>
               <div className="h-3 bg-[#6b5d3f]/20 rounded-full overflow-hidden">
                 <div className="h-full bg-[#6b5d3f] rounded-full w-full" />
@@ -323,22 +323,22 @@ export function ImpactPage({ onNavigate }: { onNavigate: (p: string, id?: number
             </div>
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[12px]">
-                <span className="text-[#25521f]">Phát thải thực tế với GreenLife: {totalCO2} kg</span>
+                <span className="text-[#25521f]">Actual emissions with GreenLife: {totalCO2} kg</span>
               </div>
               <div className="h-3 bg-[#25521f]/20 rounded-full overflow-hidden">
                 <div className="h-full bg-[#25521f] rounded-full" style={{ width: `${standardCO2 > 0 ? (totalCO2 / standardCO2) * 100 : 0}%` }} />
               </div>
             </div>
-            <p className="text-[#25521f] text-[13px] mt-1 font-medium">Bạn đã giảm được {pctBetter}% lượng phát thải!</p>
+            <p className="text-[#25521f] text-[13px] mt-1 font-medium">You have reduced your emissions by {pctBetter}%!</p>
           </div>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={TrendingDown} label="CO₂ tiết kiệm"    value={`${savedCO2} kg`}           sub="CO₂e tổng cộng" />
-          <StatCard icon={Award}        label="Green Points"      value={greenPts.toLocaleString()}   sub="pts tích lũy"   color="#6b5d3f" />
-          <StatCard icon={ShoppingBag}  label="Đơn hàng Xanh"    value={ordersCount.toString()}       sub="giao dịch"      color="#3d6b35" />
-          <StatCard icon={TreePine}     label="Cây tương đương"   value={`${Math.ceil(savedCO2 / 5)}`} sub="cây đã trồng" color="#2e7d32" />
+          <StatCard icon={TrendingDown} label="CO₂ Saved"    value={`${savedCO2} kg`}           sub="Total CO₂e" />
+          <StatCard icon={Award}        label="Green Points"      value={greenPts.toLocaleString()}   sub="pts accumulated"   color="#6b5d3f" />
+          <StatCard icon={ShoppingBag}  label="Green Orders"    value={ordersCount.toString()}       sub="transactions"      color="#3d6b35" />
+          <StatCard icon={TreePine}     label="Equivalent Trees"   value={`${Math.ceil(savedCO2 / 5)}`} sub="trees planted" color="#2e7d32" />
         </div>
 
         {/* Charts row */}

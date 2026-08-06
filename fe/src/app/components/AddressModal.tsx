@@ -30,7 +30,7 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
       setAddresses(data);
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi", "Không thể tải danh sách địa chỉ.");
+      toast.error("Error", "Failed to load addresses.");
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
 
   const handleSave = async () => {
     if (!recipientName.trim() || !phoneNumber.trim() || !fullAddress.trim()) {
-      toast.error("Lỗi", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
+      toast.error("Error", "Please fill in all required fields.");
       return;
     }
 
@@ -86,41 +86,41 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
 
       if (editingAddress) {
         await addressesApi.updateAddress(editingAddress.id, payload);
-        toast.success("Thành công", "Đã cập nhật địa chỉ.");
+        toast.success("Success", "Address updated successfully.");
       } else {
         await addressesApi.createAddress(payload);
-        toast.success("Thành công", "Đã thêm địa chỉ mới.");
+        toast.success("Success", "New address added.");
       }
       resetForm();
       await fetchAddresses();
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi", "Không thể lưu địa chỉ. Vui lòng thử lại.");
+      toast.error("Error", "Failed to save address. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?")) return;
+    if (!window.confirm("Are you sure you want to delete this address?")) return;
     try {
       await addressesApi.deleteAddress(id);
-      toast.success("Thành công", "Đã xóa địa chỉ.");
+      toast.success("Success", "Address deleted.");
       await fetchAddresses();
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi", "Không thể xóa địa chỉ.");
+      toast.error("Error", "Failed to delete address.");
     }
   };
 
   const handleSetDefault = async (id: number) => {
     try {
       await addressesApi.setDefaultAddress(id);
-      toast.success("Thành công", "Đã đặt làm địa chỉ mặc định.");
+      toast.success("Success", "Set as default address.");
       await fetchAddresses();
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi", "Không thể cập nhật địa chỉ mặc định.");
+      toast.error("Error", "Failed to update default address.");
     }
   };
 
@@ -136,7 +136,7 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
             <div className="flex items-center gap-2">
               <MapPin size={20} className="text-[#25521f]" />
               <h3 className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[18px]">
-                {isAddingNew ? "Thêm địa chỉ mới" : editingAddress ? "Chỉnh sửa địa chỉ" : "Địa chỉ của tôi"}
+                {isAddingNew ? "Add New Address" : editingAddress ? "Edit Address" : "My Addresses"}
               </h3>
             </div>
             <button onClick={onClose} className="text-[#6b7280] hover:text-[#1a1c19] p-1 transition-colors">
@@ -150,33 +150,33 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
               /* Add/Edit Form */
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] text-[#6b7280] tracking-wide">Tên người nhận *</label>
+                  <label className="text-[12px] text-[#6b7280] tracking-wide">Recipient Name *</label>
                   <input
                     type="text"
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
-                    placeholder="Nguyễn Văn A"
+                    placeholder="John Doe"
                     className="w-full border border-[#c2c9bb] rounded-xl px-4 py-2.5 text-[14px] text-[#1a1c19] outline-none focus:border-[#25521f] transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] text-[#6b7280] tracking-wide">Số điện thoại *</label>
+                  <label className="text-[12px] text-[#6b7280] tracking-wide">Phone Number *</label>
                   <input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="0912345678"
+                    placeholder="+1 (555) 000-0000"
                     className="w-full border border-[#c2c9bb] rounded-xl px-4 py-2.5 text-[14px] text-[#1a1c19] outline-none focus:border-[#25521f] transition-colors"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] text-[#6b7280] tracking-wide">Địa chỉ đầy đủ *</label>
+                  <label className="text-[12px] text-[#6b7280] tracking-wide">Full Address *</label>
                   <textarea
                     value={fullAddress}
                     onChange={(e) => setFullAddress(e.target.value)}
-                    placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                    placeholder="Street address, apartment, city, state/province"
                     rows={3}
                     className="w-full border border-[#c2c9bb] rounded-xl px-4 py-2.5 text-[14px] text-[#1a1c19] outline-none focus:border-[#25521f] transition-colors resize-none"
                   />
@@ -191,7 +191,7 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
                     className="w-4 h-4 accent-[#25521f] rounded cursor-pointer"
                   />
                   <label htmlFor="isDefaultCheck" className="text-[13px] text-[#1a1c19] cursor-pointer select-none">
-                    Đặt làm địa chỉ giao hàng mặc định
+                    Set as default shipping address
                   </label>
                 </div>
 
@@ -201,14 +201,14 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
                     disabled={submitting}
                     className="flex-1 border border-[#c2c9bb] text-[#42493e] text-[13px] tracking-widest uppercase py-3 rounded-full hover:bg-[#fafaf5] transition-colors disabled:opacity-50"
                   >
-                    Hủy
+                    Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={submitting}
                     className="flex-1 bg-[#25521f] text-white text-[13px] tracking-widest uppercase py-3 rounded-full hover:bg-[#1e4219] transition-colors disabled:opacity-50"
                   >
-                    {submitting ? "Đang lưu..." : "Lưu địa chỉ"}
+                    {submitting ? "Saving..." : "Save Address"}
                   </button>
                 </div>
               </div>
@@ -219,13 +219,13 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
                   onClick={startAdd}
                   className="w-full border-2 border-dashed border-[#25521f] text-[#25521f] font-medium py-3 rounded-xl hover:bg-[#f0f7ee] transition-colors flex items-center justify-center gap-2 text-[14px]"
                 >
-                  <Plus size={16} /> Thêm địa chỉ mới
+                  <Plus size={16} /> Add New Address
                 </button>
 
                 {loading ? (
-                  <div className="py-8 text-center text-[#6b7280] text-[14px]">Đang tải danh sách địa chỉ...</div>
+                  <div className="py-8 text-center text-[#6b7280] text-[14px]">Loading addresses...</div>
                 ) : addresses.length === 0 ? (
-                  <div className="py-8 text-center text-[#6b7280] text-[14px]">Chưa có địa chỉ giao hàng nào được lưu.</div>
+                  <div className="py-8 text-center text-[#6b7280] text-[14px]">No saved shipping addresses found.</div>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {addresses.map((addr) => {
@@ -247,14 +247,14 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
                             <div className="flex items-center gap-1">
                               {addr.isDefault ? (
                                 <span className="bg-[#25521f] text-white text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                                  <Star size={10} fill="currentColor" /> Mặc định
+                                  <Star size={10} fill="currentColor" /> Default
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => handleSetDefault(addr.id)}
                                   className="text-[#6b7280] hover:text-[#25521f] text-[11px] underline"
                                 >
-                                  Đặt mặc định
+                                  Set Default
                                 </button>
                               )}
                             </div>
@@ -268,14 +268,14 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
                                 onClick={() => startEdit(addr)}
                                 className="text-[#42493e] hover:text-[#25521f] text-[12px] flex items-center gap-1 transition-colors"
                               >
-                                <Edit3 size={13} /> Sửa
+                                <Edit3 size={13} /> Edit
                               </button>
                               <span className="text-[#e2e3de]">|</span>
                               <button
                                 onClick={() => handleDelete(addr.id)}
                                 className="text-[#ba1a1a] hover:text-[#991515] text-[12px] flex items-center gap-1 transition-colors"
                               >
-                                <Trash2 size={13} /> Xóa
+                                <Trash2 size={13} /> Delete
                               </button>
                             </div>
 
@@ -291,7 +291,7 @@ export function AddressModal({ isOpen, onClose, onSelectAddress, selectedAddress
                                     : "border border-[#25521f] text-[#25521f] hover:bg-[#25521f] hover:text-white"
                                 }`}
                               >
-                                {isSelected ? <><Check size={12} /> Đã chọn</> : "Chọn giao đến đây"}
+                                {isSelected ? <><Check size={12} /> Selected</> : "Deliver to this address"}
                               </button>
                             )}
                           </div>
