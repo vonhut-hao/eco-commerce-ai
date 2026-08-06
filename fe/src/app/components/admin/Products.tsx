@@ -282,6 +282,15 @@ export default function Products() {
                     onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
                 </div>
               </div>
+              <div style={{ padding: '12px 16px', background: '#f5f9f3', borderRadius: 12, border: '1px dashed #c2deba' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#3d6b35' }}>
+                  <Icon name="Info" size={14} color="#3d6b35" />
+                  <span style={{ fontSize: 12, fontFamily: NS, fontWeight: 500 }}>Quản lý Chứng nhận xanh</span>
+                </div>
+                <p style={{ fontSize: 11, color: '#6b7280', fontFamily: NS, margin: '6px 0 0', lineHeight: 1.5 }}>
+                  Chứng nhận xanh hiện được quản lý ở một luồng riêng. Hãy lưu thông tin sản phẩm tại đây trước, sau đó ấn vào biểu tượng 🎖️ ở cột "Chứng chỉ" ngoài danh sách để thêm hoặc xóa chứng nhận.
+                </p>
+              </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: '1px solid #eef2eb', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setModal(null)} style={BTN_GHOST}>Hủy</button>
