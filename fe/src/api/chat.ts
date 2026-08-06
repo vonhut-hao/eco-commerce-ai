@@ -17,11 +17,14 @@ export const chatWithAi = async (data: AiChatRequest): Promise<AiChatResponse> =
 // Types for Live Chat (Team has already done BE, this is just calling the API)
 export interface Conversation {
   id: number;
-  userId: number;
+  user1_id: number;
+  user2_id: number;
   type: string;
-  user1Id: number;
-  user2Id: number;
-  isDeleted: boolean;
+  user1Username?: string;
+  user2Username?: string;
+  user1AvatarUrl?: string;
+  user2AvatarUrl?: string;
+  is_deleted: boolean;
 }
 
 export interface ChatMessage {
