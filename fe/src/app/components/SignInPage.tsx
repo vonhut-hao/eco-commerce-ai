@@ -44,7 +44,13 @@ export function SignInPage({ onNavigate }: { onNavigate: (page: string) => void 
         await useCartStore.getState().syncGuestCart();
         await useCartStore.getState().fetchCart();
         toast.success("Welcome back!", "Signed in successfully");
-        onNavigate("home");
+          
+        const userRoles = useAuthStore.getState().user?.roles || [];
+        if (userRoles.includes('ADMIN') || userRoles.includes('ROLE_ADMIN')) {
+          onNavigate("admin");
+        } else {
+          onNavigate("home");
+        }
       }
     } catch (e: any) {
       console.error(e);

@@ -41,8 +41,9 @@ import { useAuthStore } from "../store/authStore";
 import { useCartStore } from "../store/cartStore";
 import { profileApi } from "../api/profile";
 import { favoritesApi } from "../api/favorites";
+import { AdminPanel } from "./components/admin/AdminPanel";
 
-export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact";
+export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact" | "admin";
 
 const mainDisplayImages = [imgPrimary, imgThumb2, imgThumb3, imgThumb4];
 const thumbnails = [imgThumb1, imgThumb2, imgThumb3, imgThumb4];
@@ -1049,8 +1050,17 @@ export default function App() {
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
   // Auth pages render standalone (no app shell)
-  if (activePage === "signup") return <SignUpPage onNavigate={navigate} />;
   if (activePage === "signin") return <SignInPage onNavigate={navigate} />;
+  if (activePage === "signup") return <SignUpPage onNavigate={navigate} />;
+  if (activePage === "admin") {
+    // Basic protection: normally we would check role here, e.g., if (user?.role !== "ADMIN") return <NotFound />
+    return (
+      <>
+        <ToastContainer />
+        <AdminPanel />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative">

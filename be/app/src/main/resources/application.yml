@@ -11,6 +11,7 @@ spring:
     import:
       - optional:classpath:identity.yml
       - optional:classpath:common.yml
+      - optional:aws-parameterstore:/config/flix-platform/common/
 
   flyway:
     enabled: true

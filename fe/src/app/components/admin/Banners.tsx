@@ -1,0 +1,185 @@
+import { useState } from 'react'
+import { Icon } from './Icon'
+import { GLASS, INPUT, BTN_PRIMARY, BTN_GHOST, SECTION_LABEL, PAGE_TITLE } from './ui'
+
+interface Banner {
+  id: number; title: string; imageUrl: string; linkUrl: string
+  displayOrder: number; isActive: boolean; startAt: string; endAt: string
+}
+
+const PHOTOS = [
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=300&fit=crop&auto=format',
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=300&fit=crop&auto=format',
+  'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=300&fit=crop&auto=format',
+  'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&h=300&fit=crop&auto=format',
+]
+
+const INIT: Banner[] = [
+  { id: 1, title: 'Khuyến mãi mùa hè xanh',  imageUrl: PHOTOS[0], linkUrl: '/shop?tag=summer',   displayOrder: 1, isActive: true,  startAt: '2026-07-01', endAt: '2026-08-31' },
+  { id: 2, title: 'Sản phẩm mới tháng 8',     imageUrl: PHOTOS[1], linkUrl: '/shop?sort=newest',  displayOrder: 2, isActive: true,  startAt: '2026-08-01', endAt: '2026-08-31' },
+  { id: 3, title: 'Flash Sale 20% - Tuần này', imageUrl: PHOTOS[2], linkUrl: '/shop?coupon=FLASH20', displayOrder: 3, isActive: false, startAt: '2026-07-10', endAt: '2026-07-15' },
+  { id: 4, title: 'Bộ sưu tập Eco Home mới',  imageUrl: PHOTOS[3], linkUrl: '/shop?category=home', displayOrder: 4, isActive: true,  startAt: '2026-08-01', endAt: '2026-09-30' },
+]
+const EMPTY: Omit<Banner, 'id'> = { title: '', imageUrl: PHOTOS[0], linkUrl: '', displayOrder: 5, isActive: true, startAt: '2026-08-01', endAt: '2026-12-31' }
+const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
+
+export default function Banners() {
+  const [banners, setBanners] = useState(INIT)
+  const [modal, setModal] = useState<(Omit<Banner,'id'> & { id?: number }) | null>(null)
+  const [isNew, setIsNew] = useState(false)
+  const [deleteId, setDeleteId] = useState<number | null>(null)
+
+  function openNew()    { setModal({ ...EMPTY }); setIsNew(true) }
+  function openEdit(b: Banner) { setModal({ id: b.id, title: b.title, imageUrl: b.imageUrl, linkUrl: b.linkUrl, displayOrder: b.displayOrder, isActive: b.isActive, startAt: b.startAt, endAt: b.endAt }); setIsNew(false) }
+  function save() {
+    if (!modal) return
+    isNew ? setBanners(prev => [...prev, { ...modal, id: Date.now() } as Banner]) : setBanners(prev => prev.map(b => b.id === modal.id ? { ...b, ...modal } : b))
+    setModal(null)
+  }
+  function toggleActive(id: number) { setBanners(prev => prev.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b)) }
+
+  const sorted = [...banners].sort((a, b) => a.displayOrder - b.displayOrder)
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div><p style={SECTION_LABEL}>Nội dung trang chủ</p><h1 style={PAGE_TITLE}>Banner quảng cáo</h1></div>
+        <button style={BTN_PRIMARY} onClick={openNew}><Icon name="Plus" size={14} color="#fff" /> Thêm banner</button>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <span style={{ background: 'rgba(255,255,255,0.75)', border: '1px solid #dde8d8', borderRadius: 12, padding: '8px 16px', fontSize: 13, color: '#42493e', fontFamily: NS }}>
+          {banners.filter(b => b.isActive).length} / {banners.length} đang hiển thị
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {sorted.map(b => (
+          <div key={b.id} style={{ ...GLASS, overflow: 'hidden', display: 'flex', opacity: b.isActive ? 1 : 0.65 }}>
+            {/* Image preview */}
+            <div style={{ width: 200, flexShrink: 0, position: 'relative', background: '#e8f5e4', overflow: 'hidden' }}>
+              <img src={b.imageUrl} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }} />
+              <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '2px 8px', fontFamily: NS }}>
+                #{b.displayOrder}
+              </span>
+            </div>
+
+            {/* Info */}
+            <div style={{ flex: 1, padding: '18px 22px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ fontWeight: 600, fontSize: 16, color: '#1a1c19', fontFamily: NS, marginBottom: 4 }}>{b.title}</div>
+              <div style={{ fontSize: 13, color: '#6b7280', fontFamily: NS, marginBottom: 10 }}>🔗 <span style={{ color: '#3d6b35' }}>{b.linkUrl}</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 12, color: '#6b7280', fontFamily: NS }}>
+                  {new Date(b.startAt).toLocaleDateString('vi-VN')} — {new Date(b.endAt).toLocaleDateString('vi-VN')}
+                </span>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '3px 8px', fontFamily: NS,
+                  ...(b.isActive ? { background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba' } : { background: '#f5f5f0', color: '#6b7280', border: '1px solid #e0e0d8' }),
+                }}>
+                  {b.isActive ? 'ACTIVE' : 'INACTIVE'}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ padding: '18px 18px', borderLeft: '1px solid #eef2eb', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
+              <button onClick={() => toggleActive(b.id)} style={{ width: 36, height: 36, background: b.isActive ? '#e8f5e4' : '#f5f5f0', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: b.isActive ? '#3d6b35' : '#6b7280' }}>
+                {b.isActive ? <Icon name="ToggleRight" size={16} color="#3d6b35" /> : <Icon name="ToggleLeft" size={16} color="#6b7280" />}
+              </button>
+              <button onClick={() => openEdit(b)} style={{ width: 36, height: 36, background: '#f0f7ee', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Pencil" size={14} color="#3d6b35" /></button>
+              <button onClick={() => setDeleteId(b.id)} style={{ width: 36, height: 36, background: '#fff0f0', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Trash2" size={14} color="#ba1a1a" /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {modal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #dde8d8', width: '100%', maxWidth: 460, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 24px 18px', borderBottom: '1px solid #eef2eb' }}>
+              <h2 style={{ fontFamily: NS, fontWeight: 700, fontSize: 18, color: '#1a1c19', margin: 0 }}>{isNew ? 'Thêm banner mới' : 'Chỉnh sửa banner'}</h2>
+              <button onClick={() => setModal(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 20 }}>✕</button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {modal.imageUrl && (
+                <div style={{ borderRadius: 12, overflow: 'hidden', height: 120, background: '#e8f5e4' }}>
+                  <img src={modal.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+              <div>
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Tiêu đề *</label>
+                <input value={modal.title} onChange={e => setModal({ ...modal, title: e.target.value })} style={INPUT}
+                  onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                  onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>URL hình ảnh</label>
+                <input value={modal.imageUrl} onChange={e => setModal({ ...modal, imageUrl: e.target.value })} style={INPUT}
+                  onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                  onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  {PHOTOS.map((url, i) => (
+                    <button key={i} onClick={() => setModal({ ...modal, imageUrl: url })} style={{ width: 52, height: 36, borderRadius: 8, overflow: 'hidden', border: modal.imageUrl === url ? '2px solid #3d6b35' : '2px solid transparent', cursor: 'pointer', padding: 0 }}>
+                      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link URL *</label>
+                <input value={modal.linkUrl} onChange={e => setModal({ ...modal, linkUrl: e.target.value })} placeholder="/shop?tag=summer" style={INPUT}
+                  onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                  onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Thứ tự hiển thị</label>
+                  <input type="number" value={modal.displayOrder} onChange={e => setModal({ ...modal, displayOrder: +e.target.value })} style={INPUT}
+                    onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                    onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={modal.isActive} onChange={e => setModal({ ...modal, isActive: e.target.checked })} style={{ accentColor: '#3d6b35', width: 16, height: 16 }} />
+                    <span style={{ fontSize: 14, color: '#1a1c19', fontFamily: NS }}>Hiển thị ngay</span>
+                  </label>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {([['Bắt đầu','startAt'],['Kết thúc','endAt']] as const).map(([lbl, field]) => (
+                  <div key={field}>
+                    <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>{lbl}</label>
+                    <input type="date" value={(modal as any)[field]} onChange={e => setModal({ ...modal, [field]: e.target.value })} style={INPUT}
+                      onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                      onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #eef2eb', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setModal(null)} style={BTN_GHOST}>Hủy</button>
+              <button onClick={save} disabled={!modal.title || !modal.linkUrl} style={{ ...BTN_PRIMARY, opacity: (!modal.title || !modal.linkUrl) ? 0.5 : 1 }}>
+                {isNew ? 'Thêm banner' : 'Lưu thay đổi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteId !== null && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 340, textAlign: 'center', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: '#fff0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><Icon name="Trash2" size={22} color="#ba1a1a" /></div>
+            <h3 style={{ fontFamily: NS, fontWeight: 700, fontSize: 17, color: '#1a1c19', margin: '0 0 8px' }}>Xóa banner?</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', fontFamily: NS, margin: '0 0 22px' }}>Banner sẽ bị xóa khỏi trang chủ.</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setDeleteId(null)} style={{ ...BTN_GHOST, flex: 1, justifyContent: 'center' }}>Hủy</button>
+              <button onClick={() => { setBanners(prev => prev.filter(b => b.id !== deleteId)); setDeleteId(null) }} style={{ flex: 1, background: '#ba1a1a', color: '#fff', border: 'none', borderRadius: 999, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: NS }}>Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
