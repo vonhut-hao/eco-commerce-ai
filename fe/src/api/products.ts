@@ -67,6 +67,20 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
+export interface ProductRequest {
+  name: string;
+  price: number;
+  stock: number;
+  greenPoints?: number;
+  ecoFriendliness?: string;
+  carbonIndex?: number;
+  mainImage?: string;
+  subImages?: string[];
+  categoryIds?: number[];
+  materialIds?: number[];
+  description?: string;
+}
+
 export function mapProductBeToFe(be: ProductBE): any {
   return {
     id: be.id,
@@ -103,5 +117,19 @@ export const productsApi = {
   getCategories: async () => {
     const res = await client.get<ApiResponse<CategoryBE[]>>('/v1/catalog/categories');
     return res.data.data;
+  },
+  
+  createProduct: async (req: ProductRequest) => {
+    const res = await client.post<ApiResponse<ProductBE>>('/v1/catalog/products', req);
+    return res.data.data;
+  },
+  
+  updateProduct: async (id: number, req: ProductRequest) => {
+    const res = await client.post<ApiResponse<ProductBE>>(`/v1/catalog/products/${id}`, req);
+    return res.data.data;
+  },
+  
+  deleteProduct: async (id: number) => {
+    await client.delete(`/v1/catalog/products/${id}`);
   }
 };

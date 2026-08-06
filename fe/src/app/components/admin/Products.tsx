@@ -1,48 +1,115 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Icon } from './Icon'
 import { GLASS, INPUT, BTN_PRIMARY, BTN_GHOST, SECTION_LABEL, PAGE_TITLE, TH, TD, badge, MONO } from './ui'
+import { productsApi, ProductBE, CategoryBE } from '../../../api/products'
 
-interface Product {
-  id: number; name: string; category: string; price: number; stock: number
-  carbonIndex: number; greenPoints: number; ecoFriendliness: string
-  status: 'active' | 'deleted'; certificates: string[]
+interface ProductForm {
+  id: number;
+  name: string;
+  categoryId: number | null;
+  price: number;
+  stock: number;
+  carbonIndex: number;
+  greenPoints: number;
+  ecoFriendliness: string;
+  certificates: string[];
 }
 
-const INITIAL: Product[] = [
-  { id: 1, name: 'Bamboo Toothbrush Set (Pack of 4)', category: 'Personal Care', price: 149000, stock: 342, carbonIndex: 0.3, greenPoints: 15, ecoFriendliness: 'BIODEGRADABLE', status: 'active', certificates: ['BIODEGRADABLE','BPA FREE'] },
-  { id: 2, name: 'Organic Cotton Tote Bag', category: 'Fashion', price: 180000, stock: 215, carbonIndex: 0.2, greenPoints: 18, ecoFriendliness: '100% ORGANIC', status: 'active', certificates: ['100% ORGANIC'] },
-  { id: 3, name: 'Reusable Steel Straw Kit', category: 'Food & Beverage', price: 95000, stock: 512, carbonIndex: 0.1, greenPoints: 10, ecoFriendliness: 'ZERO PLASTIC', status: 'active', certificates: ['ZERO PLASTIC','BPA FREE'] },
-  { id: 4, name: 'Natural Coconut Bowl Set', category: 'Home & Kitchen', price: 320000, stock: 87, carbonIndex: 0.4, greenPoints: 32, ecoFriendliness: 'BIODEGRADABLE', status: 'active', certificates: ['BIODEGRADABLE'] },
-  { id: 5, name: 'Beeswax Food Wraps (Set of 3)', category: 'Home & Kitchen', price: 120000, stock: 198, carbonIndex: 0.2, greenPoints: 12, ecoFriendliness: 'ZERO PLASTIC', status: 'active', certificates: ['ZERO PLASTIC'] },
-  { id: 6, name: 'Natural Hemp Soap Bar', category: 'Personal Care', price: 85000, stock: 0, carbonIndex: 0.15, greenPoints: 9, ecoFriendliness: '100% NATURAL', status: 'active', certificates: ['100% NATURAL'] },
-  { id: 7, name: 'Insulated Steel Bottle (500ml)', category: 'Travel', price: 420000, stock: 156, carbonIndex: 0.8, greenPoints: 42, ecoFriendliness: 'RECYCLABLE', status: 'active', certificates: ['RECYCLABLE'] },
-  { id: 8, name: 'Hemp Canvas Backpack', category: 'Fashion', price: 680000, stock: 44, carbonIndex: 0.6, greenPoints: 68, ecoFriendliness: 'SUSTAINABLE', status: 'active', certificates: ['FSC CERTIFIED'] },
-]
-const EMPTY: Product = { id: 0, name: '', category: 'Personal Care', price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE', status: 'active', certificates: [] }
+const EMPTY: ProductForm = { id: 0, name: '', categoryId: null, price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE', certificates: [] }
 const ECO = ['BIODEGRADABLE','100% ORGANIC','ZERO PLASTIC','RECYCLABLE','100% NATURAL','FSC CERTIFIED','BPA FREE','SUSTAINABLE','PLANTABLE','PET SAFE']
-const CATS = ['Personal Care','Fashion','Home & Kitchen','Food & Beverage','Travel','Office','Pet']
 const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
 const LMONO = '"Liberation Mono","Courier New",monospace'
 
 const carbonBadge = (v: number) => v < 0.3 ? badge('success') : v <= 0.6 ? badge('warning') : badge('danger')
 
 export default function Products() {
-  const [products, setProducts] = useState(INITIAL)
+  const [products, setProducts] = useState<ProductBE[]>([])
+  const [categories, setCategories] = useState<CategoryBE[]>([])
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState<Product | null>(null)
+  const [modal, setModal] = useState<ProductForm | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const filtered = products.filter(p => p.status === 'active' && p.name.toLowerCase().includes(search.toLowerCase()))
+  const fetchProducts = async () => {
+    try {
+      const res = await productsApi.getProducts(0, 1000);
+      setProducts(res.content);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  function openNew() { setModal({ ...EMPTY, id: Date.now() }); setIsNew(true) }
-  function openEdit(p: Product) { setModal({ ...p }); setIsNew(false) }
-  function save() {
-    if (!modal) return
-    isNew ? setProducts(prev => [...prev, modal]) : setProducts(prev => prev.map(p => p.id === modal.id ? modal : p))
-    setModal(null)
+  useEffect(() => {
+    fetchProducts();
+    productsApi.getCategories().then(setCategories).catch(console.error);
+  }, []);
+
+  const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+
+  function openNew() { 
+    setModal({ ...EMPTY, categoryId: categories.length > 0 ? categories[0].id : null }); 
+    setIsNew(true) 
   }
-  function remove(id: number) { setProducts(prev => prev.map(p => p.id === id ? { ...p, status: 'deleted' as const } : p)); setDeleteId(null) }
+  
+  function openEdit(p: ProductBE) { 
+    setModal({ 
+      id: p.id,
+      name: p.name,
+      categoryId: p.categories?.[0]?.id || (categories.length > 0 ? categories[0].id : null),
+      price: p.price,
+      stock: p.stock,
+      carbonIndex: p.carbonIndex || 0,
+      greenPoints: p.greenPoints || 0,
+      ecoFriendliness: p.ecoFriendliness || 'BIODEGRADABLE',
+      certificates: p.greenCertificates?.map(c => c.name) || []
+    }); 
+    setIsNew(false) 
+  }
+
+  async function save() {
+    if (!modal) return;
+    setLoading(true);
+    try {
+      const req = {
+        name: modal.name,
+        price: modal.price,
+        stock: modal.stock,
+        greenPoints: modal.greenPoints,
+        ecoFriendliness: modal.ecoFriendliness,
+        carbonIndex: modal.carbonIndex,
+        categoryIds: modal.categoryId ? [modal.categoryId] : [],
+      };
+      
+      if (isNew) {
+        await productsApi.createProduct(req);
+      } else {
+        await productsApi.updateProduct(modal.id, req);
+      }
+      await fetchProducts();
+      setModal(null);
+    } catch (error) {
+      console.error(error);
+      alert('Có lỗi xảy ra khi lưu sản phẩm');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function remove() { 
+    if (!deleteId) return;
+    setLoading(true);
+    try {
+      await productsApi.deleteProduct(deleteId);
+      await fetchProducts();
+    } catch (error) {
+      console.error(error);
+      alert('Có lỗi xảy ra khi xóa sản phẩm');
+    } finally {
+      setDeleteId(null);
+      setLoading(false);
+    }
+  }
 
   return (
     <div>
@@ -80,17 +147,17 @@ export default function Products() {
                 >
                   <td style={TD}>
                     <div style={{ fontWeight: 500, color: '#1a1c19', fontFamily: NS, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: '#25521f', fontFamily: NS, marginTop: 2 }}>🌿 {p.greenPoints} pts</div>
+                    <div style={{ fontSize: 11, color: '#25521f', fontFamily: NS, marginTop: 2 }}>🌿 {p.greenPoints || 0} pts</div>
                   </td>
-                  <td style={{ ...TD, color: '#6b7280', fontFamily: NS }}>{p.category}</td>
+                  <td style={{ ...TD, color: '#6b7280', fontFamily: NS }}>{p.categories?.[0]?.name || 'Chưa phân loại'}</td>
                   <td style={{ ...TD, textAlign: 'right', ...MONO, fontWeight: 600, color: '#1a1c19' }}>{p.price.toLocaleString('vi-VN')}đ</td>
                   <td style={{ ...TD, textAlign: 'right', ...MONO, fontWeight: 600, color: p.stock === 0 ? '#ba1a1a' : '#1a1c19' }}>{p.stock}</td>
                   <td style={{ ...TD, textAlign: 'center' }}>
-                    <span style={carbonBadge(p.carbonIndex)}>{p.carbonIndex}</span>
+                    <span style={carbonBadge(p.carbonIndex || 0)}>{p.carbonIndex || 0}</span>
                   </td>
                   <td style={TD}>
                     <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.5px', background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba', borderRadius: 6, padding: '3px 7px', fontFamily: NS }}>
-                      {p.ecoFriendliness}
+                      {p.ecoFriendliness || 'ECO'}
                     </span>
                   </td>
                   <td style={TD}>
@@ -101,6 +168,11 @@ export default function Products() {
                   </td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ ...TD, textAlign: 'center', color: '#6b7280' }}>Không tìm thấy sản phẩm nào</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -127,8 +199,9 @@ export default function Products() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Danh mục</label>
-                  <select value={modal.category} onChange={e => setModal({ ...modal, category: e.target.value })} style={{ ...INPUT, cursor: 'pointer' }}>
-                    {CATS.map(c => <option key={c}>{c}</option>)}
+                  <select value={modal.categoryId || ''} onChange={e => setModal({ ...modal, categoryId: +e.target.value })} style={{ ...INPUT, cursor: 'pointer' }}>
+                    <option value="" disabled>-- Chọn --</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -186,8 +259,8 @@ export default function Products() {
             </div>
             <div style={{ padding: '16px 24px', borderTop: '1px solid #eef2eb', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setModal(null)} style={BTN_GHOST}>Hủy</button>
-              <button onClick={save} disabled={!modal.name || modal.price <= 0} style={{ ...BTN_PRIMARY, opacity: (!modal.name || modal.price <= 0) ? 0.5 : 1 }}>
-                {isNew ? 'Thêm sản phẩm' : 'Lưu thay đổi'}
+              <button onClick={save} disabled={!modal.name || modal.price <= 0 || loading} style={{ ...BTN_PRIMARY, opacity: (!modal.name || modal.price <= 0 || loading) ? 0.5 : 1 }}>
+                {loading ? 'Đang lưu...' : (isNew ? 'Thêm sản phẩm' : 'Lưu thay đổi')}
               </button>
             </div>
           </div>
@@ -201,10 +274,12 @@ export default function Products() {
               <Icon name="Trash2" size={22} color="#ba1a1a" />
             </div>
             <h3 style={{ fontFamily: NS, fontWeight: 700, fontSize: 17, color: '#1a1c19', margin: '0 0 8px' }}>Xóa sản phẩm?</h3>
-            <p style={{ fontSize: 13, color: '#6b7280', fontFamily: NS, margin: '0 0 22px' }}>Sản phẩm sẽ bị ẩn khỏi hệ thống (soft delete).</p>
+            <p style={{ fontSize: 13, color: '#6b7280', fontFamily: NS, margin: '0 0 22px' }}>Sản phẩm sẽ bị xóa khỏi hệ thống.</p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setDeleteId(null)} style={{ ...BTN_GHOST, flex: 1, justifyContent: 'center' }}>Hủy</button>
-              <button onClick={() => remove(deleteId)} style={{ flex: 1, background: '#ba1a1a', color: '#fff', border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: NS }}>Xóa</button>
+              <button onClick={() => remove()} disabled={loading} style={{ flex: 1, background: '#ba1a1a', color: '#fff', border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: NS, opacity: loading ? 0.5 : 1 }}>
+                {loading ? 'Đang xóa...' : 'Xóa'}
+              </button>
             </div>
           </div>
         </div>
