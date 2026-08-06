@@ -783,13 +783,18 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
   };
 
   // Filter logic
-  const isAwaitingReview = (order: OrderResponse, productName?: string) => {
-    if (order.status !== 'COMPLETED' || !order.createdAt) return false;
+  const checkReviewStatus = (order: OrderResponse, productName?: string) => {
+    if (order.status !== 'COMPLETED' || !order.createdAt) return 'NONE';
+    if (productName && reviewedItems.includes(`${order.id}-${productName}`)) return 'REVIEWED';
     const created = new Date(order.createdAt);
     const days = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
-    if (days > 14) return false;
+    if (days > 14) return 'EXPIRED';
+    return 'PENDING';
+  };
+
+  const isAwaitingReview = (order: OrderResponse, productName?: string) => {
     if (productName) {
-      return !reviewedItems.includes(`${order.id}-${productName}`);
+      return checkReviewStatus(order, productName) === 'PENDING';
     }
     // For order level: true if at least one item can be reviewed
     return order.orderItems?.some(i => !reviewedItems.includes(`${order.id}-${i.productName}`)) ?? false;
@@ -926,14 +931,18 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
                         {/* Review logic */}
                         {order.status === 'COMPLETED' && (
                           <div className="flex justify-end items-center mt-1">
-                            {isAwaitingReview(order, p.productName) ? (
+                            {checkReviewStatus(order, p.productName) === 'PENDING' && (
                               <button
                                 onClick={() => setReviewTarget({ orderId: order.id, productName: p.productName })}
                                 className="flex items-center gap-1.5 text-[#25521f] text-[12px] border border-[#25521f] px-4 py-1.5 rounded-full hover:bg-[#f0f7ee] transition-colors"
                               >
                                 Đánh giá
                               </button>
-                            ) : (
+                            )}
+                            {checkReviewStatus(order, p.productName) === 'REVIEWED' && (
+                              <span className="text-[#3d6b35] text-[11px] font-medium">Đã đánh giá</span>
+                            )}
+                            {checkReviewStatus(order, p.productName) === 'EXPIRED' && (
                               <span className="text-[#9ca3af] text-[11px]">Hết hạn đánh giá</span>
                             )}
                           </div>
