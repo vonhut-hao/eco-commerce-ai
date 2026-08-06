@@ -8,6 +8,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useCartStore } from "../../store/cartStore";
 import { profileApi, UserProfileResponse } from "../../api/profile";
 import { ordersApi, OrderResponse } from "../../api/orders";
+import { AddressModal } from "./AddressModal";
 import imageCompression from 'browser-image-compression';
 import { getTier, ECO_TIERS } from "./ImpactPage";
 
@@ -1122,11 +1123,12 @@ function WishlistSection({
 
 // ─── Account Preferences ───────────────────────────────────────────────────
 function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void }) {
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
   const userRoles = useAuthStore.getState().user?.roles || [];
   const isAdmin = userRoles.includes('ADMIN') || userRoles.includes('ROLE_ADMIN');
 
   const rows = [
-    { label: "Địa chỉ giao hàng",    sublabel: "Quản lý địa chỉ đã lưu",      icon: MapPin,     danger: false, action: () => {} },
+    { label: "Địa chỉ giao hàng",    sublabel: "Quản lý địa chỉ đã lưu",      icon: MapPin,     danger: false, action: () => setAddressModalOpen(true) },
     { label: "Phương thức thanh toán", sublabel: "Thẻ và ví điện tử",           icon: CreditCard, danger: false, action: () => {} },
     ...(isAdmin ? [{ label: "Trang Quản trị", sublabel: "Admin Panel", icon: Award, danger: false, action: () => onNavigate("admin") }] : []),
     { label: "Cài đặt thông báo",     sublabel: "Email, push và tin nhắn",      icon: Bell,       danger: false, action: () => {} },
@@ -1138,10 +1140,11 @@ function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void })
   ];
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.75)", border: "1px solid #dde8d8", backdropFilter: "blur(8px)" }}
-    >
+    <>
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.75)", border: "1px solid #dde8d8", backdropFilter: "blur(8px)" }}
+      >
         {rows.map((row, i) => {
           const Icon = row.icon;
           return (
@@ -1173,6 +1176,8 @@ function AccountPreferences({ onNavigate }: { onNavigate: (p: string) => void })
           );
         })}
       </div>
+      <AddressModal isOpen={addressModalOpen} onClose={() => setAddressModalOpen(false)} />
+    </>
   );
 }
 
