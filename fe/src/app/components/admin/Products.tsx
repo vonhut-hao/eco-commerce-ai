@@ -12,10 +12,9 @@ interface ProductForm {
   carbonIndex: number;
   greenPoints: number;
   ecoFriendliness: string;
-  certificates: string[];
 }
 
-const EMPTY: ProductForm = { id: 0, name: '', categoryId: null, price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE', certificates: [] }
+const EMPTY: ProductForm = { id: 0, name: '', categoryId: null, price: 0, stock: 0, carbonIndex: 0, greenPoints: 0, ecoFriendliness: 'BIODEGRADABLE' }
 const ECO = ['BIODEGRADABLE','100% ORGANIC','ZERO PLASTIC','RECYCLABLE','100% NATURAL','FSC CERTIFIED','BPA FREE','SUSTAINABLE','PLANTABLE','PET SAFE']
 const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
 const LMONO = '"Liberation Mono","Courier New",monospace'
@@ -27,14 +26,20 @@ export default function Products() {
   const [categories, setCategories] = useState<CategoryBE[]>([])
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState<ProductForm | null>(null)
+  const [certModal, setCertModal] = useState<ProductBE | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+  
+  // Cert Form State
+  const [certForm, setCertForm] = useState({ name: '', issuer: '', issueDate: '', imageUrl: '' })
 
   const fetchProducts = async () => {
     try {
       const res = await productsApi.getProducts(0, 1000);
       setProducts(res.content);
+      // Update certModal if it's open
+      setCertModal(prev => prev ? (res.content.find(p => p.id === prev.id) || prev) : null);
     } catch (error) {
       console.error(error);
     }
@@ -61,8 +66,7 @@ export default function Products() {
       stock: p.stock,
       carbonIndex: p.carbonIndex || 0,
       greenPoints: p.greenPoints || 0,
-      ecoFriendliness: p.ecoFriendliness || 'BIODEGRADABLE',
-      certificates: p.greenCertificates?.map(c => c.name) || []
+      ecoFriendliness: p.ecoFriendliness || 'BIODEGRADABLE'
     }); 
     setIsNew(false) 
   }
@@ -110,6 +114,39 @@ export default function Products() {
       setLoading(false);
     }
   }
+  
+  async function addCertificate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!certModal) return;
+    setLoading(true);
+    try {
+      await productsApi.createGreenCertificate({
+        ...certForm,
+        productId: certModal.id
+      });
+      setCertForm({ name: '', issuer: '', issueDate: '', imageUrl: '' });
+      await fetchProducts();
+    } catch (error) {
+      console.error(error);
+      alert('Có lỗi xảy ra khi thêm chứng chỉ');
+    } finally {
+      setLoading(false);
+    }
+  }
+  
+  async function removeCertificate(certId: number) {
+    if (!confirm('Bạn có chắc muốn xóa chứng chỉ này?')) return;
+    setLoading(true);
+    try {
+      await productsApi.deleteGreenCertificate(certId);
+      await fetchProducts();
+    } catch (error) {
+      console.error(error);
+      alert('Có lỗi xảy ra khi xóa chứng chỉ');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div>
@@ -134,7 +171,7 @@ export default function Products() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Sản phẩm','Danh mục','Giá','Tồn kho','CO₂ (kg)','Eco',''].map(h => (
+                {['Sản phẩm','Danh mục','Giá','Tồn kho','CO₂ (kg)','Eco','Chứng chỉ',''].map(h => (
                   <th key={h} style={{ ...TH, textAlign: h === 'Giá' || h === 'Tồn kho' ? 'right' : 'left' }}>{h}</th>
                 ))}
               </tr>
@@ -161,6 +198,12 @@ export default function Products() {
                     </span>
                   </td>
                   <td style={TD}>
+                    <button onClick={() => setCertModal(p)} style={{ background: 'transparent', border: '1px solid #c2deba', color: '#3d6b35', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: NS, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="Award" size={12} color="#3d6b35" />
+                      {p.greenCertificates?.length || 0}
+                    </button>
+                  </td>
+                  <td style={TD}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <button onClick={() => openEdit(p)} style={{ width: 32, height: 32, background: '#f0f7ee', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Pencil" size={14} color="#3d6b35" /></button>
                       <button onClick={() => setDeleteId(p.id)} style={{ width: 32, height: 32, background: '#fff0f0', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Trash2" size={14} color="#ba1a1a" /></button>
@@ -170,7 +213,7 @@ export default function Products() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ ...TD, textAlign: 'center', color: '#6b7280' }}>Không tìm thấy sản phẩm nào</td>
+                  <td colSpan={8} style={{ ...TD, textAlign: 'center', color: '#6b7280' }}>Không tìm thấy sản phẩm nào</td>
                 </tr>
               )}
             </tbody>
@@ -179,7 +222,7 @@ export default function Products() {
         <div style={{ padding: '10px 16px', fontSize: 12, color: '#6b7280', fontFamily: NS, borderTop: '1px solid #eef2eb' }}>{filtered.length} sản phẩm</div>
       </div>
 
-      {/* Modal */}
+      {/* Product Modal */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #dde8d8', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
@@ -239,29 +282,75 @@ export default function Products() {
                     onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
                 </div>
               </div>
-              <div>
-                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 8 }}>Chứng nhận xanh</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {ECO.map(b => (
-                    <button key={b} type="button" onClick={() => {
-                      const certs = modal.certificates.includes(b) ? modal.certificates.filter(c => c !== b) : [...modal.certificates, b]
-                      setModal({ ...modal, certificates: certs })
-                    }} style={{
-                      fontSize: 10, fontWeight: 700, letterSpacing: '0.5px',
-                      padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontFamily: NS,
-                      background: modal.certificates.includes(b) ? '#25521f' : '#f5f9f3',
-                      color: modal.certificates.includes(b) ? '#ffffff' : '#6b7280',
-                      border: modal.certificates.includes(b) ? '1px solid #25521f' : '1px solid #dde8d8',
-                    }}>{b}</button>
-                  ))}
-                </div>
-              </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: '1px solid #eef2eb', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setModal(null)} style={BTN_GHOST}>Hủy</button>
               <button onClick={save} disabled={!modal.name || modal.price <= 0 || loading} style={{ ...BTN_PRIMARY, opacity: (!modal.name || modal.price <= 0 || loading) ? 0.5 : 1 }}>
                 {loading ? 'Đang lưu...' : (isNew ? 'Thêm sản phẩm' : 'Lưu thay đổi')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cert Modal */}
+      {certModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #dde8d8', width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 24px 18px', borderBottom: '1px solid #eef2eb' }}>
+              <div>
+                <h2 style={{ fontFamily: NS, fontWeight: 700, fontSize: 18, color: '#1a1c19', margin: '0 0 4px' }}>Quản lý chứng nhận xanh</h2>
+                <p style={{ fontSize: 13, color: '#6b7280', fontFamily: NS, margin: 0 }}>{certModal.name}</p>
+              </div>
+              <button onClick={() => setCertModal(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 20, lineHeight: 1 }}>✕</button>
+            </div>
+            
+            <div style={{ padding: '20px 24px' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1a1c19', fontFamily: NS, margin: '0 0 12px' }}>Danh sách chứng nhận</h3>
+              {(!certModal.greenCertificates || certModal.greenCertificates.length === 0) ? (
+                <div style={{ padding: '20px', textAlign: 'center', background: '#f5f9f3', borderRadius: 12, border: '1px dashed #c2deba', fontSize: 13, color: '#6b7280', fontFamily: NS, marginBottom: 24 }}>
+                  Chưa có chứng nhận nào
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                  {certModal.greenCertificates.map(c => (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#fcfdfb', border: '1px solid #eef2eb', borderRadius: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1c19', fontFamily: NS }}>{c.name}</div>
+                        <div style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, marginTop: 4 }}>Bởi: {c.issuer} · {c.issueDate}</div>
+                      </div>
+                      <button onClick={() => removeCertificate(c.id)} disabled={loading} style={{ background: '#fff0f0', border: 'none', width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: loading ? 0.5 : 1 }}>
+                        <Icon name="Trash2" size={14} color="#ba1a1a" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1a1c19', fontFamily: NS, margin: '0 0 12px', borderTop: '1px solid #eef2eb', paddingTop: 20 }}>Thêm chứng nhận mới</h3>
+              <form onSubmit={addCertificate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Tên chứng nhận *</label>
+                  <input required value={certForm.name} onChange={e => setCertForm({ ...certForm, name: e.target.value })} style={INPUT} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Tổ chức cấp (Issuer) *</label>
+                  <input required value={certForm.issuer} onChange={e => setCertForm({ ...certForm, issuer: e.target.value })} style={INPUT} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Ngày cấp *</label>
+                    <input required type="date" value={certForm.issueDate} onChange={e => setCertForm({ ...certForm, issueDate: e.target.value })} style={INPUT} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link hình ảnh logo (tuỳ chọn)</label>
+                    <input value={certForm.imageUrl} onChange={e => setCertForm({ ...certForm, imageUrl: e.target.value })} style={INPUT} placeholder="https://..." />
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} style={{ ...BTN_PRIMARY, marginTop: 10, alignSelf: 'flex-end', opacity: loading ? 0.5 : 1 }}>
+                  {loading ? 'Đang thêm...' : 'Thêm chứng nhận'}
+                </button>
+              </form>
             </div>
           </div>
         </div>

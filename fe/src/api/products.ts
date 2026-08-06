@@ -6,6 +6,14 @@ export interface CategoryBE {
   description: string;
 }
 
+import client from './client';
+
+export interface CategoryBE {
+  id: number;
+  name: string;
+  description: string;
+}
+
 export interface MaterialBE {
   id: number;
   name: string;
@@ -15,7 +23,19 @@ export interface MaterialBE {
 export interface GreenCertificateBE {
   id: number;
   name: string;
-  organization: string;
+  issuer: string;
+  issueDate: string;
+  imageUrl: string;
+  productId: number;
+  productName: string;
+}
+
+export interface GreenCertificateRequest {
+  name: string;
+  issuer: string;
+  issueDate: string;
+  imageUrl?: string;
+  productId: number;
 }
 
 export interface CommentBE {
@@ -131,5 +151,25 @@ export const productsApi = {
   
   deleteProduct: async (id: number) => {
     await client.delete(`/v1/catalog/products/${id}`);
+  },
+  
+  // --- Green Certificates ---
+  getGreenCertificates: async () => {
+    const res = await client.get<ApiResponse<GreenCertificateBE[]>>('/v1/catalog/green-certificates');
+    return res.data.data;
+  },
+  
+  createGreenCertificate: async (req: GreenCertificateRequest) => {
+    const res = await client.post<ApiResponse<GreenCertificateBE>>('/v1/catalog/green-certificates', req);
+    return res.data.data;
+  },
+  
+  updateGreenCertificate: async (id: number, req: GreenCertificateRequest) => {
+    const res = await client.post<ApiResponse<GreenCertificateBE>>(`/v1/catalog/green-certificates/${id}`, req);
+    return res.data.data;
+  },
+  
+  deleteGreenCertificate: async (id: number) => {
+    await client.delete(`/v1/catalog/green-certificates/${id}`);
   }
 };
