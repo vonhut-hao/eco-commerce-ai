@@ -45,6 +45,12 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("OAuth2 user not found after login"));
 
+        if (!Boolean.TRUE.equals(user.getIsEnabled())) {
+            log.warn("OAuth2 login handler rejected disabled user account: {}", email);
+            response.sendError(HttpStatus.FORBIDDEN.value(), "User account is disabled");
+            return;
+        }
+
         AuthResponse authResponse = authService.generateTokenForUser(user);
         String redirectUrl = authConfig.getOauth2RedirectUrl();
 

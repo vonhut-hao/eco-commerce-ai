@@ -37,6 +37,29 @@ class AuthIT extends BaseITSpec {
         resp.responseBody.detail == "Invalid username or password"
     }
 
+    def "should fail login when user account is disabled"() {
+        given:
+        def passwordEncode = '$2a$12$pmIXxQ7H.iNsd6BrXRbC/..DoMMuuFEfKml33imgyOuZklipEtpZ.'
+        def disabledUser = new com.flix.identity.entity.User(
+                username: "disabledUser",
+                email: "disabled@flix.com",
+                password: passwordEncode,
+                isEnabled: false,
+                isVerified: true,
+        )
+        disabledUser.roles.add(Role.USER)
+        disabledUser.authProviders.add(AuthProvider.LOCAL)
+        userRepository.save(disabledUser)
+
+        when:
+        def resp = postRequest(BaseIT.LOGIN_API, [username: "disabledUser", password: "Admin@123"])
+                .returnResult(ProblemDetail)
+
+        then:
+        resp.status == HttpStatus.FORBIDDEN
+        resp.responseBody.detail == "User account is disabled"
+    }
+
     //Register Tests
 
     def "should register successfully with valid data"() {

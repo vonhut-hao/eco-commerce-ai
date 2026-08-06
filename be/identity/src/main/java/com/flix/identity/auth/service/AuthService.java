@@ -73,6 +73,10 @@ public class AuthService {
             throw new InvalidCredentailsException();
         }
 
+        if (!Boolean.TRUE.equals(user.getIsEnabled())) {
+            throw new InvalidCredentailsException(ErrorCode.USER_DISABLED);
+        }
+
         return generateToken(user.getId(), user.getUsername(), user.getRoles());
 
     }

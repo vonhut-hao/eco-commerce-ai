@@ -48,7 +48,19 @@ public class CustomOidcUserService extends OidcUserService {
         }
 
         Optional<User> user = userRepository.findByEmail(email);
-        if (user.isEmpty()) {
+        if (user.isPresent()) {
+            if (!Boolean.TRUE.equals(user.get().getIsEnabled())) {
+                log.warn("OIDC login rejected for disabled user account: {}", email);
+                throw new OAuth2AuthenticationException("User account is disabled");
+            }
+            if (!user.get().getAuthProviders().contains(authProvider)) {
+                log.info("Existing user logged in with OIDC: {}", email);
+                log.debug("Merge provider {} into existing user", authProvider);
+                User existsUser = user.get();
+                existsUser.getAuthProviders().add(authProvider);
+                userRepository.save(existsUser);
+            }
+        } else {
             String username = buildUniqueUsername(email);
             User savedUser = userRepository.save(User.builder()
                     .email(email)
@@ -63,12 +75,6 @@ public class CustomOidcUserService extends OidcUserService {
                     .fullName(fullName)
                     .avatarUrl(avatarUrl)
                     .build());
-        } else if (!user.get().getAuthProviders().contains(authProvider)) {
-            log.info("Existing user logged in with OIDC: {}", email);
-            log.debug("Merge provider {} into existing user", authProvider);
-            User existsUser = user.get();
-            existsUser.getAuthProviders().add(authProvider);
-            userRepository.save(existsUser);
         }
 
         return oidcUser;

@@ -44,4 +44,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
             FROM users u JOIN user_roles ur ON u.id = ur.user_id WHERE ur.roles = 'ADMIN' LIMIT 1
             """, nativeQuery = true)
     Optional<User> findFirstAdmin();
+
+    @Query(value = """
+            SELECT u FROM User u LEFT JOIN u.userProfile up
+            WHERE (:query IS NULL OR :query = '' OR
+                   LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                   LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                   LOWER(up.fullName) LIKE LOWER(CONCAT('%', :query, '%')))
+            """,
+            countQuery = """
+            SELECT COUNT(u) FROM User u LEFT JOIN u.userProfile up
+            WHERE (:query IS NULL OR :query = '' OR
+                   LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                   LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                   LOWER(up.fullName) LIKE LOWER(CONCAT('%', :query, '%')))
+            """)
+    org.springframework.data.domain.Page<User> searchUsers(@Param("query") String query, org.springframework.data.domain.Pageable pageable);
+
+    long countByIsEnabledTrue();
 }

@@ -1,14 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Icon } from './Icon'
 import { GLASS, SECTION_LABEL, PAGE_TITLE, TH, TD, BTN_PRIMARY, BTN_GHOST, MONO } from './ui'
+import { adminUserApi, mapAdminUserBeToFe, UserFE } from '../../../api/users'
 
-interface User {
-  id: number; username: string; email: string; fullName: string; phone: string
-  greenPoints: number; totalCarbon: number; orders: number
-  isEnabled: boolean; role: 'USER' | 'ADMIN'; joined: string
-}
-
-const USERS: User[] = [
+const MOCK_USERS: UserFE[] = [
   { id: 1, username: 'nguyenlan',  email: 'lan.nt@gmail.com',    fullName: 'Nguyễn Thị Lan',  phone: '0901234567', greenPoints: 1250, totalCarbon: 4.2, orders: 18, isEnabled: true,  role: 'USER',  joined: '15/01/2026' },
   { id: 2, username: 'tranminh',   email: 'minh.tv@yahoo.com',   fullName: 'Trần Văn Minh',   phone: '0912345678', greenPoints: 580,  totalCarbon: 2.1, orders:  7, isEnabled: true,  role: 'USER',  joined: '03/03/2026' },
   { id: 3, username: 'phamha',     email: 'ha.pt@gmail.com',     fullName: 'Phạm Thu Hà',     phone: '0923456789', greenPoints: 2100, totalCarbon: 7.8, orders: 31, isEnabled: true,  role: 'USER',  joined: '22/11/2025' },
@@ -21,19 +16,61 @@ const USERS: User[] = [
 const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
 
 export default function Users() {
-  const [users, setUsers] = useState(USERS)
+  const [users, setUsers] = useState<UserFE[]>(MOCK_USERS)
   const [search, setSearch] = useState('')
-  const [detail, setDetail] = useState<User | null>(null)
+  const [detail, setDetail] = useState<UserFE | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [stats, setStats] = useState<{ total: number; active: number } | null>(null)
 
-  const filtered = users.filter(u =>
-    u.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
-  )
+  const fetchUsers = useCallback(async () => {
+    setLoading(true)
+    try {
+      const pageData = await adminUserApi.getUsers(search)
+      if (pageData && pageData.content) {
+        const mapped = pageData.content.map(mapAdminUserBeToFe)
+        setUsers(mapped)
+      }
+      const statsData = await adminUserApi.getUserStats()
+      if (statsData) {
+        setStats({ total: statsData.totalUsers, active: statsData.activeUsers })
+      }
+    } catch {
+      // Fallback to local mock filtering when backend identity API is unavailable or unauthenticated
+      setUsers(MOCK_USERS.filter(u =>
+        u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase()) ||
+        u.username.toLowerCase().includes(search.toLowerCase())
+      ))
+    } finally {
+      setLoading(false)
+    }
+  }, [search])
 
-  function toggleEnabled(id: number) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsers()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [fetchUsers])
+
+  async function toggleEnabled(id: number, currentStatus: boolean) {
+    try {
+      const updated = await adminUserApi.updateUserStatus(id, !currentStatus)
+      if (updated) {
+        const mapped = mapAdminUserBeToFe(updated)
+        setUsers(prev => prev.map(u => u.id === id ? mapped : u))
+        if (detail?.id === id) setDetail(mapped)
+        return
+      }
+    } catch {
+      // Fallback to local state update if offline
+    }
     setUsers(prev => prev.map(u => u.id === id ? { ...u, isEnabled: !u.isEnabled } : u))
     if (detail?.id === id) setDetail(d => d ? { ...d, isEnabled: !d.isEnabled } : d)
   }
+
+  const totalCount = stats ? stats.total : users.length
+  const activeCount = stats ? stats.active : users.filter(u => u.isEnabled).length
 
   return (
     <div>
@@ -41,7 +78,7 @@ export default function Users() {
         <div><p style={SECTION_LABEL}>Quản lý tài khoản</p><h1 style={PAGE_TITLE}>Người dùng</h1></div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div style={{ background: 'rgba(255,255,255,0.75)', border: '1px solid #dde8d8', borderRadius: 12, padding: '8px 16px', fontSize: 13, color: '#42493e', fontFamily: NS }}>
-            Tổng: <strong style={{ color: '#1a1c19' }}>{users.length}</strong> · Hoạt động: <strong style={{ color: '#25521f' }}>{users.filter(u => u.isEnabled).length}</strong>
+            Tổng: <strong style={{ color: '#1a1c19' }}>{totalCount}</strong> · Hoạt động: <strong style={{ color: '#25521f' }}>{activeCount}</strong>
           </div>
         </div>
       </div>
@@ -59,53 +96,67 @@ export default function Users() {
               <tr>{['Người dùng','Liên hệ','Đơn hàng','Green Points','CO₂','Vai trò','Trạng thái',''].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
             </thead>
             <tbody>
-              {filtered.map(u => (
-                <tr key={u.id} style={{ transition: 'background 120ms' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafff8'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                >
-                  <td style={TD}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 999, background: '#e8f5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: '#3d6b35', flexShrink: 0, fontFamily: NS }}>
-                        {u.fullName[0]}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 500, color: '#1a1c19', fontSize: 14, fontFamily: NS }}>{u.fullName}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>@{u.username} · {u.joined}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={TD}>
-                    <div style={{ fontSize: 13, color: '#42493e', fontFamily: NS }}>{u.email}</div>
-                    <div style={{ ...MONO, fontSize: 11, color: '#6b7280' }}>{u.phone}</div>
-                  </td>
-                  <td style={{ ...TD, ...MONO, fontWeight: 600, color: '#1a1c19' }}>{u.orders}</td>
-                  <td style={TD}>
-                    <span style={{ fontSize: 12, fontWeight: 600, background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba', borderRadius: 999, padding: '3px 10px', fontFamily: NS }}>
-                      🌿 {u.greenPoints.toLocaleString()}
-                    </span>
-                  </td>
-                  <td style={{ ...TD, ...MONO, color: '#6b7280' }}>{u.totalCarbon} kg</td>
-                  <td style={TD}>
-                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', background: u.role === 'ADMIN' ? '#25521f' : '#f5f5f0', color: u.role === 'ADMIN' ? '#fff' : '#6b7280', border: `1px solid ${u.role === 'ADMIN' ? '#25521f' : '#e0e0d8'}`, borderRadius: 6, padding: '3px 8px', fontFamily: NS }}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td style={TD}>
-                    <button onClick={() => u.role !== 'ADMIN' && toggleEnabled(u.id)} disabled={u.role === 'ADMIN'}
-                      style={{ position: 'relative', width: 36, height: 20, borderRadius: 999, border: 'none', cursor: u.role === 'ADMIN' ? 'not-allowed' : 'pointer', background: u.isEnabled ? '#3d6b35' : '#d1d5db', opacity: u.role === 'ADMIN' ? 0.4 : 1, transition: 'background 200ms', padding: 0 }}>
-                      <span style={{ position: 'absolute', top: 2, left: u.isEnabled ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: '#fff', transition: 'left 200ms', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                    </button>
-                  </td>
-                  <td style={TD}>
-                    <button onClick={() => setDetail(u)} style={{ width: 32, height: 32, background: '#f0f7ee', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Eye" size={14} color="#3d6b35" /></button>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '30px 0', color: '#6b7280', fontFamily: NS }}>
+                    Đang tải dữ liệu người dùng...
                   </td>
                 </tr>
-              ))}
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '30px 0', color: '#6b7280', fontFamily: NS }}>
+                    Không tìm thấy người dùng phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                users.map(u => (
+                  <tr key={u.id} style={{ transition: 'background 120ms' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafff8'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                  >
+                    <td style={TD}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 999, background: '#e8f5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: '#3d6b35', flexShrink: 0, fontFamily: NS }}>
+                          {u.fullName ? u.fullName[0].toUpperCase() : 'U'}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 500, color: '#1a1c19', fontSize: 14, fontFamily: NS }}>{u.fullName}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>@{u.username} · {u.joined}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={TD}>
+                      <div style={{ fontSize: 13, color: '#42493e', fontFamily: NS }}>{u.email}</div>
+                      <div style={{ ...MONO, fontSize: 11, color: '#6b7280' }}>{u.phone}</div>
+                    </td>
+                    <td style={{ ...TD, ...MONO, fontWeight: 600, color: '#1a1c19' }}>{u.orders}</td>
+                    <td style={TD}>
+                      <span style={{ fontSize: 12, fontWeight: 600, background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba', borderRadius: 999, padding: '3px 10px', fontFamily: NS }}>
+                        🌿 {u.greenPoints.toLocaleString()}
+                      </span>
+                    </td>
+                    <td style={{ ...TD, ...MONO, color: '#6b7280' }}>{u.totalCarbon} kg</td>
+                    <td style={TD}>
+                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', background: u.role === 'ADMIN' ? '#25521f' : '#f5f5f0', color: u.role === 'ADMIN' ? '#fff' : '#6b7280', border: `1px solid ${u.role === 'ADMIN' ? '#25521f' : '#e0e0d8'}`, borderRadius: 6, padding: '3px 8px', fontFamily: NS }}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td style={TD}>
+                      <button onClick={() => u.role !== 'ADMIN' && toggleEnabled(u.id, u.isEnabled)} disabled={u.role === 'ADMIN'}
+                        style={{ position: 'relative', width: 36, height: 20, borderRadius: 999, border: 'none', cursor: u.role === 'ADMIN' ? 'not-allowed' : 'pointer', background: u.isEnabled ? '#3d6b35' : '#d1d5db', opacity: u.role === 'ADMIN' ? 0.4 : 1, transition: 'background 200ms', padding: 0 }}>
+                        <span style={{ position: 'absolute', top: 2, left: u.isEnabled ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: '#fff', transition: 'left 200ms', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                      </button>
+                    </td>
+                    <td style={TD}>
+                      <button onClick={() => setDetail(u)} style={{ width: 32, height: 32, background: '#f0f7ee', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Eye" size={14} color="#3d6b35" /></button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-        <div style={{ padding: '10px 16px', fontSize: 12, color: '#6b7280', fontFamily: NS, borderTop: '1px solid #eef2eb' }}>{filtered.length} người dùng</div>
+        <div style={{ padding: '10px 16px', fontSize: 12, color: '#6b7280', fontFamily: NS, borderTop: '1px solid #eef2eb' }}>{users.length} người dùng</div>
       </div>
 
       {detail && (
@@ -117,7 +168,9 @@ export default function Users() {
             </div>
             <div style={{ padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-                <div style={{ width: 52, height: 52, borderRadius: 999, background: '#e8f5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#3d6b35', fontFamily: NS }}>{detail.fullName[0]}</div>
+                <div style={{ width: 52, height: 52, borderRadius: 999, background: '#e8f5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#3d6b35', fontFamily: NS }}>
+                  {detail.fullName ? detail.fullName[0].toUpperCase() : 'U'}
+                </div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 17, color: '#1a1c19', fontFamily: NS }}>{detail.fullName}</div>
                   <div style={{ fontSize: 13, color: '#6b7280', fontFamily: NS }}>@{detail.username}</div>
@@ -135,7 +188,7 @@ export default function Users() {
             </div>
             <div style={{ padding: '16px 24px', borderTop: '1px solid #eef2eb', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               {detail.role !== 'ADMIN' && (
-                <button onClick={() => toggleEnabled(detail.id)} style={{
+                <button onClick={() => toggleEnabled(detail.id, detail.isEnabled)} style={{
                   ...BTN_GHOST,
                   color: detail.isEnabled ? '#ba1a1a' : '#3d6b35',
                   borderColor: detail.isEnabled ? '#f5c2c2' : '#c2deba',

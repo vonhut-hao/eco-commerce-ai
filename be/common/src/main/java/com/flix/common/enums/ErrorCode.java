@@ -12,6 +12,9 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
+    USER_DISABLED("User account is disabled", HttpStatus.FORBIDDEN),
+    ADMIN_SELF_DISABLE_NOT_ALLOWED("Admin user cannot disable their own account", HttpStatus.BAD_REQUEST),
+    ADMIN_STATUS_CHANGE_NOT_ALLOWED("Cannot change account status of another administrator", HttpStatus.BAD_REQUEST),
     INVALID_CREDENTIALS("Invalid username or password", HttpStatus.UNAUTHORIZED),
     EMAIL_ALREADY_EXISTS("Email already exists", HttpStatus.BAD_REQUEST),
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.BAD_REQUEST),
