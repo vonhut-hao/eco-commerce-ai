@@ -143,7 +143,7 @@ function EditProfilePanel({
     }
   };
 
-  const grad = AVATAR_GRADIENTS[form.avatarIndex];
+  const grad = AVATAR_GRADIENTS[Math.abs(profile.userId) % AVATAR_GRADIENTS.length];
 
   return (
     <>
@@ -200,17 +200,6 @@ function EditProfilePanel({
                   )}
                 </button>
               </div>
-              {/* Color swatches */}
-              <div className="flex gap-2 flex-wrap">
-                {AVATAR_GRADIENTS.map((g, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setForm((f) => ({ ...f, avatarIndex: i }))}
-                    className={`w-8 h-8 rounded-lg transition-all ${form.avatarIndex === i ? "ring-2 ring-[#25521f] ring-offset-1 scale-110" : "hover:scale-105"}`}
-                    style={{ background: `linear-gradient(135deg, ${g.from}, ${g.to})` }}
-                  />
-                ))}
-              </div>
             </div>
             {/* Hidden file input */}
             <input 
@@ -220,17 +209,6 @@ function EditProfilePanel({
               className="hidden" 
               onChange={handleFileChange}
             />
-            {/* Initial letter input */}
-            <div className="flex items-center gap-3">
-              <span className="text-[#6b7280] text-[13px] shrink-0">Display initial:</span>
-              <input
-                maxLength={1}
-                value={form.avatarInitial}
-                onChange={(e) => setForm((f) => ({ ...f, avatarInitial: e.target.value.toUpperCase() }))}
-                placeholder={form.username?.[0]?.toUpperCase() || "S"}
-                className="w-12 border border-[#c2c9bb] text-center py-1.5 text-[16px] text-[#1a1c19] outline-none focus:border-[#25521f] transition-colors bg-white rounded-sm"
-              />
-            </div>
           </div>
 
           {/* Full Name */}

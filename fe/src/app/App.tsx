@@ -45,6 +45,15 @@ import { AdminPanel } from "./components/admin/AdminPanel";
 
 export type Page = "home" | "shop" | "product" | "cart" | "checkout" | "profile" | "signup" | "signin" | "impact" | "admin";
 
+const AVATAR_GRADIENTS = [
+  { from: "#8fbf8a", to: "#3d7035" },
+  { from: "#7eb8d4", to: "#1e5a8a" },
+  { from: "#d4a76a", to: "#8a5a1e" },
+  { from: "#c47eb8", to: "#6a1e8a" },
+  { from: "#d47e7e", to: "#8a1e1e" },
+  { from: "#7ed4c4", to: "#1e8a7a" },
+];
+
 const mainDisplayImages = [imgPrimary, imgThumb2, imgThumb3, imgThumb4];
 const thumbnails = [imgThumb1, imgThumb2, imgThumb3, imgThumb4];
 
@@ -305,8 +314,8 @@ function DesktopHeader({
                 <img src={avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-[#c2c9bb]" />
               ) : isAuthenticated ? (
                 <div 
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white border border-[#c2c9bb]"
-                  style={{ background: "#3d7035" }}
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold text-white border border-[#c2c9bb] leading-none pb-[1px]"
+                  style={{ background: user ? `linear-gradient(135deg, ${AVATAR_GRADIENTS[Math.abs(user.id) % AVATAR_GRADIENTS.length].from}, ${AVATAR_GRADIENTS[Math.abs(user.id) % AVATAR_GRADIENTS.length].to})` : "#3d7035" }}
                 >
                   {(user?.username?.[0] || user?.email?.[0] || "U").toUpperCase()}
                 </div>
@@ -854,7 +863,7 @@ function BottomNav({
                 avatarUrl ? (
                   <img src={avatarUrl} alt="Avatar" className={`w-[22px] h-[22px] rounded-full object-cover ${isActive ? 'border-2 border-[#25521f]' : ''}`} />
                 ) : (
-                  <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-bold text-white ${isActive ? 'border-2 border-[#25521f]' : ''}`} style={{ background: "#3d7035" }}>
+                  <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-bold text-white leading-none pb-[1px] ${isActive ? 'border-2 border-[#25521f]' : ''}`} style={{ background: user ? `linear-gradient(135deg, ${AVATAR_GRADIENTS[Math.abs(user.id) % AVATAR_GRADIENTS.length].from}, ${AVATAR_GRADIENTS[Math.abs(user.id) % AVATAR_GRADIENTS.length].to})` : "#3d7035" }}>
                     {(user?.username?.[0] || user?.email?.[0] || "U").toUpperCase()}
                   </div>
                 )
