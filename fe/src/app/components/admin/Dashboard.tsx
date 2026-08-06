@@ -8,13 +8,17 @@ import { GLASS, MONO, SECTION_LABEL, PAGE_TITLE } from './ui'
 import { ordersApi, OrderResponse } from '../../../api/orders'
 import { statisticsApi } from '../../../api/statistics'
 
-const categoryDataMock = [
-  { name: 'Home & Kitchen', value: 32, color: '#3d6b35' },
-  { name: 'Personal Care',  value: 27, color: '#5a9448' },
-  { name: 'Fashion',        value: 19, color: '#8ab87a' },
-  { name: 'Food & Beverage',value: 14, color: '#b8d8a8' },
-  { name: 'Khác',           value:  8, color: '#dde8d8' },
-]
+import { productsApi, ProductBE } from '../../../api/products'
+
+const CATEGORY_COLORS = [
+  '#3d6b35', // Home & Kitchen
+  '#5a9448', // Personal Care
+  '#8ab87a', // Fashion
+  '#b8d8a8', // Food & Beverage
+  '#dde8d8', // Other
+  '#25521f',
+  '#a3c99a'
+];
 
 const statusStyle: Record<string, React.CSSProperties> = {
   'PENDING':      { background: '#fdf6ec', color: '#6f6143', border: '1px solid #e8d8ae' },
@@ -57,10 +61,12 @@ function timeAgo(dateString?: string) {
 
 export default function Dashboard() {
   const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [products, setProducts] = useState<ProductBE[]>([]);
   const [revenueThisMonth, setRevenueThisMonth] = useState(0);
 
   useEffect(() => {
     ordersApi.getAllOrdersAdmin().then(setOrders).catch(console.error);
+    productsApi.getProducts(0, 1000).then(res => setProducts(res.content)).catch(console.error);
     const today = new Date().toISOString().split('T')[0];
     statisticsApi.getRevenue('MONTHLY', today).then(setRevenueThisMonth).catch(console.error);
   }, []);
@@ -81,11 +87,15 @@ export default function Dashboard() {
 
     let totalOrdersThisMonth = 0;
     let totalCarbonSaved = 0;
+    const uniqueCustomers = new Set<number>();
     
     // Top products calculation
     const productStats: Record<number, { name: string; sold: number; revenue: number; carbon: number }> = {};
+    const categoryStats: Record<string, { value: number; color: string }> = {};
+    let totalSold = 0;
 
     orders.forEach(o => {
+      uniqueCustomers.add(o.userId);
       const date = o.createdAt ? new Date(o.createdAt) : new Date();
       const m = date.getMonth();
       const y = date.getFullYear();
@@ -106,6 +116,7 @@ export default function Dashboard() {
         
         o.orderItems?.forEach(item => {
           totalCarbonSaved += (item.lineCarbonFootprint || 0);
+          totalSold += item.quantity;
           
           if (!productStats[item.productId]) {
             productStats[item.productId] = { name: item.productName, sold: 0, revenue: 0, carbon: 0 };
@@ -113,9 +124,26 @@ export default function Dashboard() {
           productStats[item.productId].sold += item.quantity;
           productStats[item.productId].revenue += item.price * item.quantity;
           productStats[item.productId].carbon += (item.lineCarbonFootprint || 0);
+          
+          // Map to category
+          const product = products.find(p => p.id === item.productId);
+          const categoryName = product?.categories?.[0]?.name || 'Khác';
+          if (!categoryStats[categoryName]) {
+            categoryStats[categoryName] = { 
+              value: 0, 
+              color: CATEGORY_COLORS[Object.keys(categoryStats).length % CATEGORY_COLORS.length] 
+            };
+          }
+          categoryStats[categoryName].value += item.quantity;
         });
       }
     });
+    
+    const categoryData = Object.entries(categoryStats).map(([name, data]) => ({
+      name,
+      value: Math.round((data.value / (totalSold || 1)) * 100), // convert to percentage
+      color: data.color
+    })).sort((a, b) => b.value - a.value).filter(c => c.value > 0);
 
     const topProducts = Object.values(productStats)
       .sort((a, b) => b.sold - a.sold)
@@ -142,7 +170,7 @@ export default function Dashboard() {
     const stats: { label: string; value: string; unit: string; trend: string; color: string; icon: StatIcon }[] = [
       { label: `Doanh thu tháng ${new Date().getMonth() + 1}`, value: formatCurrency(revenueThisMonth), unit: 'VNĐ',      trend: 'Mới nhất', color: '#3d6b35', icon: 'TrendingUp'  },
       { label: `Đơn hàng tháng ${new Date().getMonth() + 1}`,  value: totalOrdersThisMonth.toString(),   unit: 'đơn hàng', trend: 'Mới nhất', color: '#5a9448', icon: 'ShoppingBag' },
-      { label: 'Người dùng mới',    value: '142', unit: 'tài khoản',trend: '+8.3%',  color: '#6f6143', icon: 'Users'       },
+      { label: 'Khách hàng',        value: uniqueCustomers.size.toString(), unit: 'tài khoản', trend: 'Tổng',  color: '#6f6143', icon: 'Users'       },
       { label: 'Carbon tiết kiệm',  value: totalCarbonSaved.toFixed(1),   unit: 'kg CO₂ eq.', trend: 'Tổng',color: '#3b4fd4', icon: 'Leaf'        },
     ];
 
@@ -150,9 +178,10 @@ export default function Dashboard() {
       revenueData: months,
       topProducts,
       recentOrders,
+      categoryData,
       stats
     };
-  }, [orders, revenueThisMonth]);
+  }, [orders, products, revenueThisMonth]);
 
   return (
     <div>
@@ -219,14 +248,14 @@ export default function Dashboard() {
           <p style={{ fontFamily: NS, fontWeight: 600, fontSize: 15, color: '#1a1c19', margin: '0 0 16px' }}>Danh mục bán chạy</p>
           <ResponsiveContainer width="100%" height={150}>
             <PieChart>
-              <Pie data={categoryDataMock} dataKey="value" cx="50%" cy="50%" outerRadius={62} innerRadius={30}>
-                {categoryDataMock.map((e, i) => <Cell key={i} fill={e.color} />)}
+              <Pie data={data.categoryData} dataKey="value" cx="50%" cy="50%" outerRadius={62} innerRadius={30}>
+                {data.categoryData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #dde8d8', fontSize: 12, fontFamily: NS }} formatter={v => [`${v}%`, '']} />
             </PieChart>
           </ResponsiveContainer>
           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {categoryDataMock.map(c => (
+            {data.categoryData.map(c => (
               <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 2, background: c.color }} />
@@ -235,6 +264,9 @@ export default function Dashboard() {
                 <span style={{ ...MONO, fontSize: 12, fontWeight: 700, color: '#1a1c19' }}>{c.value}%</span>
               </div>
             ))}
+            {data.categoryData.length === 0 && (
+              <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'center', padding: '20px 0' }}>Chưa có dữ liệu</div>
+            )}
           </div>
         </div>
       </div>
