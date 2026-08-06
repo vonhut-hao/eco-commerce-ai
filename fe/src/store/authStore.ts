@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
             user: {
               id: decoded.userId || decoded.sub, // adjust based on your JWT payload
               email: decoded.email || decoded.sub,
-              roles: decoded.roles || [],
+              roles: decoded.roles || (decoded.scope ? decoded.scope.split(' ') : []),
             },
             isAuthenticated: true,
           });
