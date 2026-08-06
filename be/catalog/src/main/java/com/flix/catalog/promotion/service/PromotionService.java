@@ -30,6 +30,14 @@ public class PromotionService {
         });
     }
 
+    public PromotionEntity getPromotionByCode(String code){
+        log.debug("Fetching promotion by code: {}", code);
+        return promotionRepository.findByCode(code).orElseThrow(() -> {
+            log.warn("Promotion not found with code: {}", code);
+            return new BusinessException(ErrorCode.PROMOTION_NOT_FOUND);
+        });
+    }
+
     public List<PromotionEntity> getAllPromotions(){
         log.info("Fetching all promotions");
         List<PromotionEntity> promotions = promotionRepository.findAll();

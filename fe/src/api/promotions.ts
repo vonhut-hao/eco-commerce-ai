@@ -42,6 +42,10 @@ export const promotionsApi = {
     const res = await client.get(`/v1/promotions/${id}`);
     return res.data.data;
   },
+  getByCode: async (code: string): Promise<Promotion> => {
+    const res = await client.get(`/v1/promotions/code/${code}`);
+    return res.data.data;
+  },
   create: async (data: PromotionRequest): Promise<Promotion> => {
     const res = await client.post('/v1/promotions', data);
     return res.data.data;

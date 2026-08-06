@@ -216,13 +216,40 @@ export default function Orders() {
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #eef2eb' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 13, color: '#3d6b35', fontFamily: NS }}>🌿 Carbon: <strong>{formatCarbon(detail)} kg CO₂</strong></span>
-                  <span style={{ fontSize: 13, color: '#3d6b35', fontFamily: NS }}>🎖️ Điểm xanh: <strong>+{detail.totalGreenPoints || 0} pt</strong></span>
-                </div>
-                <span style={{ ...MONO, fontSize: 18, fontWeight: 700, color: '#1a1c19' }}>{detail.totalAmount.toLocaleString('vi-VN')}đ</span>
-              </div>
+              {(() => {
+                const subtotal = detail.orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+                const shipping = subtotal > 0 && subtotal < 200000 ? 30000 : 0;
+                const discount = Math.max(0, subtotal + shipping - (detail.totalAmount || 0));
+
+                return (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid #eef2eb', gap: 16 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#3d6b35', fontFamily: NS }}>🌿 Carbon: <strong>{formatCarbon(detail)} kg CO₂</strong></span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#3d6b35', fontFamily: NS }}><Icon name="Award" size={14} color="#3d6b35" /> Điểm xanh: <strong>+{detail.totalGreenPoints || 0} pt</strong></span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, minWidth: 260, background: '#f5f9f3', padding: '16px 20px', borderRadius: 12, border: '1px solid #e2e3de' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
+                        <span>Tổng tiền hàng:</span>
+                        <span style={{ color: '#1a1c19', fontWeight: 500 }}>{subtotal.toLocaleString('vi-VN')}đ</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
+                        <span>Phí vận chuyển:</span>
+                        <span style={{ color: '#1a1c19', fontWeight: 500 }}>{shipping === 0 ? 'Miễn phí' : `${shipping.toLocaleString('vi-VN')}đ`}</span>
+                      </div>
+                      {discount > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13, color: '#6b7280' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="Tag" size={12} color="#6b7280" /> Mã giảm giá:</span>
+                          <span style={{ color: '#25521f', fontWeight: 500 }}>- {discount.toLocaleString('vi-VN')}đ</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', borderTop: '1px solid #e2e3de', paddingTop: 10, marginTop: 4, alignItems: 'center' }}>
+                        <span style={{ fontSize: 14, color: '#1a1c19' }}>Thành tiền:</span>
+                        <span style={{ ...MONO, fontSize: 18, fontWeight: 700, color: '#1a1c19' }}>{detail.totalAmount.toLocaleString('vi-VN')}đ</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <div style={{ padding: '16px 24px', borderTop: '1px solid #eef2eb', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => printOrder(detail)} style={{ ...BTN_GHOST, display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="Printer" size={13} color="#42493e" /> In đơn</button>

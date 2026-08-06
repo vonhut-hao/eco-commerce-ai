@@ -2,13 +2,10 @@ import { useState } from "react";
 import { Minus, Plus, X, Tag, ShoppingBag, ArrowRight, Leaf, Trash2 } from "lucide-react";
 import type { Product } from "./ShopPage";
 
-import { CartItem } from "../../store/cartStore";
+import { CartItem, useCartStore } from "../../store/cartStore";
+import { promotionsApi, Promotion } from "../../api/promotions";
 
-const COUPONS: Record<string, { type: "pct" | "fixed"; value: number; label: string }> = {
-  GREEN10: { type: "pct", value: 10, label: "Giảm 10%" },
-  GREENLIFE50K: { type: "fixed", value: 50000, label: "Giảm 50.000 VND" },
-  ECO20: { type: "pct", value: 20, label: "Giảm 20%" },
-};
+
 
 function fmt(n: number) { return n.toLocaleString("vi-VN") + " VND"; }
 
@@ -23,30 +20,51 @@ export function CartPage({
   onRemove: (productId: number) => void;
   onNavigate: (page: string) => void;
 }) {
-  const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const { appliedCoupon, setAppliedCoupon } = useCartStore();
+  const [couponInput, setCouponInput] = useState(appliedCoupon?.code || "");
   const [couponError, setCouponError] = useState("");
+  const [loadingCoupon, setLoadingCoupon] = useState(false);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const totalCO2 = items.reduce((sum, i) => sum + i.carbonIndex * i.quantity, 0);
   const totalGreenPts = items.reduce((sum, i) => sum + (i.greenPoints || 0) * i.quantity, 0);
 
-  const coupon = appliedCoupon ? COUPONS[appliedCoupon] : null;
-  const discount = coupon
-    ? coupon.type === "pct"
-      ? Math.round(subtotal * coupon.value / 100)
-      : coupon.value
+  const discount = appliedCoupon
+    ? appliedCoupon.discountType === "PERCENTAGE"
+      ? Math.min(Math.round(subtotal * appliedCoupon.discountValue / 100), appliedCoupon.maxDiscountAmount || Infinity)
+      : appliedCoupon.discountValue
     : 0;
   const shipping = subtotal >= 200000 ? 0 : 30000;
   const total = subtotal - discount + shipping;
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
-    if (COUPONS[code]) {
-      setAppliedCoupon(code);
-      setCouponError("");
-    } else {
-      setCouponError("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
+    if (!code) return;
+    setLoadingCoupon(true);
+    setCouponError("");
+    try {
+      const promotion = await promotionsApi.getByCode(code);
+      if (!promotion.isActive) {
+        setCouponError("Mã giảm giá đã bị khóa.");
+        setAppliedCoupon(null);
+        return;
+      }
+      if (new Date(promotion.endDate) < new Date()) {
+        setCouponError("Mã giảm giá đã hết hạn.");
+        setAppliedCoupon(null);
+        return;
+      }
+      if (promotion.minOrderValue && subtotal < promotion.minOrderValue) {
+        setCouponError(`Đơn hàng phải từ ${fmt(promotion.minOrderValue)} để áp dụng.`);
+        setAppliedCoupon(null);
+        return;
+      }
+      setAppliedCoupon(promotion);
+    } catch (e: any) {
+      setCouponError("Mã giảm giá không hợp lệ hoặc không tồn tại.");
+      setAppliedCoupon(null);
+    } finally {
+      setLoadingCoupon(false);
     }
   };
 
@@ -170,8 +188,10 @@ export function CartPage({
                   <div className="flex items-center justify-between bg-[#f0f7ee] border border-[#25521f]/30 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Tag size={13} className="text-[#25521f]" />
-                      <span className="text-[#25521f] text-[13px] font-medium">{appliedCoupon}</span>
-                      <span className="text-[#6b7280] text-[11px]">– {coupon?.label}</span>
+                      <span className="text-[#25521f] text-[13px] font-medium">{appliedCoupon.code}</span>
+                      <span className="text-[#6b7280] text-[11px]">
+                        – Giảm {appliedCoupon.discountType === 'PERCENTAGE' ? `${appliedCoupon.discountValue}%` : fmt(appliedCoupon.discountValue)}
+                      </span>
                     </div>
                     <button onClick={() => { setAppliedCoupon(null); setCouponInput(""); }} className="text-[#6b7280] hover:text-[#ba1a1a]">
                       <X size={13} />
@@ -188,9 +208,10 @@ export function CartPage({
                     />
                     <button
                       onClick={handleApplyCoupon}
-                      className="px-3 py-2 bg-[#25521f] text-white rounded-lg text-[12px] hover:bg-[#1e4219] transition-colors"
+                      disabled={loadingCoupon}
+                      className="px-3 py-2 bg-[#25521f] text-white rounded-lg text-[12px] hover:bg-[#1e4219] transition-colors disabled:opacity-50"
                     >
-                      Áp dụng
+                      {loadingCoupon ? "..." : "Áp dụng"}
                     </button>
                   </div>
                 )}

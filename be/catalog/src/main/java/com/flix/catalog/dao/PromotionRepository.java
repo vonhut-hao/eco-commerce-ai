@@ -12,5 +12,8 @@ public interface PromotionRepository extends JpaRepository<PromotionEntity, Long
     @Query("SELECT p FROM PromotionEntity p WHERE p.id = :id")
     Optional<PromotionEntity> findByPromotionById(@Param("id") Long id);
 
+    @Query("SELECT p FROM PromotionEntity p WHERE p.code = :code")
+    Optional<PromotionEntity> findByCode(@Param("code") String code);
+
     boolean existsByCode(String code);
 }

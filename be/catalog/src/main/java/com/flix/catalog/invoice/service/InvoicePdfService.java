@@ -88,9 +88,22 @@ public class InvoicePdfService {
             summaryTable.setWidthPercentage(50);
             summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
+            Font summaryNormal = FontFactory.getFont(FontFactory.HELVETICA, 11, darkGray);
             Font summaryBold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
             Font summaryPrimary = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, primaryColor);
 
+            long subtotal = 0L;
+            for (InvoiceDataDto.InvoiceItemDto item : data.items()) {
+                subtotal += item.totalAmount();
+            }
+            long shipping = (subtotal > 0 && subtotal < 200000) ? 30000L : 0L;
+            long discount = Math.max(0, subtotal + shipping - data.totalAmount());
+
+            addSummaryRow(summaryTable, "Subtotal:", formatCurrency(subtotal), summaryNormal);
+            addSummaryRow(summaryTable, "Shipping:", shipping == 0 ? "Free" : formatCurrency(shipping), summaryNormal);
+            if (discount > 0) {
+                addSummaryRow(summaryTable, "Discount:", "- " + formatCurrency(discount), summaryNormal);
+            }
             addSummaryRow(summaryTable, "Total Amount:", formatCurrency(data.totalAmount()), summaryPrimary);
             addSummaryRow(summaryTable, "Total Carbon Footprint:", String.format("%.2f kg CO2", data.totalCarbonFootprint()), summaryBold);
 

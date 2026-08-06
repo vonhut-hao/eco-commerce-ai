@@ -31,6 +31,7 @@ export type OrderItemResponse = OrderItemBE;
 export interface OrderRequest {
   paymentMethodId?: number;
   status?: string;
+  promotionId?: number;
 }
 
 export const ordersApi = {

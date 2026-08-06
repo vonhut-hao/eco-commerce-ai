@@ -42,6 +42,13 @@ public class PromotionController {
         return ApiResponse.success(PromotionResponse.from(promotion));
     }
 
+    @GetMapping("/code/{code}")
+    public ApiResponse<PromotionResponse> getPromotionByCode(@PathVariable("code") String code) {
+        log.info("REST request to get promotion by code: {}", code);
+        PromotionEntity promotion = promotionService.getPromotionByCode(code);
+        return ApiResponse.success(PromotionResponse.from(promotion));
+    }
+
     @PostMapping
     public ApiResponse<PromotionResponse> createPromotion(@Valid @RequestBody PromotionRequest request) {
         log.info("REST request to create promotion");

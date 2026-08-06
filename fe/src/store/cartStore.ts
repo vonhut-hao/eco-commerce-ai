@@ -4,6 +4,7 @@ import { cartApi, CartItemResponse } from '../api/cart';
 import { productsApi } from '../api/products';
 import { useAuthStore } from './authStore';
 import { toast } from '../app/components/Toast';
+import { Promotion } from '../api/promotions';
 
 export interface CartItem {
   cartItemId?: number; // Needed for backend delete/update
@@ -21,6 +22,7 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   loading: boolean;
+  appliedCoupon: Promotion | null;
   
   // Actions
   fetchCart: () => Promise<void>;
@@ -29,6 +31,7 @@ interface CartState {
   removeFromCart: (productId: number) => Promise<void>;
   clearCart: () => void;
   syncGuestCart: () => Promise<void>;
+  setAppliedCoupon: (coupon: Promotion | null) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -36,6 +39,9 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       loading: false,
+      appliedCoupon: null,
+
+      setAppliedCoupon: (coupon) => set({ appliedCoupon: coupon }),
 
       syncGuestCart: async () => {
         const { isAuthenticated, user } = useAuthStore.getState();
@@ -161,7 +167,7 @@ export const useCartStore = create<CartState>()(
       },
 
       clearCart: () => {
-        set({ items: [] });
+        set({ items: [], appliedCoupon: null });
       }
     }),
     {

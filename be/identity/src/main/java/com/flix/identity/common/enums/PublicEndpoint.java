@@ -12,7 +12,8 @@ public enum PublicEndpoint {
     ERROR("/error"),
     ADMIN("/v1/internal/auth/**"),
     GET_PRODUCTS("/v1/catalog/products"),
-    GET_PRODUCTS_DETAIL("/v1/catalog/products/**");
+    GET_PRODUCTS_DETAIL("/v1/catalog/products/**"),
+    GET_PROMOTIONS_CODE("/v1/promotions/code/**");
 
     private final String value;
 

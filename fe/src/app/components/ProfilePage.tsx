@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MapPin, CreditCard, Bell, LogOut, Leaf, X, Camera, Eye, EyeOff, Star, MessageSquarePlus, ChevronRight, Sprout, TrendingDown, Award, Trophy } from "lucide-react";
+import { MapPin, CreditCard, Bell, LogOut, Leaf, X, Camera, Eye, EyeOff, Star, MessageSquarePlus, ChevronRight, Sprout, TrendingDown, Award, Trophy, Tag } from "lucide-react";
 import { toast } from "./Toast";
 import { ProductCard } from "./ProductCard";
 import { ALL_PRODUCTS } from "./ShopPage";
@@ -981,10 +981,34 @@ function OrderHistory({ orders, onOpenChatbot }: { orders: OrderResponse[], onOp
 
               {/* Order footer: Total + Buttons */}
               <div className="bg-transparent px-5 py-4 flex flex-col gap-4 border-t border-[#e2e3de]">
-                <div className="flex justify-end items-center gap-2">
-                  <span className="text-[#1a1c19] text-[14px]">Thành tiền:</span>
-                  <span className="text-[#25521f] text-[20px] font-['Nimbus_Sans:Bold',sans-serif]">{(order.totalAmount || 0).toLocaleString()}đ</span>
-                </div>
+                {(() => {
+                  const subtotal = order.orderItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+                  const shipping = subtotal > 0 && subtotal < 200000 ? 30000 : 0;
+                  const discount = Math.max(0, subtotal + shipping - (order.totalAmount || 0));
+
+                  return (
+                    <div className="flex flex-col gap-1.5 md:w-[320px] ml-auto bg-[#f5f9f3] p-4 rounded-xl border border-[#e2e3de]">
+                      <div className="flex justify-between text-[13px] text-[#6b7280]">
+                        <span>Tổng tiền hàng:</span>
+                        <span className="text-[#1a1c19] font-medium">{subtotal.toLocaleString()}đ</span>
+                      </div>
+                      <div className="flex justify-between text-[13px] text-[#6b7280]">
+                        <span>Phí vận chuyển:</span>
+                        <span className="text-[#1a1c19] font-medium">{shipping === 0 ? "Miễn phí" : `${shipping.toLocaleString()}đ`}</span>
+                      </div>
+                      {discount > 0 && (
+                        <div className="flex justify-between text-[13px] text-[#6b7280]">
+                          <span className="flex items-center gap-1"><Tag size={12}/> Mã giảm giá:</span>
+                          <span className="text-[#25521f] font-medium">- {discount.toLocaleString()}đ</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center border-t border-[#e2e3de] pt-2 mt-1">
+                        <span className="text-[#1a1c19] text-[14px]">Thành tiền:</span>
+                        <span className="text-[#25521f] text-[20px] font-['Nimbus_Sans:Bold',sans-serif]">{(order.totalAmount || 0).toLocaleString()}đ</span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex flex-col md:flex-row justify-end items-center gap-3 border-t border-[#e2e3de] pt-4 mt-2">
                   {order.status !== 'CANCELLED' && order.status !== 'PENDING' && (
