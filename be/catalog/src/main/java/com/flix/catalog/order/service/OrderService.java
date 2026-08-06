@@ -252,7 +252,13 @@ public class OrderService {
 
         if (request.status() != null) {
             OrderStatus newStatus = request.status();
-            log.info("Updating status for order ID: {} from {} to {}", id, orderEntity.getStatus(), newStatus);
+            OrderStatus oldStatus = orderEntity.getStatus();
+            log.info("Updating status for order ID: {} from {} to {}", id, oldStatus, newStatus);
+
+            if (oldStatus == OrderStatus.DELIVERY && newStatus == OrderStatus.PENDING) {
+                log.warn("Update order failed: Cannot revert from DELIVERY to PENDING for order ID {}", id);
+                throw new BusinessException(ErrorCode.ORDER_IN_DELIVERY);
+            }
 
             if (newStatus == OrderStatus.CANCELLED) {
                 cancelOrderLogic(orderEntity);
