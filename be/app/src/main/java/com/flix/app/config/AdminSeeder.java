@@ -37,9 +37,8 @@ public class AdminSeeder implements CommandLineRunner {
 
             UserProfile profile = UserProfile.builder()
                     .user(admin)
-                    .firstName("Admin")
-                    .lastName("GreenLife")
-                    .greenPoints(1000L)
+                    .fullName("Admin GreenLife")
+                    .greenPoints(1000)
                     .build();
 
             admin.setUserProfile(profile);
