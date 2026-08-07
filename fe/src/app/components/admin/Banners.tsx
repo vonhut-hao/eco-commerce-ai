@@ -1,11 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Icon } from './Icon'
 import { GLASS, INPUT, BTN_PRIMARY, BTN_GHOST, SECTION_LABEL, PAGE_TITLE } from './ui'
-
-interface Banner {
-  id: number; title: string; imageUrl: string; linkUrl: string
-  displayOrder: number; isActive: boolean; startAt: string; endAt: string
-}
+import { bannersApi, Banner, BannerRequest } from '../../../api/banners'
+import { uploadApi } from '../../../api/upload'
 
 const PHOTOS = [
   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=300&fit=crop&auto=format',
@@ -14,29 +11,84 @@ const PHOTOS = [
   'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&h=300&fit=crop&auto=format',
 ]
 
-const INIT: Banner[] = [
-  { id: 1, title: 'Green Summer Sale',  imageUrl: PHOTOS[0], linkUrl: '/shop?tag=summer',   displayOrder: 1, isActive: true,  startAt: '2026-07-01', endAt: '2026-08-31' },
-  { id: 2, title: 'New Products in August',     imageUrl: PHOTOS[1], linkUrl: '/shop?sort=newest',  displayOrder: 2, isActive: true,  startAt: '2026-08-01', endAt: '2026-08-31' },
-  { id: 3, title: 'Flash Sale 20% - This week', imageUrl: PHOTOS[2], linkUrl: '/shop?coupon=FLASH20', displayOrder: 3, isActive: false, startAt: '2026-07-10', endAt: '2026-07-15' },
-  { id: 4, title: 'New Eco Home Collection',  imageUrl: PHOTOS[3], linkUrl: '/shop?category=home', displayOrder: 4, isActive: true,  startAt: '2026-08-01', endAt: '2026-09-30' },
-]
-const EMPTY: Omit<Banner, 'id'> = { title: '', imageUrl: PHOTOS[0], linkUrl: '', displayOrder: 5, isActive: true, startAt: '2026-08-01', endAt: '2026-12-31' }
+const EMPTY: BannerRequest = { title: '', imageUrl: PHOTOS[0], linkUrl: '', displayOrder: 5, isActive: true }
 const NS = '"Nimbus Sans","Helvetica Neue",Arial,sans-serif'
 
 export default function Banners() {
-  const [banners, setBanners] = useState(INIT)
-  const [modal, setModal] = useState<(Omit<Banner,'id'> & { id?: number }) | null>(null)
+  const [banners, setBanners] = useState<Banner[]>([])
+  const [modal, setModal] = useState<(BannerRequest & { id?: number }) | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
-  function openNew()    { setModal({ ...EMPTY }); setIsNew(true) }
-  function openEdit(b: Banner) { setModal({ id: b.id, title: b.title, imageUrl: b.imageUrl, linkUrl: b.linkUrl, displayOrder: b.displayOrder, isActive: b.isActive, startAt: b.startAt, endAt: b.endAt }); setIsNew(false) }
-  function save() {
-    if (!modal) return
-    isNew ? setBanners(prev => [...prev, { ...modal, id: Date.now() } as Banner]) : setBanners(prev => prev.map(b => b.id === modal.id ? { ...b, ...modal } : b))
-    setModal(null)
+  useEffect(() => {
+    loadBanners();
+  }, [])
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const { url } = await uploadApi.uploadImage(file);
+      if (modal) setModal({ ...modal, imageUrl: url });
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while uploading image');
+    } finally {
+      setUploadingImage(false);
+    }
   }
-  function toggleActive(id: number) { setBanners(prev => prev.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b)) }
+
+  async function loadBanners() {
+    try {
+      const data = await bannersApi.getAllBanners();
+      setBanners(data);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function openNew() { setModal({ ...EMPTY }); setIsNew(true) }
+  function openEdit(b: Banner) { setModal({ id: b.id, title: b.title, imageUrl: b.imageUrl, linkUrl: b.linkUrl, displayOrder: b.displayOrder, isActive: b.isActive }); setIsNew(false) }
+  
+  async function save() {
+    if (!modal) return
+    setLoading(true)
+    try {
+      if (isNew) {
+        await bannersApi.createBanner(modal);
+      } else {
+        await bannersApi.updateBanner(modal.id!, modal);
+      }
+      await loadBanners();
+      setModal(null)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function toggleActive(b: Banner) { 
+    try {
+      await bannersApi.updateBanner(b.id, { ...b, isActive: !b.isActive });
+      await loadBanners();
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function deleteBanner(id: number) {
+    try {
+      await bannersApi.deleteBanner(id);
+      await loadBanners();
+      setDeleteId(null);
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const sorted = [...banners].sort((a, b) => a.displayOrder - b.displayOrder)
 
@@ -70,9 +122,6 @@ export default function Banners() {
               <div style={{ fontWeight: 600, fontSize: 16, color: '#1a1c19', fontFamily: NS, marginBottom: 4 }}>{b.title}</div>
               <div style={{ fontSize: 13, color: '#6b7280', fontFamily: NS, marginBottom: 10 }}>🔗 <span style={{ color: '#3d6b35' }}>{b.linkUrl}</span></div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 12, color: '#6b7280', fontFamily: NS }}>
-                  {new Date(b.startAt).toLocaleDateString('vi-VN')} — {new Date(b.endAt).toLocaleDateString('vi-VN')}
-                </span>
                 <span style={{
                   fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '3px 8px', fontFamily: NS,
                   ...(b.isActive ? { background: '#e8f5e4', color: '#25521f', border: '1px solid #c2deba' } : { background: '#f5f5f0', color: '#6b7280', border: '1px solid #e0e0d8' }),
@@ -84,7 +133,7 @@ export default function Banners() {
 
             {/* Actions */}
             <div style={{ padding: '18px 18px', borderLeft: '1px solid #eef2eb', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
-              <button onClick={() => toggleActive(b.id)} style={{ width: 36, height: 36, background: b.isActive ? '#e8f5e4' : '#f5f5f0', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: b.isActive ? '#3d6b35' : '#6b7280' }}>
+              <button onClick={() => toggleActive(b)} style={{ width: 36, height: 36, background: b.isActive ? '#e8f5e4' : '#f5f5f0', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: b.isActive ? '#3d6b35' : '#6b7280' }}>
                 {b.isActive ? <Icon name="ToggleRight" size={16} color="#3d6b35" /> : <Icon name="ToggleLeft" size={16} color="#6b7280" />}
               </button>
               <button onClick={() => openEdit(b)} style={{ width: 36, height: 36, background: '#f0f7ee', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Pencil" size={14} color="#3d6b35" /></button>
@@ -108,26 +157,25 @@ export default function Banners() {
                 </div>
               )}
               <div>
-                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Title *</label>
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Title</label>
                 <input value={modal.title} onChange={e => setModal({ ...modal, title: e.target.value })} style={INPUT}
                   onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                   onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Image URL</label>
-                <input value={modal.imageUrl} onChange={e => setModal({ ...modal, imageUrl: e.target.value })} style={INPUT}
-                  onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
-                  onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  {PHOTOS.map((url, i) => (
-                    <button key={i} onClick={() => setModal({ ...modal, imageUrl: url })} style={{ width: 52, height: 36, borderRadius: 8, overflow: 'hidden', border: modal.imageUrl === url ? '2px solid #3d6b35' : '2px solid transparent', cursor: 'pointer', padding: 0 }}>
-                      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </button>
-                  ))}
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Image URL *</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={modal.imageUrl} onChange={e => setModal({ ...modal, imageUrl: e.target.value })} style={{ ...INPUT, flex: 1 }}
+                    onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
+                    onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', background: '#e8f5e4', color: '#25521f', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: uploadingImage ? 'not-allowed' : 'pointer', opacity: uploadingImage ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+                    {uploadingImage ? 'Uploading...' : 'Upload'}
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={uploadingImage} />
+                  </label>
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link URL *</label>
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link URL</label>
                 <input value={modal.linkUrl} onChange={e => setModal({ ...modal, linkUrl: e.target.value })} placeholder="/shop?tag=summer" style={INPUT}
                   onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                   onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
@@ -146,21 +194,11 @@ export default function Banners() {
                   </label>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {([['Start Date','startAt'],['End Date','endAt']] as const).map(([lbl, field]) => (
-                  <div key={field}>
-                    <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>{lbl}</label>
-                    <input type="date" value={(modal as any)[field]} onChange={e => setModal({ ...modal, [field]: e.target.value })} style={INPUT}
-                      onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
-                      onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
-                  </div>
-                ))}
-              </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: '1px solid #eef2eb', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setModal(null)} style={BTN_GHOST}>Cancel</button>
-              <button onClick={save} disabled={!modal.title || !modal.linkUrl} style={{ ...BTN_PRIMARY, opacity: (!modal.title || !modal.linkUrl) ? 0.5 : 1 }}>
-                {isNew ? 'Add banner' : 'Save changes'}
+              <button onClick={save} disabled={!modal.imageUrl || loading} style={{ ...BTN_PRIMARY, opacity: (!modal.imageUrl || loading) ? 0.5 : 1 }}>
+                {loading ? 'Saving...' : isNew ? 'Add banner' : 'Save changes'}
               </button>
             </div>
           </div>
@@ -175,7 +213,7 @@ export default function Banners() {
             <p style={{ fontSize: 13, color: '#6b7280', fontFamily: NS, margin: '0 0 22px' }}>The banner will be removed from the homepage.</p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setDeleteId(null)} style={{ ...BTN_GHOST, flex: 1, justifyContent: 'center' }}>Cancel</button>
-              <button onClick={() => { setBanners(prev => prev.filter(b => b.id !== deleteId)); setDeleteId(null) }} style={{ flex: 1, background: '#ba1a1a', color: '#fff', border: 'none', borderRadius: 999, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: NS }}>Delete</button>
+              <button onClick={() => deleteBanner(deleteId)} style={{ flex: 1, background: '#ba1a1a', color: '#fff', border: 'none', borderRadius: 999, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: NS }}>Delete</button>
             </div>
           </div>
         </div>

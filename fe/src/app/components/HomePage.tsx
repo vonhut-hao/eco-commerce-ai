@@ -6,6 +6,7 @@ import type { Product } from "./ShopPage";
 import { useAuthStore } from "../../store/authStore";
 import { statisticsApi } from "../../api/statistics";
 import { categoriesApi, Category } from "../../api/categories";
+import { bannersApi, Banner } from "../../api/banners";
 
 import imgHero1 from "../../imports/Homepage/ad594a362ca9f01e32ef654ed2558bf212d42c6b.png";
 import imgHero2 from "../../imports/Homepage/f6aed8954f7b8995c083ee7f5fa9a423fd3feff0.png";
@@ -13,7 +14,22 @@ import imgHero3 from "../../imports/Homepage/fd3c27e888c95fc4c471ae218112f085bb1
 import imgHero4 from "../../imports/Homepage/cb597c14aa466186896b0278899817127b88c8ab.png";
 
 // ─── Hero ──────────────────────────────────────────────────────────────────
-function HeroSection({ onNavigate }: { onNavigate: (p: string) => void }) {
+function HeroSection({ onNavigate, banners }: { onNavigate: (p: string) => void, banners: Banner[] }) {
+  const images = [
+    banners[0]?.imageUrl || imgHero1,
+    banners[1]?.imageUrl || imgHero2,
+    banners[2]?.imageUrl || imgHero3,
+    banners[3]?.imageUrl || imgHero4,
+  ];
+
+  const handleClick = (idx: number) => {
+    const link = banners[idx]?.linkUrl;
+    if (link) {
+      if (link.startsWith('http')) window.open(link, '_blank');
+      else window.location.href = link;
+    }
+  };
+
   return (
     <section className="max-w-[1280px] mx-auto w-full px-4 md:px-16 py-12 md:py-20 flex flex-col md:flex-row items-center gap-10 md:gap-16">
       {/* Left */}
@@ -57,25 +73,27 @@ function HeroSection({ onNavigate }: { onNavigate: (p: string) => void }) {
 
       {/* Right — 2×2 image grid */}
       <div className="hidden md:grid grid-cols-2 grid-rows-2 gap-3 shrink-0 w-[400px] h-[480px]">
-        <div className="row-span-2 rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm">
-          <img src={imgHero1} alt="" className="w-full h-full object-cover" />
+        <div onClick={() => handleClick(0)} className={`row-span-2 rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm ${banners[0]?.linkUrl ? 'cursor-pointer hover:opacity-90' : ''}`}>
+          <img src={images[0]} alt="" className="w-full h-full object-cover" />
         </div>
-        <div className="rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm">
-          <img src={imgHero2} alt="" className="w-full h-full object-cover" />
+        <div onClick={() => handleClick(1)} className={`rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm ${banners[1]?.linkUrl ? 'cursor-pointer hover:opacity-90' : ''}`}>
+          <img src={images[1]} alt="" className="w-full h-full object-cover" />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm">
-            <img src={imgHero3} alt="" className="w-full h-full object-cover" />
+          <div onClick={() => handleClick(2)} className={`rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm ${banners[2]?.linkUrl ? 'cursor-pointer hover:opacity-90' : ''}`}>
+            <img src={images[2]} alt="" className="w-full h-full object-cover" />
           </div>
-          <div className="rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm">
-            <img src={imgHero4} alt="" className="w-full h-full object-cover" />
+          <div onClick={() => handleClick(3)} className={`rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm ${banners[3]?.linkUrl ? 'cursor-pointer hover:opacity-90' : ''}`}>
+            <img src={images[3]} alt="" className="w-full h-full object-cover" />
           </div>
         </div>
       </div>
 
       {/* Mobile single hero image */}
       <div className="md:hidden w-full h-[220px] rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm">
-        <img src={imgHero1} alt="" className="w-full h-full object-cover" />
+        <div onClick={() => handleClick(0)} className={`w-full h-full ${banners[0]?.linkUrl ? 'cursor-pointer' : ''}`}>
+          <img src={images[0]} alt="" className="w-full h-full object-cover" />
+        </div>
       </div>
     </section>
   );
@@ -294,13 +312,16 @@ export function HomePage({
 }) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [dbCategories, setDbCategories] = useState<Category[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  
   useEffect(() => {
     categoriesApi.getAll().then(setDbCategories).catch(console.error);
+    bannersApi.getActiveBanners().then(setBanners).catch(console.error);
   }, []);
 
   return (
     <main className="flex-1 pb-20 md:pb-0 flex flex-col">
-      <HeroSection onNavigate={onNavigate} />
+      <HeroSection onNavigate={onNavigate} banners={banners} />
       <CategoryStrip active={activeCategory} setActive={setActiveCategory} categories={dbCategories} />
       <TrendingSection
         onNavigate={onNavigate}

@@ -33,6 +33,7 @@ public enum ErrorCode {
     PARENT_COMMENT_NOT_FOUND("Parent comment not found", HttpStatus.NOT_FOUND),
     CART_ITEM_NOT_FOUND("Cart item not found", HttpStatus.NOT_FOUND),
     INSUFFICIENT_PRODUCT_STOCK("Insufficient product stock", HttpStatus.BAD_REQUEST),
+    BANNER_NOT_FOUND("Banner not found", HttpStatus.NOT_FOUND),
 
     // Order Error Codes
     ORDER_NOT_FOUND("Order not found", HttpStatus.NOT_FOUND),
