@@ -98,7 +98,7 @@ export default function Orders() {
   }
 
   function formatCarbon(o: OrderBE) {
-    return o.orderItems.reduce((acc, i) => acc + (i.lineCarbonFootprint || 0) * i.quantity, 0).toFixed(2);
+    return o.orderItems.reduce((acc, i) => acc + (i.lineCarbonFootprint || 0), 0).toFixed(2);
   }
 
   return (
@@ -208,10 +208,10 @@ export default function Orders() {
                         {item.mainImage && <img src={item.mainImage} alt={item.productName} style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} />}
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1c19', fontFamily: NS }}>{item.productName}</div>
-                          <div style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>CO₂: {(item.lineCarbonFootprint || 0) * item.quantity}kg · x{item.quantity}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280', fontFamily: NS }}>CO₂: {Number(item.lineCarbonFootprint || 0).toFixed(2)}kg · x{item.quantity}</div>
                         </div>
                       </div>
-                      <span style={{ ...MONO, fontSize: 13, fontWeight: 700, color: '#1a1c19' }}>{(item.price * item.quantity).toLocaleString('vi-VN')}đ</span>
+                      <span style={{ ...MONO, fontSize: 13, fontWeight: 700, color: '#1a1c19' }}>{(item.price || 0).toLocaleString('vi-VN')}đ</span>
                     </div>
                   ))}
                 </div>

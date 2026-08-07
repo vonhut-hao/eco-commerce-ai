@@ -27,8 +27,8 @@ public record InvoiceDataDto(
     ) {
         public static InvoiceItemDto from(OrderItemEntity item) {
             String name = item.getProductEntity() != null ? item.getProductEntity().getName() : "Product #" + item.getId();
-            Long unitPriceItem = item.getPrice() != null ? item.getPrice() : 0L;
-            Long totalAmountItem = unitPriceItem * item.getQuantity();
+            Long totalAmountItem = item.getPrice() != null ? item.getPrice() : 0L;
+            Long unitPriceItem = item.getQuantity() > 0 ? totalAmountItem / item.getQuantity() : 0L;
             Double carbon = item.getLineCarbonFootprint() != null ? item.getLineCarbonFootprint() : 0.0;
 
             return new InvoiceItemDto(
