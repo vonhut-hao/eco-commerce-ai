@@ -64,10 +64,14 @@ function MonthlyCarbonChart() {
           const monthStr = `T${d.getMonth() + 1}`;
           const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
           promises.push(
-            statisticsApi.getMonthlyCarbonIndex(dateStr).then(val => ({
-              month: monthStr,
-              co2: Number(val.toFixed(1))
-            }))
+            statisticsApi.getMonthlyCarbonIndex(dateStr).then(val => {
+              const std = Number((val * 2.5).toFixed(1));
+              const saved = Number((std - val).toFixed(1));
+              return {
+                month: monthStr,
+                co2: saved
+              };
+            })
           );
         }
         Promise.all(promises).then(res => setData(res)).catch(console.error);

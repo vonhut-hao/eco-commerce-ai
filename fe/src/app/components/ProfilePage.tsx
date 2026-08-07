@@ -357,6 +357,10 @@ function UserInfoCard({ profile, ordersCount, onUpdateProfile }: { profile: User
 
   if (!profile) return <div className="h-40 animate-pulse bg-gray-100 rounded-2xl" />;
 
+  const totalCO2 = profile?.totalCarbonIndex ? Number(profile.totalCarbonIndex.toFixed(1)) : 0;
+  const standardCO2 = Number((totalCO2 * 2.5).toFixed(1));
+  const savedCO2 = Number((standardCO2 - totalCO2).toFixed(1));
+
   const grad = AVATAR_GRADIENTS[Math.abs(profile.userId) % AVATAR_GRADIENTS.length];
   const isImageAvatar = profile.avatarUrl?.startsWith("http");
   const initial = isImageAvatar ? (profile.fullName?.[0] || profile.userName?.[0] || "U").toUpperCase() : (profile.avatarUrl || profile.fullName?.[0] || profile.userName?.[0] || "U").toUpperCase();
@@ -477,7 +481,7 @@ function UserInfoCard({ profile, ordersCount, onUpdateProfile }: { profile: User
               <span className="text-[#6b7280] text-[12px]">Green Points</span>
             </div>
             <div className="flex flex-col gap-0.5 px-6 border-r border-[#e2e3de]">
-              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">{profile.totalCarbonIndex ? profile.totalCarbonIndex.toFixed(1) : "0"}kg</span>
+              <span className="text-[#1a1c19] font-['Nimbus_Sans:Bold',sans-serif] text-[20px] leading-tight">{savedCO2}kg</span>
               <span className="text-[#6b7280] text-[12px]">CO2e Saved</span>
             </div>
             <div className="flex flex-col gap-0.5 pl-6">
@@ -522,6 +526,9 @@ function UserInfoCard({ profile, ordersCount, onUpdateProfile }: { profile: User
 // ─── Green Impact Metrics ──────────────────────────────────────────────────
 function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResponse | null, ordersCount: number }) {
   const pts = profile?.greenPoints || 0;
+  const totalCO2 = profile?.totalCarbonIndex ? Number(profile.totalCarbonIndex.toFixed(1)) : 0;
+  const standardCO2 = Number((totalCO2 * 2.5).toFixed(1));
+  const savedCO2 = Number((standardCO2 - totalCO2).toFixed(1));
   const tier = getTier(pts);
   const TierIcon = tier.Icon;
   const currentIdx = ECO_TIERS.findIndex((t) => t.label === tier.label);
@@ -575,7 +582,7 @@ function GreenImpactMetrics({ profile, ordersCount }: { profile: UserProfileResp
             className="text-[#3d6b35] leading-tight"
             style={{ fontFamily: "'Liberation Mono', monospace", fontWeight: 700, fontSize: "22px" }}
           >
-            {profile?.totalCarbonIndex ? profile.totalCarbonIndex.toFixed(1) : "0"}
+            {savedCO2}
           </span>
           <span className="text-[#6b7280] text-[11px]">kg CO₂e</span>
         </div>
