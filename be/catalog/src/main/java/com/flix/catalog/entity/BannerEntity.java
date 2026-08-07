@@ -20,13 +20,13 @@ public class BannerEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "image_url", nullable = false)
+    @Column(name = "image_url", nullable = false, columnDefinition = "TEXT")
     private String imageUrl;
 
     @Column(name = "title")
     private String title;
 
-    @Column(name = "link_url")
+    @Column(name = "link_url", columnDefinition = "TEXT")
     private String linkUrl;
 
     @Column(name = "display_order", nullable = false)

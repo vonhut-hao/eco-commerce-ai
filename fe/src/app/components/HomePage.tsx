@@ -15,6 +15,15 @@ import imgHero4 from "../../imports/Homepage/cb597c14aa466186896b0278899817127b8
 
 // ─── Hero ──────────────────────────────────────────────────────────────────
 function HeroSection({ onNavigate, banners }: { onNavigate: (p: string) => void, banners: Banner[] }) {
+  const [mobileSlide, setMobileSlide] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMobileSlide(prev => (prev + 1) % 4);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
   const images = [
     banners[0]?.imageUrl || imgHero1,
     banners[1]?.imageUrl || imgHero2,
@@ -89,10 +98,27 @@ function HeroSection({ onNavigate, banners }: { onNavigate: (p: string) => void,
         </div>
       </div>
 
-      {/* Mobile single hero image */}
-      <div className="md:hidden w-full h-[220px] rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm">
-        <div onClick={() => handleClick(0)} className={`w-full h-full ${banners[0]?.linkUrl ? 'cursor-pointer' : ''}`}>
-          <img src={images[0]} alt="" className="w-full h-full object-cover" />
+      {/* Mobile auto-swipeable banners */}
+      <div className="md:hidden w-full relative h-[220px] rounded-2xl overflow-hidden border border-[#dde8d8] shadow-sm group">
+        <div 
+          className="flex transition-transform duration-500 ease-in-out h-full"
+          style={{ transform: `translateX(-${mobileSlide * 100}%)` }}
+        >
+          {images.map((img, i) => (
+            <div key={i} onClick={() => handleClick(i)} className={`w-full h-full shrink-0 ${banners[i]?.linkUrl ? 'cursor-pointer' : ''}`}>
+              <img src={img} alt="" className="w-full h-full object-cover" />
+            </div>
+          ))}
+        </div>
+        
+        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+          {images.map((_, i) => (
+            <button 
+              key={i} 
+              onClick={() => setMobileSlide(i)}
+              className={`w-1.5 h-1.5 rounded-full transition-all ${i === mobileSlide ? 'bg-white scale-125' : 'bg-white/50'}`}
+            />
+          ))}
         </div>
       </div>
     </section>

@@ -31,7 +31,7 @@ export default function Banners() {
     if (!file) return;
     setUploadingImage(true);
     try {
-      const { url } = await uploadApi.uploadImage(file);
+      const url = await uploadApi.uploadImage(file);
       if (modal) setModal({ ...modal, imageUrl: url });
     } catch (err) {
       console.error(err);
@@ -158,14 +158,15 @@ export default function Banners() {
               )}
               <div>
                 <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Title</label>
-                <input value={modal.title} onChange={e => setModal({ ...modal, title: e.target.value })} style={INPUT}
+                <input value={modal.title || ''} onChange={e => setModal({ ...modal, title: e.target.value })} style={INPUT}
                   onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                   onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Image URL *</label>
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 2 }}>Image URL *</label>
+                <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: NS, marginBottom: 8 }}>The actual banner image. You can paste a link or upload directly.</div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <input value={modal.imageUrl} onChange={e => setModal({ ...modal, imageUrl: e.target.value })} style={{ ...INPUT, flex: 1 }}
+                  <input value={modal.imageUrl || ''} onChange={e => setModal({ ...modal, imageUrl: e.target.value })} placeholder="https://..." style={{ ...INPUT, flex: 1 }}
                     onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                     onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', background: '#e8f5e4', color: '#25521f', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: uploadingImage ? 'not-allowed' : 'pointer', opacity: uploadingImage ? 0.6 : 1, whiteSpace: 'nowrap' }}>
@@ -175,15 +176,16 @@ export default function Banners() {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Link URL</label>
-                <input value={modal.linkUrl} onChange={e => setModal({ ...modal, linkUrl: e.target.value })} placeholder="/shop?tag=summer" style={INPUT}
+                <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 2 }}>Link URL</label>
+                <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: NS, marginBottom: 8 }}>Where users are redirected when they click the banner (e.g., /shop?tag=summer)</div>
+                <input value={modal.linkUrl || ''} onChange={e => setModal({ ...modal, linkUrl: e.target.value })} placeholder="/shop?tag=summer" style={INPUT}
                   onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                   onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, color: '#6b7280', fontFamily: NS, display: 'block', marginBottom: 6 }}>Display Order</label>
-                  <input type="number" value={modal.displayOrder} onChange={e => setModal({ ...modal, displayOrder: +e.target.value })} style={INPUT}
+                  <input type="number" value={modal.displayOrder ?? 5} onChange={e => setModal({ ...modal, displayOrder: +e.target.value })} style={INPUT}
                     onFocus={e => { e.target.style.borderColor='#3d6b35'; e.target.style.boxShadow='0 0 0 3px rgba(61,107,53,0.10)' }}
                     onBlur={e => { e.target.style.borderColor='#dde8d8'; e.target.style.boxShadow='none' }} />
                 </div>

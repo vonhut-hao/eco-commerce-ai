@@ -1,0 +1,2 @@
+ALTER TABLE banner MODIFY image_url TEXT NOT NULL;
+ALTER TABLE banner MODIFY link_url TEXT;
